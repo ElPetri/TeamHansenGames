@@ -108,14 +108,30 @@
     <script>
         (function () {
             const counter = document.getElementById('visitor-count');
-            fetch('https://api.countapi.xyz/hit/teamhansengames/homepage')
-                .then(response => response.json())
-                .then(data => {
-                    counter.textContent = data.value.toLocaleString();
-                })
-                .catch(() => {
+            const endpoints = [
+                'https://api.countapi.xyz/hit/teamhansengames/homepage?format=json',
+                'https://countapi.xyz/hit/teamhansengames/homepage?format=json'
+            ];
+
+            const tryFetch = (index) => {
+                if (index >= endpoints.length) {
                     counter.textContent = 'Unavailable';
-                });
+                    return;
+                }
+                fetch(endpoints[index], { cache: 'no-store', referrerPolicy: 'no-referrer' })
+                    .then(response => response.json())
+                    .then(data => {
+                        const value = data.value ?? data.count ?? data.total;
+                        if (typeof value === 'number') {
+                            counter.textContent = value.toLocaleString();
+                        } else {
+                            tryFetch(index + 1);
+                        }
+                    })
+                    .catch(() => tryFetch(index + 1));
+            };
+
+            tryFetch(0);
         })();
     </script>
 </body>

@@ -289,7 +289,9 @@ function setupLine(exp) {
 
     wrap.appendChild(holder);
     const stats = createElement('div', 'raised-tile', 'Accuracy: 0%');
+    const checkBtn = createElement('button', 'maze-btn', 'Check Line');
     wrap.appendChild(stats);
+    wrap.appendChild(checkBtn);
     const legend = createElement('div', 'class-legend');
     const magentaLegend = createElement('span', 'legend-dot', 'Magenta');
     magentaLegend.prepend(createElement('span', 'dot magenta'));
@@ -301,8 +303,9 @@ function setupLine(exp) {
     workspace.appendChild(wrap);
 
     const points = generateClusterPoints(exp.seed, exp.clusters, exp.clusterCount);
-    let line = { x1: 0.2, y1: 0.2, x2: 0.8, y2: 0.8 };
+    let line = { x1: 0.1, y1: 0.5, x2: 0.9, y2: 0.5 };
     let hasInteracted = false;
+    let currentAccuracy = 0;
 
     const ctx = canvas.getContext('2d');
 
@@ -335,12 +338,8 @@ function setupLine(exp) {
 
     const render = () => {
         window.AiViz.drawScatter(ctx, points, line);
-        const accuracy = computeAccuracy();
-        stats.textContent = `Accuracy: ${Math.round(accuracy * 100)}%`;
-        if (hasInteracted && accuracy >= 0.9) {
-            stats.textContent += ' ✅';
-            completeExperiment();
-        }
+        currentAccuracy = computeAccuracy();
+        stats.textContent = `Accuracy: ${Math.round(currentAccuracy * 100)}%`;
     };
 
     const startDrag = (event, handleKey) => {
@@ -368,6 +367,18 @@ function setupLine(exp) {
 
     handleA.addEventListener('pointerdown', (event) => startDrag(event, 'x1'));
     handleB.addEventListener('pointerdown', (event) => startDrag(event, 'x2'));
+
+    checkBtn.addEventListener('click', () => {
+        if (!hasInteracted) {
+            setStatus('Move the line first, then check.');
+            return;
+        }
+        if (currentAccuracy >= 0.9) {
+            completeExperiment();
+        } else {
+            setStatus('Not quite. Aim for 90% accuracy.');
+        }
+    });
 
     updateHandles();
     render();
