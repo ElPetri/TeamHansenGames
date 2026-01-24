@@ -302,6 +302,7 @@ function setupLine(exp) {
 
     const points = generateClusterPoints(exp.seed, exp.clusters, exp.clusterCount);
     let line = { x1: 0.2, y1: 0.2, x2: 0.8, y2: 0.8 };
+    let hasInteracted = false;
 
     const ctx = canvas.getContext('2d');
 
@@ -336,7 +337,7 @@ function setupLine(exp) {
         window.AiViz.drawScatter(ctx, points, line);
         const accuracy = computeAccuracy();
         stats.textContent = `Accuracy: ${Math.round(accuracy * 100)}%`;
-        if (accuracy >= 0.9) {
+        if (hasInteracted && accuracy >= 0.9) {
             stats.textContent += ' ✅';
             completeExperiment();
         }
@@ -352,6 +353,7 @@ function setupLine(exp) {
             const y = clamp((moveEvent.clientY - rect.top) / rect.height, 0, 1);
             line[handleKey] = x;
             line[handleKey === 'x1' ? 'y1' : 'y2'] = y;
+            hasInteracted = true;
             updateHandles();
             render();
         };
@@ -372,7 +374,7 @@ function setupLine(exp) {
 }
 
 function setupFeatures(exp) {
-    workspace.appendChild(createElement('div', 'raised-tile', 'Drag three features into the model slots.'));
+    workspace.appendChild(createElement('div', 'raised-tile', 'Drag three features into the model slots. Order does not matter.'));
 
     const emojiRow = createElement('div', 'emoji-row');
     ['🍕', '🍎', '🌮', '🎸', '⚽', '🎺'].forEach(emoji => {
@@ -405,13 +407,13 @@ function setupFeatures(exp) {
         }
         const selectedIds = chosen.map(tile => tile.dataset.feature);
         const matchCount = selectedIds.filter(id => exp.optimalSet.includes(id)).length;
-        const accuracy = matchCount === 3 ? 92 : matchCount === 2 ? 82 : matchCount === 1 ? 72 : 60;
+        const accuracy = matchCount === 3 ? 92 : matchCount === 2 ? 84 : matchCount === 1 ? 72 : 60;
         result.textContent = `Accuracy: ${accuracy}%`;
         const isOptimal = exp.optimalSet.every(id => selectedIds.includes(id));
         if (isOptimal) {
             completeExperiment();
         } else {
-            setStatus('Try swapping one feature to boost accuracy.');
+            setStatus('Try swapping one feature to boost accuracy. Food traits are usually edible, smelly, or crumbly.');
         }
     });
 }
@@ -474,7 +476,9 @@ function setupBias(exp) {
 
 function setupNeuron(exp) {
     const stageLabel = createElement('div', 'neuron-stage', 'Target: AND');
+    const help = createElement('div', 'raised-tile', 'A neuron sums inputs × weights + bias. Output is 1 if the sum ≥ 0. Try to make ONLY 111 fire for AND.');
     workspace.appendChild(stageLabel);
+    workspace.appendChild(help);
 
     const inputRow = createElement('div', 'choice-row');
     const inputs = [0, 0, 0];
@@ -645,7 +649,9 @@ function setupKnn(exp) {
     wrap.appendChild(choiceRow);
 
     const progressBox = createElement('div', 'raised-tile', 'Correct: 0 / 5');
+    const voteBox = createElement('div', 'raised-tile', 'Votes: --');
     wrap.appendChild(progressBox);
+    wrap.appendChild(voteBox);
 
     workspace.appendChild(wrap);
 
@@ -678,6 +684,7 @@ function setupKnn(exp) {
             acc[p.label] = (acc[p.label] || 0) + 1;
             return acc;
         }, {});
+        voteBox.textContent = `Votes → Magenta: ${counts.magenta || 0} | Orange: ${counts.orange || 0}`;
         return (counts.magenta || 0) >= (counts.orange || 0) ? 'magenta' : 'orange';
     };
 
@@ -755,9 +762,11 @@ function setupRl(exp) {
     legendRow.appendChild(createElement('span', 'legend-pill trap', 'Traps')); 
     legendRow.appendChild(createElement('span', 'legend-pill agent', 'Agent'));
 
-    const stats = createElement('div', 'raised-tile', 'Episodes: 0 | Success: 0');
+    const explain = createElement('div', 'raised-tile', 'Reward the agent to reach the goal. Train a few episodes and watch the green values grow along the best path.');
+    const stats = createElement('div', 'raised-tile', 'Episodes: 0 | Success: 0 | Last: --');
     wrap.appendChild(controls);
     wrap.appendChild(legendRow);
+    wrap.appendChild(explain);
     wrap.appendChild(stats);
     workspace.appendChild(wrap);
 
@@ -812,12 +821,14 @@ function setupRl(exp) {
         if (pos[0] === exp.goal[0] && pos[1] === exp.goal[1] && steps <= 20) {
             success += 1;
         }
-        stats.textContent = `Episodes: ${episodes} | Success: ${success}`;
+        const reachedGoal = pos[0] === exp.goal[0] && pos[1] === exp.goal[1];
+        const lastLabel = reachedGoal ? `Goal in ${steps} steps` : isTrap(pos) ? 'Hit trap' : 'Stopped';
+        stats.textContent = `Episodes: ${episodes} | Success: ${success} | Last: ${lastLabel}`;
         renderMaze();
         if (episodes >= 30 && success === 0) {
             setStatus('Hint: Try Goal +10, Trap -5, Step -1.');
         }
-        if (success >= 3) {
+        if (success >= 1 && episodes >= 5) {
             completeExperiment();
         }
     };
@@ -873,6 +884,8 @@ function setupAttention(exp) {
         sliderLabel.textContent = `Threshold: ${threshold.toFixed(2)}`;
         window.AiViz.drawHeatmapWords(sentenceBox, words, exp.weights, threshold);
     };
+
+    slider.addEventListener('input', render);
 
     checkBtn.addEventListener('click', () => {
         const threshold = Number(slider.value);

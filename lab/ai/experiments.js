@@ -37,11 +37,11 @@ const AI_EXPERIMENTS = [
             { id: 'music', label: 'Makes music' },
             { id: 'sports', label: 'Used in sports' }
         ],
-        optimalSet: ['edible', 'crumbs', 'handheld'],
+        optimalSet: ['edible', 'crumbs', 'smell'],
         hints: [
             'Pick features tied directly to eating.',
-            'One feature should exclude instruments and sports gear.',
-            'Try edible + crumbs + handheld.'
+            'Food tends to be edible, smells, or leaves crumbs.',
+            'Try edible + crumbs + smell.'
         ],
         deepDive: {
             formula: '\\text{Accuracy} = \\frac{\\text{correct}}{\\text{total}}',

@@ -101,7 +101,22 @@
 
         <footer>
             <p>Made with ☕ by Team Hansen</p>
+            <p class="visitor-counter">Visitors: <span id="visitor-count">...</span></p>
         </footer>
     </div>
+
+    <script>
+        (function () {
+            const counter = document.getElementById('visitor-count');
+            fetch('https://api.countapi.xyz/hit/teamhansengames/homepage')
+                .then(response => response.json())
+                .then(data => {
+                    counter.textContent = data.value.toLocaleString();
+                })
+                .catch(() => {
+                    counter.textContent = 'Unavailable';
+                });
+        })();
+    </script>
 </body>
 </html>
