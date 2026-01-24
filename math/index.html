@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Blaster</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="starfield"></div>
+
+        <div id="hud">
+            <div class="hud-block">Score: <span id="score">0</span></div>
+            <div class="hud-block">Lives: <span id="lives">3</span></div>
+        </div>
+
+        <div id="problem-layer"></div>
+
+        <div id="input-panel">
+            <input id="answer-input" type="text" placeholder="Type answer" autocomplete="off" />
+            <button id="submit-btn">Fire</button>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <h1>MATH BLASTER</h1>
+            <p class="subtitle">Solve to destroy incoming problems</p>
+            <div class="mode-select">
+                <button class="mode-btn" data-mode="arithmetic">Arithmetic</button>
+                <button class="mode-btn" data-mode="prealgebra">Pre‑Algebra</button>
+                <button class="mode-btn" data-mode="algebra">Algebra</button>
+                <button class="mode-btn" data-mode="mixed">Mixed</button>
+            </div>
+            <div class="tips">
+                <p>Type the answer and press Enter or Fire.</p>
+            </div>
+        </div>
+
+        <div id="game-over" class="screen hidden">
+            <h1>GAME OVER</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <button id="restart-btn">Play Again</button>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

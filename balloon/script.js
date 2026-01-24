@@ -1,5 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const gameContainer = document.getElementById('game-container');
 
 // Elements
 const scoreEl = document.getElementById('score');
@@ -7,6 +8,7 @@ const moneyEl = document.getElementById('money');
 const waveEl = document.getElementById('wave');
 const uiLayer = document.getElementById('ui-layer');
 const startScreen = document.getElementById('start-screen');
+const modeScreen = document.getElementById('mode-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const upgradeMenu = document.getElementById('upgrade-menu');
 const costFireRateEl = document.getElementById('cost-firerate');
@@ -18,14 +20,35 @@ const barMultiShot = document.getElementById('bar-multishot');
 const finalScoreEl = document.getElementById('final-score');
 const playerNameInput = document.getElementById('player-name');
 const topScoresList = document.getElementById('top-scores-list');
+const livesEl = document.getElementById('lives');
 const audioToggleBtn = document.getElementById('audio-btn');
 const pauseBtn = document.getElementById('pause-btn');
+const modeUnlocksEl = document.getElementById('mode-unlocks');
+const modeBackBtn = document.getElementById('mode-back-btn');
+const chaosHud = document.getElementById('chaos-hud');
+const modeLabelEl = document.getElementById('mode-label');
+const bossHpWrap = document.getElementById('boss-hp');
+const bossHpFill = document.getElementById('boss-hp-fill');
+const statusShieldEl = document.getElementById('status-shield');
+const statusSlowMoEl = document.getElementById('status-slowmo');
+const statusDoubleCashEl = document.getElementById('status-doublecash');
+const statusRapidFireEl = document.getElementById('status-rapidfire');
+const valueShieldEl = document.getElementById('value-shield');
+const valueSlowMoEl = document.getElementById('value-slowmo');
+const valueDoubleCashEl = document.getElementById('value-doublecash');
+const valueRapidFireEl = document.getElementById('value-rapidfire');
+const ringShieldEl = document.getElementById('ring-shield');
+const ringSlowMoEl = document.getElementById('ring-slowmo');
+const ringDoubleCashEl = document.getElementById('ring-doublecash');
+const ringRapidFireEl = document.getElementById('ring-rapidfire');
 
 // Game State
 let gameState = 'START';
 let difficulty = 'easy';
+let gameMode = localStorage.getItem('popTheBalloons_lastMode') || 'classic';
 let score = 0;
 let money = 0;
+let lives = 3;
 let frames = 0; // Keeping for cosmetic anims (wobble)
 let mouse = { x: 0, y: 0 };
 let isAudioMuted = false;
@@ -76,7 +99,12 @@ const Sound = {
 };
 
 // Leaderboard
-const LEADERBOARD_KEY = 'popTheBalloons_leaderboard';
+const LEADERBOARD_KEYS = {
+    classic: 'popTheBalloons_leaderboard_classic',
+    chaos: 'popTheBalloons_leaderboard_chaos'
+};
+const CHAOS_PROGRESS_KEY = 'popTheBalloons_chaosProgress';
+const LAST_MODE_KEY = 'popTheBalloons_lastMode';
 
 // Upgrade Costs & State
 const MAX_UPGRADES = 5;
@@ -95,6 +123,12 @@ let enemiesRemainingToSpawn = 0;
 let spawnTimer = 0;    // Now in seconds
 let waveCooldown = 0;  // Now in seconds
 let activeEnemies = 0;
+let bossWaveActive = false;
+let bossDefeats = 0;
+let maxBossDefeated = parseInt(localStorage.getItem(CHAOS_PROGRESS_KEY) || '0', 10);
+let powerupsUnlocked = false;
+let screenShakeUnlocked = false;
+let currentBoss = null;
 
 // Entities
 let tank;
@@ -103,6 +137,25 @@ let lasers = [];
 let balloons = [];
 let particles = [];
 let waveText = null; // Store reference to wave text element
+let powerups = [];
+let bossProjectiles = [];
+
+let shieldCharges = 0;
+let slowMoTimer = 0;
+let doubleCashTimer = 0;
+let rapidFireTimer = 0;
+let invulnTimer = 0;
+
+const POWERUP_DURATIONS = {
+    slowmo: 5,
+    doublecash: 10,
+    rapidfire: 3
+};
+
+const INVULN_DURATION = 1.2;
+
+let shakeTime = 0;
+let shakeIntensity = 0;
 
 class Tank {
     constructor() {
@@ -139,10 +192,11 @@ class Tank {
         // Auto Fire
         if (this.fireTimer <= 0) {
             this.shoot();
+            const effectiveFireRate = getEffectiveFireRate();
             // Weapon specific delays
-            if (currentWeapon === 'shotgun') this.fireTimer = this.currentFireRate * 2.5;
-            else if (currentWeapon === 'laser') this.fireTimer = Math.max(0.3, this.currentFireRate * 2); 
-            else this.fireTimer = this.currentFireRate;
+            if (currentWeapon === 'shotgun') this.fireTimer = effectiveFireRate * 2.5;
+            else if (currentWeapon === 'laser') this.fireTimer = Math.max(0.3, effectiveFireRate * 2); 
+            else this.fireTimer = effectiveFireRate;
         } else {
             this.fireTimer -= dt;
         }
@@ -177,12 +231,9 @@ class Tank {
                 const distSq = (b.x - cx)**2 + (b.y - cy)**2;
                 
                 if (distSq < (b.radius + 10)**2) { 
-                    b.hp -= 5;
+                    const dead = handleBalloonDamage(b, 5);
                     createHighlight(b.x, b.y, '#00f3ff');
-                    if(b.hp <= 0) {
-                        popBalloon(b);
-                        balloons.splice(i, 1);
-                    }
+                    if (dead) balloons.splice(i, 1);
                 }
             }
         } else if (currentWeapon === 'shotgun') {
@@ -212,6 +263,19 @@ class Tank {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
+
+        if (invulnTimer > 0) {
+            const pulse = 0.6 + Math.sin(frames * 0.3) * 0.4;
+            ctx.save();
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#66ccff';
+            ctx.strokeStyle = `rgba(102, 204, 255, ${0.5 + pulse * 0.3})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 28 + pulse * 4, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
 
         ctx.fillStyle = this.color;
         ctx.shadowBlur = 15;
@@ -281,8 +345,13 @@ class Dart {
 }
 
 class Balloon {
-    constructor(isSeeker = false) {
-        this.isSeeker = isSeeker;
+    constructor(options = {}) {
+        if (typeof options === 'boolean') options = { isSeeker: options };
+        this.isSeeker = !!options.isSeeker;
+        this.isArmored = !!options.isArmored;
+        this.isSplitter = !!options.isSplitter;
+        this.splitLevel = options.splitLevel || 0;
+        this.isMini = !!options.isMini;
         const edge = Math.floor(Math.random() * 4); 
         const padding = 60; 
         
@@ -291,7 +360,7 @@ class Balloon {
         else if (edge === 2) { this.x = Math.random() * canvas.width; this.y = canvas.height + padding; }
         else { this.x = -padding; this.y = Math.random() * canvas.height; }
 
-        this.radius = 15 + Math.random() * 15;
+        this.radius = this.isMini ? 10 + Math.random() * 6 : (15 + Math.random() * 15);
         
         // Difficulty scaling
         let speedBase = 1.0 + (wave * 0.1); 
@@ -307,15 +376,28 @@ class Balloon {
         let hpBase = 1 + Math.floor(wave / 2);
 
         this.speed = moveSpeed;
-        this.hp = hpBase;
-        if (isSeeker) {
+        this.hp = this.isMini ? Math.max(1, Math.floor(hpBase * 0.6)) : hpBase;
+        this.maxHp = this.hp;
+        this.armor = this.isArmored ? (2 + Math.floor(wave / 6)) : 0;
+        if (this.isSeeker) {
             this.speed *= 0.7; 
             this.hp = Math.floor(this.hp * 1.5);
+            this.maxHp = this.hp;
             this.color = '#ff0055'; 
         } else {
              const hues = [120, 180, 280, 300]; 
              const hue = hues[Math.floor(Math.random() * hues.length)];
              this.color = `hsl(${hue}, 100%, 50%)`;
+        }
+
+        if (this.isArmored) {
+            this.color = '#88baff';
+            this.speed *= 0.85;
+        }
+
+        if (this.isSplitter) {
+            this.color = '#ffcc66';
+            this.speed *= 1.1;
         }
     }
 
@@ -330,13 +412,14 @@ class Balloon {
         }
         
         const dist = Math.hypot(dx, dy);
-        this.x += (dx / dist) * this.speed * dt;
-        this.y += (dy / dist) * this.speed * dt;
+        const slowMoFactor = getSlowMoFactor();
+        this.x += (dx / dist) * this.speed * slowMoFactor * dt;
+        this.y += (dy / dist) * this.speed * slowMoFactor * dt;
 
         this.x += Math.sin(frames * 0.05 + this.y) * 30 * dt; // Wobble per second
 
         if (dist < 30 + this.radius) {
-            endGame();
+            handlePlayerHit();
         }
     }
 
@@ -359,13 +442,237 @@ class Balloon {
             ctx.fill();
         }
         ctx.shadowBlur = 0;
+
+        if (this.isArmored) {
+            ctx.strokeStyle = '#d0e8ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.radius + 4, this.radius * 1.1 + 4, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        if (this.isSplitter) {
+            ctx.strokeStyle = '#fff2b2';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-6, 0); ctx.lineTo(6, 0);
+            ctx.moveTo(0, -6); ctx.lineTo(0, 6);
+            ctx.stroke();
+        }
         
-        if (this.hp > 1) {
+        if (this.hp > 1 || this.armor > 0) {
             ctx.fillStyle = 'white';
             ctx.font = 'bold 12px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(this.hp, 0, 5);
+            const armorText = this.armor > 0 ? `+${this.armor}` : '';
+            ctx.fillText(`${this.hp}${armorText}`, 0, 5);
         }
+        ctx.restore();
+    }
+}
+
+class BossBalloon {
+    constructor() {
+        const edge = Math.floor(Math.random() * 4);
+        const padding = 80;
+        if (edge === 0) { this.x = Math.random() * canvas.width; this.y = -padding; }
+        else if (edge === 1) { this.x = canvas.width + padding; this.y = Math.random() * canvas.height; }
+        else if (edge === 2) { this.x = Math.random() * canvas.width; this.y = canvas.height + padding; }
+        else { this.x = -padding; this.y = Math.random() * canvas.height; }
+
+        this.isBoss = true;
+        this.radius = 45;
+        this.tier = Math.floor(wave / 5);
+        const baseHp = 1 + Math.floor(wave / 2);
+        const hpMultiplier = this.tier === 1 ? 12 : 10;
+        this.maxHp = baseHp * hpMultiplier;
+        this.hp = this.maxHp;
+
+        let speedBase = 1.0 + (wave * 0.05);
+        if (difficulty === 'easy') {
+            speedBase *= 0.85;
+            if (canvas.width < 768) speedBase *= 0.8;
+        }
+        this.speed = 40 * speedBase;
+        if (this.tier === 1) this.speed *= 1.15;
+
+        this.minionsSpawned = false;
+        this.shotTimer = 1.5;
+        this.shotCooldown = 2.8;
+        this.shieldTimer = 0;
+        this.shieldCooldown = 6;
+        this.shieldActive = false;
+    }
+
+    update(dt) {
+        const dx = (canvas.width / 2) - this.x;
+        const dy = (canvas.height / 2) - this.y;
+        const dist = Math.hypot(dx, dy);
+        const slowMoFactor = getSlowMoFactor();
+
+        this.x += (dx / dist) * this.speed * slowMoFactor * dt;
+        this.y += (dy / dist) * this.speed * slowMoFactor * dt;
+        this.x += Math.sin(frames * 0.04 + this.y) * 15 * dt;
+
+        if (dist < 40 + this.radius) {
+            handlePlayerHit();
+        }
+
+        if (this.tier >= 4) {
+            this.shieldCooldown -= dt;
+            if (this.shieldCooldown <= 0 && !this.shieldActive) {
+                this.shieldActive = true;
+                this.shieldTimer = 2.2;
+                this.shieldCooldown = 8 + Math.random() * 2;
+            }
+            if (this.shieldActive) {
+                this.shieldTimer -= dt;
+                if (this.shieldTimer <= 0) this.shieldActive = false;
+            }
+        }
+
+        if (this.tier >= 1) {
+            const threshold = this.tier === 1 ? 0.7 : 0.5;
+            const count = this.tier === 1 ? 2 : 3;
+            if (!this.minionsSpawned && this.hp <= this.maxHp * threshold) {
+                this.minionsSpawned = true;
+                spawnBossMinions(this, count);
+            }
+        }
+
+        if (this.tier >= 2) {
+            this.shotTimer -= dt;
+            if (this.shotTimer <= 0) {
+                bossProjectiles.push(new BossProjectile(this.x, this.y));
+                this.shotTimer = this.shotCooldown + Math.random() * 0.6;
+            }
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        const gradient = ctx.createRadialGradient(0, 0, 5, 0, 0, this.radius + 10);
+        gradient.addColorStop(0, '#fff59d');
+        gradient.addColorStop(0.6, '#ff00ff');
+        gradient.addColorStop(1, '#5a00ff');
+        ctx.fillStyle = gradient;
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#ff00ff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.radius, this.radius * 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (this.shieldActive) {
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#66ccff';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.radius + 8, this.radius * 1.1 + 8, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.hp, 0, 6);
+        ctx.restore();
+    }
+}
+
+class BossProjectile {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 8;
+        this.speed = 180;
+        this.life = 6;
+        const angle = Math.atan2(tank.y - y, tank.x - x);
+        this.vx = Math.cos(angle) * this.speed;
+        this.vy = Math.sin(angle) * this.speed;
+        this.turnRate = 3.5;
+    }
+
+    update(dt) {
+        const dx = tank.x - this.x;
+        const dy = tank.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const desiredVx = (dx / dist) * this.speed;
+        const desiredVy = (dy / dist) * this.speed;
+        const turn = Math.min(1, this.turnRate * dt);
+        this.vx += (desiredVx - this.vx) * turn;
+        this.vy += (desiredVy - this.vy) * turn;
+
+        const slowMoFactor = getSlowMoFactor();
+        this.x += this.vx * slowMoFactor * dt;
+        this.y += this.vy * slowMoFactor * dt;
+        this.life -= dt;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.fillStyle = '#ff5555';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff2222';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Powerup {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.radius = 12;
+        this.life = 16;
+        this.floatOffset = Math.random() * Math.PI * 2;
+    }
+
+    update(dt) {
+        this.life -= dt;
+        const dx = tank.x - this.x;
+        const dy = tank.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const pull = 85;
+        this.x += (dx / dist) * pull * dt;
+        this.y += (dy / dist) * pull * dt;
+        this.y += Math.sin(frames * 0.12 + this.floatOffset) * 5 * dt;
+    }
+
+    draw() {
+        ctx.save();
+        const colorMap = {
+            shield: '#00ffea',
+            slowmo: '#66aaff',
+            doublecash: '#00ff66',
+            rapidfire: '#ffcc00',
+            health: '#ff5a7a'
+        };
+        const labelMap = {
+            shield: 'S',
+            slowmo: 'T',
+            doublecash: '$',
+            rapidfire: 'R',
+            health: '❤'
+        };
+        const color = colorMap[this.type] || '#ffffff';
+        ctx.fillStyle = color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(labelMap[this.type] || '?', this.x, this.y + 4);
         ctx.restore();
     }
 }
@@ -440,8 +747,21 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         difficulty = btn.getAttribute('data-mode');
         if(audioCtx.state === 'suspended') audioCtx.resume();
+        showModeScreen();
+    });
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        gameMode = btn.getAttribute('data-mode');
+        localStorage.setItem(LAST_MODE_KEY, gameMode);
         startGame();
     });
+});
+
+modeBackBtn.addEventListener('click', () => {
+    modeScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
 });
 
 document.getElementById('upgrade-btn').addEventListener('click', togglePause);
@@ -454,6 +774,7 @@ document.getElementById('buy-laser').addEventListener('click', () => unlockWeapo
 
 const restart = () => {
     gameOverScreen.classList.add('hidden');
+    modeScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
     loadLeaderboard();
 };
@@ -470,14 +791,248 @@ document.getElementById('save-score-btn').addEventListener('click', () => {
     restart();
 });
 
+function showModeScreen() {
+    startScreen.classList.add('hidden');
+    modeScreen.classList.remove('hidden');
+    updateModeUnlocks();
+}
+
+function updateModeUnlocks() {
+    if (maxBossDefeated >= 2) {
+        modeUnlocksEl.innerText = 'Chaos unlocks: Power-ups + Screen Shake';
+    } else if (maxBossDefeated >= 1) {
+        modeUnlocksEl.innerText = 'Chaos unlocks: Power-ups unlocked';
+    } else {
+        modeUnlocksEl.innerText = 'Chaos unlocks: Defeat the first boss to unlock power-ups';
+    }
+}
+
+function getLeaderboardKey(mode = gameMode) {
+    return mode === 'chaos' ? LEADERBOARD_KEYS.chaos : LEADERBOARD_KEYS.classic;
+}
+
+function getSlowMoFactor() {
+    return slowMoTimer > 0 ? 0.5 : 1;
+}
+
+function getEffectiveFireRate() {
+    return rapidFireTimer > 0 ? tank.currentFireRate * 0.6 : tank.currentFireRate;
+}
+
+function getCashMultiplier() {
+    return doubleCashTimer > 0 ? 2 : 1;
+}
+
+function triggerScreenShake(intensity, duration) {
+    if (!screenShakeUnlocked) return;
+    shakeIntensity = Math.max(shakeIntensity, intensity);
+    shakeTime = Math.max(shakeTime, duration);
+}
+
+function handlePlayerHit() {
+    if (invulnTimer > 0) return;
+    if (shieldCharges > 0) {
+        shieldCharges--;
+        createHighlight(tank.x, tank.y, '#00ffea');
+        triggerScreenShake(6, 0.3);
+        Sound.playTone(200, 'square', 0.2, 0.1);
+        return;
+    }
+    lives = Math.max(0, lives - 1);
+    updateScoreUI();
+    triggerScreenShake(10, 0.4);
+    Sound.playTone(140, 'sawtooth', 0.3, 0.15);
+    invulnTimer = INVULN_DURATION;
+    clearNearbyBalloons();
+    if (lives <= 0) {
+        endGame();
+    }
+}
+
+function clearNearbyBalloons() {
+    const clearRadius = 140;
+    for (let i = balloons.length - 1; i >= 0; i--) {
+        const b = balloons[i];
+        const dist = Math.hypot(b.x - tank.x, b.y - tank.y);
+        if (dist <= clearRadius) {
+            popBalloon(b);
+            balloons.splice(i, 1);
+        }
+    }
+}
+
+function applyPowerup(type) {
+    if (type === 'shield') {
+        shieldCharges++;
+    } else if (type === 'health') {
+        lives = Math.min(3, lives + 1);
+        updateScoreUI();
+    } else if (type === 'slowmo') {
+        slowMoTimer = Math.max(slowMoTimer, 5);
+    } else if (type === 'doublecash') {
+        doubleCashTimer = Math.max(doubleCashTimer, 10);
+    } else if (type === 'rapidfire') {
+        rapidFireTimer = Math.max(rapidFireTimer, 3);
+    }
+    Sound.playTone(800, 'sine', 0.15, 0.15);
+}
+
+function maybeSpawnPowerup(x, y) {
+    if (gameMode !== 'chaos' || !powerupsUnlocked) return;
+    if (Math.random() > 0.1) return;
+    const types = ['shield', 'slowmo', 'doublecash', 'rapidfire'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    powerups.push(new Powerup(x, y, type));
+}
+
+function spawnBossMinions(boss, count) {
+    for (let i = 0; i < count; i++) {
+        const minion = new Balloon(false);
+        minion.x = boss.x + Math.cos((Math.PI * 2 * i) / count) * 40;
+        minion.y = boss.y + Math.sin((Math.PI * 2 * i) / count) * 40;
+        minion.speed *= 1.1;
+        balloons.push(minion);
+    }
+}
+
+function spawnSplitterChildren(parent) {
+    const count = 2;
+    for (let i = 0; i < count; i++) {
+        const child = new Balloon({
+            isMini: true,
+            splitLevel: parent.splitLevel + 1
+        });
+        const angle = (Math.PI * 2 * i) / count;
+        child.x = parent.x + Math.cos(angle) * 12;
+        child.y = parent.y + Math.sin(angle) * 12;
+        child.speed *= 1.15;
+        child.color = '#ffe3a3';
+        balloons.push(child);
+    }
+}
+
+function updateChaosHud() {
+    if (gameMode !== 'chaos') return;
+
+    if (currentBoss && currentBoss.isBoss) {
+        bossHpWrap.classList.remove('hidden');
+        const ratio = Math.max(0, currentBoss.hp) / currentBoss.maxHp;
+        bossHpFill.style.width = `${Math.max(4, ratio * 100)}%`;
+    } else {
+        bossHpWrap.classList.add('hidden');
+    }
+
+    valueShieldEl.innerText = `${shieldCharges}`;
+    valueSlowMoEl.innerText = `${slowMoTimer.toFixed(1)}s`;
+    valueDoubleCashEl.innerText = `${doubleCashTimer.toFixed(1)}s`;
+    valueRapidFireEl.innerText = `${rapidFireTimer.toFixed(1)}s`;
+
+    updatePowerupRing(ringShieldEl, shieldCharges > 0 ? 1 : 0, '#00ffea');
+    updatePowerupRing(ringSlowMoEl, slowMoTimer / POWERUP_DURATIONS.slowmo, '#66aaff');
+    updatePowerupRing(ringDoubleCashEl, doubleCashTimer / POWERUP_DURATIONS.doublecash, '#00ff66');
+    updatePowerupRing(ringRapidFireEl, rapidFireTimer / POWERUP_DURATIONS.rapidfire, '#ffcc00');
+}
+
+function updatePowerupRing(el, ratio, color) {
+    const clamped = Math.max(0, Math.min(1, ratio));
+    const deg = Math.round(clamped * 360);
+    el.style.background = `conic-gradient(${color} ${deg}deg, rgba(255, 255, 255, 0.1) 0deg)`;
+    el.style.boxShadow = clamped > 0 ? `0 0 10px ${color}` : '0 0 6px rgba(0, 243, 255, 0.2)';
+}
+
+function handleBalloonDamage(b, amount) {
+    if (b.isBoss && b.shieldActive) {
+        createHighlight(b.x, b.y, '#66ccff');
+        Sound.playTone(220, 'sine', 0.05, 0.05);
+        return false;
+    }
+    if (b.armor && b.armor > 0) {
+        const absorbed = Math.min(amount, b.armor);
+        b.armor -= absorbed;
+        amount -= absorbed;
+        createHighlight(b.x, b.y, '#a5d3ff');
+        Sound.playTone(320, 'square', 0.05, 0.05);
+        if (amount <= 0) return false;
+    }
+    b.hp -= amount;
+    if (b.isBoss) {
+        triggerScreenShake(2, 0.12);
+    }
+    if (b.hp <= 0) {
+        handleBalloonDeath(b);
+        return true;
+    }
+    return false;
+}
+
+function handleBalloonDeath(b) {
+    if (b.isSplitter && b.splitLevel < 1) {
+        spawnSplitterChildren(b);
+        popBalloon(b);
+        return;
+    }
+    if (b.isBoss) {
+        handleBossDefeat(b);
+    } else {
+        popBalloon(b);
+    }
+}
+
+function handleBossDefeat(boss) {
+    if (boss === currentBoss) currentBoss = null;
+    const cashReward = (500 + wave * 50) * getCashMultiplier();
+    score += 500 + (wave * 20);
+    money += cashReward;
+    updateScoreUI();
+    updateUpgradeUI();
+    Sound.playTone(180, 'sawtooth', 0.4, 0.2);
+    triggerScreenShake(10, 0.4);
+
+    for (let i = 0; i < 40; i++) {
+        particles.push(new Particle(boss.x, boss.y, '#ffcc55'));
+    }
+
+    bossDefeats++;
+    if (gameMode === 'chaos') {
+        if (bossDefeats >= 1) powerupsUnlocked = true;
+        if (bossDefeats >= 2) screenShakeUnlocked = true;
+        if (bossDefeats > maxBossDefeated) {
+            maxBossDefeated = bossDefeats;
+            localStorage.setItem(CHAOS_PROGRESS_KEY, String(maxBossDefeated));
+            updateModeUnlocks();
+        }
+    }
+
+    const healthDrop = new Powerup(boss.x, boss.y, 'health');
+    powerups.push(healthDrop);
+
+    if (waveText) waveText.remove();
+    waveText = document.createElement('div');
+    waveText.innerText = 'BOSS DEFEATED';
+    waveText.style = "position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:48px; color:var(--neon-pink); font-family:var(--font-heading); text-shadow:0 0 20px black; pointer-events:none; animation: fadeUp 2s forwards;";
+    document.body.appendChild(waveText);
+    setTimeout(() => { if(waveText) waveText.remove(); }, 2000);
+}
+
 function startGame() {
     if (loopId) cancelAnimationFrame(loopId); // Stop old loop if any
     
     gameState = 'PLAYING';
     score = 0;
     money = 0;
+    lives = 3;
     frames = 0;
     wave = 1;
+    bossDefeats = 0;
+    powerupsUnlocked = gameMode === 'chaos' && maxBossDefeated >= 1;
+    screenShakeUnlocked = gameMode === 'chaos' && maxBossDefeated >= 2;
+    shieldCharges = 0;
+    slowMoTimer = 0;
+    doubleCashTimer = 0;
+    rapidFireTimer = 0;
+    invulnTimer = 0;
+    shakeTime = 0;
+    shakeIntensity = 0;
     startWave(1);
     
     upgrades = {
@@ -494,12 +1049,17 @@ function startGame() {
     balloons = [];
     particles = [];
     lasers = [];
+    powerups = [];
+    bossProjectiles = [];
     
     startScreen.classList.add('hidden');
+    modeScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     upgradeMenu.classList.add('hidden');
     updateScoreUI();
     updateUpgradeUI();
+    chaosHud.classList.toggle('hidden', gameMode !== 'chaos');
+    modeLabelEl.innerText = gameMode === 'chaos' ? 'Chaos' : 'Classic';
 
     lastTime = performance.now();
     loopId = requestAnimationFrame(gameLoop);
@@ -507,14 +1067,23 @@ function startGame() {
 
 function startWave(n) {
     wave = n;
-    enemiesRemainingToSpawn = 10 + (n * 5); 
-    spawnTimer = 1.0; 
+    bossWaveActive = gameMode === 'chaos' && (n % 5 === 0);
+    if (bossWaveActive) {
+        enemiesRemainingToSpawn = 0;
+        spawnTimer = 0;
+        currentBoss = new BossBalloon();
+        balloons.push(currentBoss);
+    } else {
+        enemiesRemainingToSpawn = 10 + (n * 5); 
+        spawnTimer = 1.0; 
+        currentBoss = null;
+    }
     waveEl.innerText = wave;
     
     // Anounce
     if (waveText) waveText.remove();
     waveText = document.createElement('div');
-    waveText.innerText = `WAVE ${wave}`;
+    waveText.innerText = bossWaveActive ? `BOSS WAVE` : `WAVE ${wave}`;
     waveText.style = "position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:60px; color:var(--neon-green); font-family:var(--font-heading); text-shadow:0 0 20px black; pointer-events:none; animation: fadeUp 2s forwards;";
     document.body.appendChild(waveText);
     setTimeout(() => { if(waveText) waveText.remove(); }, 2000);
@@ -538,6 +1107,11 @@ function gameLoop(timestamp) {
     
     tank.update(dt);
     tank.draw();
+
+    if (slowMoTimer > 0) slowMoTimer = Math.max(0, slowMoTimer - dt);
+    if (doubleCashTimer > 0) doubleCashTimer = Math.max(0, doubleCashTimer - dt);
+    if (rapidFireTimer > 0) rapidFireTimer = Math.max(0, rapidFireTimer - dt);
+    if (invulnTimer > 0) invulnTimer = Math.max(0, invulnTimer - dt);
     
     // Wave Logic
     if (activeEnemies === 0 && enemiesRemainingToSpawn === 0) {
@@ -561,8 +1135,22 @@ function gameLoop(timestamp) {
         if (enemiesRemainingToSpawn > 0) {
              spawnTimer -= dt;
              if (spawnTimer <= 0) {
-                 const isSeeker = (wave > 2) && (Math.random() > 0.7);
-                 balloons.push(new Balloon(isSeeker));
+                 let balloon;
+                 if (gameMode === 'chaos') {
+                     const roll = Math.random();
+                     if (wave >= 6 && roll < 0.18) {
+                         balloon = new Balloon({ isSplitter: true });
+                     } else if (wave >= 4 && roll < 0.36) {
+                         balloon = new Balloon({ isArmored: true });
+                     } else {
+                         const isSeeker = (wave > 2) && (Math.random() > 0.7);
+                         balloon = new Balloon({ isSeeker });
+                     }
+                 } else {
+                     const isSeeker = (wave > 2) && (Math.random() > 0.7);
+                     balloon = new Balloon({ isSeeker });
+                 }
+                 balloons.push(balloon);
                  enemiesRemainingToSpawn--;
                  activeEnemies++;
                  
@@ -590,15 +1178,11 @@ function gameLoop(timestamp) {
             const b = balloons[j];
             const dist = Math.hypot(d.x - b.x, d.y - b.y);
             if (dist < b.radius + d.radius) {
-                b.hp--;
                 Sound.pop();
                 createHighlight(d.x, d.y, '#FFF');
                 darts.splice(i, 1); 
-                
-                if (b.hp <= 0) {
-                    popBalloon(b);
-                    balloons.splice(j, 1);
-                }
+                const dead = handleBalloonDamage(b, 1);
+                if (dead) balloons.splice(j, 1);
                 break;
             }
         }
@@ -620,6 +1204,22 @@ function gameLoop(timestamp) {
         if (l.life <= 0) lasers.splice(i, 1);
     }
 
+    // Boss Projectiles
+    for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+        const p = bossProjectiles[i];
+        p.update(dt);
+        p.draw();
+        const dist = Math.hypot(p.x - tank.x, p.y - tank.y);
+        if (dist < p.radius + 18) {
+            handlePlayerHit();
+            bossProjectiles.splice(i, 1);
+            continue;
+        }
+        if (p.life <= 0 || p.x < -100 || p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100) {
+            bossProjectiles.splice(i, 1);
+        }
+    }
+
     // Balloons
     activeEnemies = balloons.length;
     balloons.forEach(b => {
@@ -634,7 +1234,32 @@ function gameLoop(timestamp) {
         if (particles[i].alpha <= 0) particles.splice(i, 1);
     }
 
+    // Powerups
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        p.update(dt);
+        p.draw();
+        const dist = Math.hypot(p.x - tank.x, p.y - tank.y);
+        if (dist < p.radius + 20) {
+            applyPowerup(p.type);
+            powerups.splice(i, 1);
+            continue;
+        }
+        if (p.life <= 0) powerups.splice(i, 1);
+    }
+
+    updateChaosHud();
+
     frames++;
+    if (shakeTime > 0) {
+        shakeTime = Math.max(0, shakeTime - dt);
+        const dx = (Math.random() * 2 - 1) * shakeIntensity;
+        const dy = (Math.random() * 2 - 1) * shakeIntensity;
+        gameContainer.style.transform = `translate(${dx}px, ${dy}px)`;
+    } else {
+        gameContainer.style.transform = '';
+        shakeIntensity = 0;
+    }
     loopId = requestAnimationFrame(gameLoop);
 }
 
@@ -660,10 +1285,12 @@ function createHighlight(x, y, color) {
 
 function popBalloon(b) {
     score += (10 + wave);
-    money += (10 + Math.floor(wave/2));
+    money += (10 + Math.floor(wave/2)) * getCashMultiplier();
     updateScoreUI();
     updateUpgradeUI(); 
     Sound.pop();
+
+    maybeSpawnPowerup(b.x, b.y);
     
     for (let i = 0; i < 15; i++) {
         particles.push(new Particle(b.x, b.y, b.color));
@@ -672,6 +1299,9 @@ function popBalloon(b) {
 
 function endGame() {
     gameState = 'GAMEOVER';
+    shakeTime = 0;
+    shakeIntensity = 0;
+    gameContainer.style.transform = '';
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
     Sound.playTone(100, 'sawtooth', 0.5);
@@ -737,10 +1367,12 @@ function equipWeapon(type) {
 function updateScoreUI() {
     scoreEl.innerText = score;
     moneyEl.innerText = money;
+    livesEl.innerText = lives;
 }
 
-function loadLeaderboard() {
-    const list = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+function loadLeaderboard(mode = gameMode) {
+    const key = getLeaderboardKey(mode);
+    const list = JSON.parse(localStorage.getItem(key) || '[]');
     topScoresList.innerHTML = '';
     list.slice(0, 10).forEach((entry, i) => {
         const li = document.createElement('li');
@@ -752,10 +1384,11 @@ function loadLeaderboard() {
 }
 
 function saveScore(name, finalScore) {
-    let list = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    const key = getLeaderboardKey();
+    let list = JSON.parse(localStorage.getItem(key) || '[]');
     list.push({ name, score: finalScore });
     list.sort((a, b) => b.score - a.score);
-    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list.slice(0, 10)));
+    localStorage.setItem(key, JSON.stringify(list.slice(0, 10)));
 }
 
 function updateUpgradeUI() {
@@ -794,3 +1427,6 @@ function updateUpgradeUI() {
         }
     });
 }
+
+loadLeaderboard();
+updateModeUnlocks();

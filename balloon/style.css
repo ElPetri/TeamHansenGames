@@ -91,6 +91,88 @@ canvas {
     box-shadow: 0 0 10px var(--neon-purple);
 }
 
+#chaos-hud {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--neon-blue);
+    padding: 10px 12px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+    pointer-events: none;
+}
+
+#mode-display {
+    color: var(--neon-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#boss-hp {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#boss-hp-label {
+    color: var(--neon-pink);
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+#boss-hp-bar {
+    width: 180px;
+    height: 8px;
+    border: 1px solid var(--neon-pink);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+#boss-hp-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff44dd, #ffcc55);
+    box-shadow: 0 0 10px rgba(255, 68, 221, 0.8);
+}
+
+#powerup-status {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--neon-blue);
+}
+
+.powerup-row {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #c8f2ff;
+}
+
+.powerup-label {
+    white-space: nowrap;
+}
+
+.powerup-value {
+    color: var(--neon-green);
+    font-variant-numeric: tabular-nums;
+}
+
+.powerup-ring {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: conic-gradient(rgba(0, 0, 0, 0) 0deg, rgba(255, 255, 255, 0.15) 0deg);
+    box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
+}
+
 #upgrade-btn {
     pointer-events: auto;
     position: absolute;
@@ -137,6 +219,23 @@ canvas {
     display: none !important;
 }
 
+.menu-link {
+    padding: 12px 20px;
+    font-family: var(--font-heading);
+    font-size: 16px;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+    border: 2px solid var(--neon-blue);
+    text-decoration: none;
+    box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+    transition: all 0.2s;
+}
+
+.menu-link:hover {
+    background: var(--neon-blue);
+    color: #000;
+}
+
 h1 {
     font-family: var(--font-pixel);
     font-size: 50px; 
@@ -154,6 +253,14 @@ h1 {
     gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.mode-select {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
 }
 
 .diff-btn {
@@ -177,6 +284,80 @@ h1 {
     width: 100%; height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transition: 0.5s;
+}
+
+.mode-btn {
+    padding: 15px 30px;
+    font-family: var(--font-heading);
+    font-size: 20px;
+    cursor: pointer;
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: 0.5s;
+}
+
+.mode-btn:hover::before {
+    left: 100%;
+}
+
+.mode-btn[data-mode="classic"] {
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.mode-btn[data-mode="chaos"] {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.mode-unlocks {
+    font-size: 14px;
+    color: var(--neon-green);
+    text-align: center;
+    margin-bottom: 20px;
+    min-height: 20px;
+}
+
+.mode-tips {
+    font-size: 12px;
+    color: #b9f5ff;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.4;
+    max-width: 420px;
+}
+
+.mode-back-btn {
+    padding: 10px 20px;
+    font-family: var(--font-heading);
+    font-size: 16px;
+    cursor: pointer;
+    background: transparent;
+    border: 2px solid var(--neon-purple);
+    color: var(--neon-purple);
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.mode-back-btn:hover {
+    background: var(--neon-purple);
+    color: #000;
+    box-shadow: 0 0 20px var(--neon-purple);
 }
 
 .diff-btn:hover::before {
