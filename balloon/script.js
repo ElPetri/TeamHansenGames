@@ -21,11 +21,13 @@ const finalScoreEl = document.getElementById('final-score');
 const playerNameInput = document.getElementById('player-name');
 const topScoresList = document.getElementById('top-scores-list');
 const livesEl = document.getElementById('lives');
+const weaponNameEl = document.getElementById('weapon-name');
 const audioToggleBtn = document.getElementById('audio-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const modeUnlocksEl = document.getElementById('mode-unlocks');
 const modeBackBtn = document.getElementById('mode-back-btn');
 const menuBtn = document.getElementById('menu-btn');
+const weaponCycleBtn = document.getElementById('weapon-cycle-btn');
 const chaosHud = document.getElementById('chaos-hud');
 const modeLabelEl = document.getElementById('mode-label');
 const bossHpWrap = document.getElementById('boss-hp');
@@ -42,6 +44,8 @@ const ringShieldEl = document.getElementById('ring-shield');
 const ringSlowMoEl = document.getElementById('ring-slowmo');
 const ringDoubleCashEl = document.getElementById('ring-doublecash');
 const ringRapidFireEl = document.getElementById('ring-rapidfire');
+const valueHomingEl = document.getElementById('value-homing');
+const ringHomingEl = document.getElementById('ring-homing');
 
 // Game State
 let gameState = 'START';
@@ -146,11 +150,13 @@ let slowMoTimer = 0;
 let doubleCashTimer = 0;
 let rapidFireTimer = 0;
 let invulnTimer = 0;
+let homingTimer = 0;
 
 const POWERUP_DURATIONS = {
     slowmo: 5,
     doublecash: 10,
-    rapidfire: 3
+    rapidfire: 3,
+    homing: 6
 };
 
 const INVULN_DURATION = 1.2;
@@ -769,6 +775,9 @@ document.getElementById('upgrade-btn').addEventListener('click', togglePause);
 document.getElementById('close-menu-btn').addEventListener('click', togglePause);
 document.getElementById('pause-btn').addEventListener('click', togglePause);
 menuBtn.addEventListener('click', returnToMenu);
+weaponCycleBtn.addEventListener('click', () => {
+    if (gameState === 'PLAYING') cycleWeapon();
+});
 document.getElementById('buy-firerate').addEventListener('click', () => buyUpgrade('fireRate'));
 document.getElementById('buy-multishot').addEventListener('click', () => buyUpgrade('multiShot'));
 document.getElementById('buy-shotgun').addEventListener('click', () => unlockWeapon('shotgun'));
@@ -825,6 +834,20 @@ function getCashMultiplier() {
     return doubleCashTimer > 0 ? 2 : 1;
 }
 
+function getNearestBalloon(x, y) {
+    let nearest = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < balloons.length; i++) {
+        const b = balloons[i];
+        const dist = (b.x - x) ** 2 + (b.y - y) ** 2;
+        if (dist < bestDist) {
+            bestDist = dist;
+            nearest = b;
+        }
+    }
+    return nearest;
+}
+
 function triggerScreenShake(intensity, duration) {
     if (!screenShakeUnlocked) return;
     shakeIntensity = Math.max(shakeIntensity, intensity);
@@ -869,6 +892,8 @@ function applyPowerup(type) {
     } else if (type === 'health') {
         lives = Math.min(3, lives + 1);
         updateScoreUI();
+    } else if (type === 'homing') {
+        homingTimer = Math.max(homingTimer, POWERUP_DURATIONS.homing);
     } else if (type === 'slowmo') {
         slowMoTimer = Math.max(slowMoTimer, 5);
     } else if (type === 'doublecash') {
@@ -882,7 +907,7 @@ function applyPowerup(type) {
 function maybeSpawnPowerup(x, y) {
     if (gameMode !== 'chaos' || !powerupsUnlocked) return;
     if (Math.random() > 0.1) return;
-    const types = ['shield', 'slowmo', 'doublecash', 'rapidfire'];
+    const types = ['shield', 'slowmo', 'doublecash', 'rapidfire', 'homing'];
     const type = types[Math.floor(Math.random() * types.length)];
     powerups.push(new Powerup(x, y, type));
 }
@@ -928,11 +953,13 @@ function updateChaosHud() {
     valueSlowMoEl.innerText = `${slowMoTimer.toFixed(1)}s`;
     valueDoubleCashEl.innerText = `${doubleCashTimer.toFixed(1)}s`;
     valueRapidFireEl.innerText = `${rapidFireTimer.toFixed(1)}s`;
+    valueHomingEl.innerText = `${homingTimer.toFixed(1)}s`;
 
     updatePowerupRing(ringShieldEl, shieldCharges > 0 ? 1 : 0, '#00ffea');
     updatePowerupRing(ringSlowMoEl, slowMoTimer / POWERUP_DURATIONS.slowmo, '#66aaff');
     updatePowerupRing(ringDoubleCashEl, doubleCashTimer / POWERUP_DURATIONS.doublecash, '#00ff66');
     updatePowerupRing(ringRapidFireEl, rapidFireTimer / POWERUP_DURATIONS.rapidfire, '#ffcc00');
+    updatePowerupRing(ringHomingEl, homingTimer / POWERUP_DURATIONS.homing, '#88ffcc');
 }
 
 function updatePowerupRing(el, ratio, color) {
@@ -1376,12 +1403,31 @@ function equipWeapon(type) {
     currentWeapon = type;
     Sound.playTone(600, 'square', 0.1);
     updateUpgradeUI();
+    updateWeaponUI();
 }
 
 function updateScoreUI() {
     scoreEl.innerText = score;
     moneyEl.innerText = money;
     livesEl.innerText = lives;
+}
+
+function updateWeaponUI() {
+    const nameMap = {
+        standard: 'Standard',
+        shotgun: 'Shotgun',
+        laser: 'Laser'
+    };
+    weaponNameEl.innerText = nameMap[currentWeapon] || 'Standard';
+}
+
+function cycleWeapon() {
+    const available = ['standard'];
+    if (upgrades.shotgun.unlocked) available.push('shotgun');
+    if (upgrades.laser.unlocked) available.push('laser');
+    const idx = available.indexOf(currentWeapon);
+    const next = available[(idx + 1) % available.length];
+    equipWeapon(next);
 }
 
 function loadLeaderboard(mode = gameMode) {

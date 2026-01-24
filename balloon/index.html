@@ -18,6 +18,7 @@
                 <div id="money-display">Cash: $<span id="money">0</span></div>
                 <div id="wave-display" style="color: var(--neon-pink); font-size: 18px; margin-top: 5px;">Wave: <span id="wave">1</span></div>
                 <div id="lives-display" style="color: var(--neon-green); font-size: 16px; margin-top: 5px;">Lives: <span id="lives">3</span></div>
+                <div id="weapon-display" style="color: var(--neon-blue); font-size: 14px; margin-top: 5px;">Weapon: <span id="weapon-name">Standard</span> <span style="color:#888; font-size:12px;">(F)</span></div>
             </div>
             <div id="high-score-display">High Score: <span id="high-score">0</span></div>
 
@@ -48,11 +49,17 @@
                         <span class="powerup-label">⚡ Rapid Fire</span>
                         <span class="powerup-value" id="value-rapidfire">0.0s</span>
                     </div>
+                    <div class="powerup-row" id="status-homing">
+                        <span class="powerup-ring" id="ring-homing"></span>
+                        <span class="powerup-label">🎯 Homing</span>
+                        <span class="powerup-value" id="value-homing">0.0s</span>
+                    </div>
                 </div>
             </div>
             
             <button id="upgrade-btn">Upgrades (Space)</button>
             <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                <button id="weapon-cycle-btn" style="background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-size: 14px; cursor: pointer; padding: 6px 10px;">Swap (F)</button>
                 <button id="pause-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer;">⏸</button>
                 <button id="audio-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer;">🔇</button>
             </div>

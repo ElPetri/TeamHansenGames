@@ -198,6 +198,18 @@ canvas {
     box-shadow: 0 0 25px var(--neon-pink);
 }
 
+#weapon-cycle-btn {
+    pointer-events: auto;
+    text-transform: uppercase;
+    border-radius: 4px;
+}
+
+#weapon-cycle-btn:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
 /* --- Screens (Start, GameOver) --- */
 
 .screen {
