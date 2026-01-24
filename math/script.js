@@ -7,6 +7,7 @@ const submitBtn = document.getElementById('submit-btn');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
 const restartBtn = document.getElementById('restart-btn');
+const menuBtn = document.getElementById('menu-btn');
 
 let gameMode = 'arithmetic';
 let problems = [];
@@ -45,6 +46,15 @@ function endGame() {
     isRunning = false;
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
+}
+
+function returnToMenu() {
+    isRunning = false;
+    startScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('hidden');
+    problems = [];
+    problemLayer.innerHTML = '';
+    answerInput.value = '';
 }
 
 function loop(timestamp) {
@@ -204,6 +214,8 @@ restartBtn.addEventListener('click', () => {
     startScreen.classList.remove('hidden');
     gameOverScreen.classList.add('hidden');
 });
+
+menuBtn.addEventListener('click', returnToMenu);
 
 startScreen.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {

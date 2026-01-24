@@ -75,6 +75,19 @@ canvas {
     box-shadow: 0 0 12px rgba(255, 0, 255, 0.3);
 }
 
+#menu-btn {
+    pointer-events: auto;
+    background: transparent;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 0 12px rgba(0, 243, 255, 0.3);
+}
+
 .screen {
     position: absolute;
     inset: 0;

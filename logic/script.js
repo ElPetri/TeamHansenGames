@@ -57,6 +57,9 @@ function setupEventListeners() {
     document.getElementById('undo-btn').addEventListener('click', undo);
     document.getElementById('clear-btn').addEventListener('click', clearCanvas);
     document.getElementById('share-btn').addEventListener('click', showShareModal);
+    document.getElementById('home-btn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
     document.getElementById('copy-url-btn').addEventListener('click', copyShareURL);
     document.getElementById('close-modal-btn').addEventListener('click', () => shareModal.classList.add('hidden'));
     

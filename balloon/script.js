@@ -25,6 +25,7 @@ const audioToggleBtn = document.getElementById('audio-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const modeUnlocksEl = document.getElementById('mode-unlocks');
 const modeBackBtn = document.getElementById('mode-back-btn');
+const menuBtn = document.getElementById('menu-btn');
 const chaosHud = document.getElementById('chaos-hud');
 const modeLabelEl = document.getElementById('mode-label');
 const bossHpWrap = document.getElementById('boss-hp');
@@ -767,6 +768,7 @@ modeBackBtn.addEventListener('click', () => {
 document.getElementById('upgrade-btn').addEventListener('click', togglePause);
 document.getElementById('close-menu-btn').addEventListener('click', togglePause);
 document.getElementById('pause-btn').addEventListener('click', togglePause);
+menuBtn.addEventListener('click', returnToMenu);
 document.getElementById('buy-firerate').addEventListener('click', () => buyUpgrade('fireRate'));
 document.getElementById('buy-multishot').addEventListener('click', () => buyUpgrade('multiShot'));
 document.getElementById('buy-shotgun').addEventListener('click', () => unlockWeapon('shotgun'));
@@ -1305,6 +1307,18 @@ function endGame() {
     finalScoreEl.innerText = score;
     gameOverScreen.classList.remove('hidden');
     Sound.playTone(100, 'sawtooth', 0.5);
+}
+
+function returnToMenu() {
+    gameState = 'START';
+    if (loopId) cancelAnimationFrame(loopId);
+    upgradeMenu.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    modeScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    chaosHud.classList.add('hidden');
+    pauseBtn.innerText = "⏸";
+    loadLeaderboard();
 }
 
 function togglePause() {

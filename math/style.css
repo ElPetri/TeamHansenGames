@@ -55,6 +55,21 @@ html, body {
     z-index: 3;
 }
 
+.menu-btn {
+    padding: 8px 14px;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    background: transparent;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 0 12px rgba(0, 243, 255, 0.35);
+}
+
+.menu-btn:hover {
+    background: var(--neon-blue);
+    color: #000;
+}
+
 .hud-block {
     background: var(--glass-bg);
     border: 1px solid var(--neon-blue);

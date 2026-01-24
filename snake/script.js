@@ -9,6 +9,7 @@ const gameOverScreen = document.getElementById('game-over');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 const pauseBtn = document.getElementById('pause-btn');
+const menuBtn = document.getElementById('menu-btn');
 
 const HIGH_SCORE_KEY = 'snakeNeon_highScore';
 
@@ -179,6 +180,14 @@ function togglePause() {
     pauseBtn.innerText = isPaused ? '▶' : '⏸';
 }
 
+function returnToMenu() {
+    isRunning = false;
+    isPaused = false;
+    pauseBtn.innerText = '⏸';
+    startScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('hidden');
+}
+
 function getHighScore() {
     return parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
 }
@@ -204,6 +213,7 @@ function handleKey(e) {
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 pauseBtn.addEventListener('click', togglePause);
+menuBtn.addEventListener('click', returnToMenu);
 window.addEventListener('keydown', handleKey);
 
 highScoreEl.innerText = getHighScore();
