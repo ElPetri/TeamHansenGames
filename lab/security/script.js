@@ -20,6 +20,7 @@ const completeTitle = document.getElementById('complete-title');
 const completeFact = document.getElementById('complete-fact');
 const medalRow = document.getElementById('medal-row');
 const nextBtn = document.getElementById('next-btn');
+const continueBtn = document.getElementById('continue-btn');
 
 let progress = Storage.getJSON(progressKey, {});
 let currentIndex = 0;
@@ -29,6 +30,7 @@ let hintIndex = 0;
 let hintsUsed = 0;
 let selectedTile = null;
 let sharedMode = false;
+let isSolved = false;
 
 function createElement(tag, className, text) {
     const el = document.createElement(tag);
@@ -159,6 +161,7 @@ function loadExperiment(index) {
     currentExperiment = SECURITY_EXPERIMENTS[index];
     updateActiveCard();
     resetHintState();
+    isSolved = false;
     expTitle.textContent = currentExperiment.title;
     expDesc.textContent = currentExperiment.description;
     parTime.textContent = `Par ${formatTime(currentExperiment.parTime)}`;
@@ -186,7 +189,8 @@ function loadExperiment(index) {
 
 function showCompleteModal(medal) {
     completeTitle.textContent = 'Experiment Complete';
-    completeFact.textContent = currentExperiment.fact;
+    const label = currentExperiment.type === 'caesar' ? 'Decoded' : 'Fact';
+    completeFact.textContent = `${label}: ${currentExperiment.fact}`;
     medalRow.innerHTML = '';
     const medalEl = createElement('div', 'raised-tile', `${medalEmoji[medal]} ${medal.toUpperCase()}`);
     medalRow.appendChild(medalEl);
@@ -196,6 +200,8 @@ function showCompleteModal(medal) {
 
 function completeExperiment() {
     if (!currentExperiment) return;
+    if (isSolved) return;
+    isSolved = true;
     timer?.stop();
     const elapsed = timer ? timer.getElapsed() : 120;
     const underPar = elapsed <= currentExperiment.parTime;
@@ -210,6 +216,14 @@ function completeExperiment() {
 
     showCompleteModal(medal);
     setStatus('Complete');
+
+    if (currentExperiment.type === 'caesar') {
+        const existing = workspace.querySelector('.success-banner');
+        if (!existing) {
+            const banner = createElement('div', 'raised-tile success-banner', `Decoded: ${currentExperiment.fact}`);
+            workspace.appendChild(banner);
+        }
+    }
 }
 
 function closeModal() {
@@ -292,6 +306,7 @@ function setupCaesar(exp) {
     };
 
     wheel.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
         startX = event.clientX;
         startShift = currentShift;
         wheel.setPointerCapture(event.pointerId);
@@ -723,6 +738,7 @@ function loadShareBuilder() {
     workspace.innerHTML = '';
     setStatus('Ready');
     if (timer) timer.stop();
+    isSolved = false;
 
     const form = createElement('div', 'cipher-box');
     const messageInput = document.createElement('textarea');
@@ -802,6 +818,7 @@ function loadSharedCipher(data) {
     expDesc.textContent = currentExperiment.description;
     parTime.textContent = `Par ${formatTime(currentExperiment.parTime)}`;
     resetHintState();
+    isSolved = false;
     setStatus('Solve the shared cipher.');
     workspace.innerHTML = '';
     startTimer();
@@ -833,6 +850,7 @@ resetBtn.addEventListener('click', () => {
     }
 });
 nextBtn.addEventListener('click', nextExperiment);
+continueBtn.addEventListener('click', closeModal);
 completeModal.addEventListener('click', (event) => {
     if (event.target === completeModal) {
         closeModal();

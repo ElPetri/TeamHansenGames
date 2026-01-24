@@ -298,6 +298,7 @@
     justify-content: center;
     gap: 0.3rem;
     position: relative;
+    touch-action: none;
 }
 
 .wheel-label {
@@ -368,6 +369,13 @@
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
 .medal-row {
     display: flex;
     justify-content: center;
@@ -383,6 +391,11 @@
     padding: 0.6rem 1rem;
     cursor: pointer;
     font-size: 0.95rem;
+}
+
+.success-banner {
+    border-color: var(--lab-accent-2);
+    box-shadow: 0 0 18px rgba(0, 255, 136, 0.35);
 }
 
 @media (max-width: 720px) {

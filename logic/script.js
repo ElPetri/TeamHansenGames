@@ -79,6 +79,7 @@ function setupEventListeners() {
     
     // Global pointer up (in case drag ends outside canvas)
     document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointermove', onPointerMove);
     
     // Keyboard
     document.addEventListener('keydown', (e) => {
@@ -208,6 +209,9 @@ function startDragFromPalette(e) {
     e.preventDefault();
     const item = e.currentTarget;
     const type = item.dataset.gate;
+    if (e.pointerId !== undefined && item.setPointerCapture) {
+        item.setPointerCapture(e.pointerId);
+    }
     
     // Create a temporary gate at cursor position
     const rect = canvasContainer.getBoundingClientRect();
@@ -234,6 +238,10 @@ function startDragGate(e, gate) {
     draggingGate = gate;
     draggingFromPalette = false;
     dragMoved = false; // Reset movement tracker
+
+    if (e.pointerId !== undefined && e.currentTarget.setPointerCapture) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }
     
     const rect = e.currentTarget.getBoundingClientRect();
     dragOffset = {

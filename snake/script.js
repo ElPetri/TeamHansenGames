@@ -26,6 +26,7 @@ let isPaused = false;
 let accumulator = 0;
 let lastTime = 0;
 let speed = 8; // moves per second
+let touchStart = null;
 
 function resizeCanvas() {
     const { innerWidth, innerHeight } = window;
@@ -209,6 +210,36 @@ function handleKey(e) {
         if (direction.x === 0) nextDirection = { x: 1, y: 0 };
     }
 }
+
+function handleSwipe(start, end) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && direction.x === 0) nextDirection = { x: 1, y: 0 };
+        if (dx < 0 && direction.x === 0) nextDirection = { x: -1, y: 0 };
+    } else {
+        if (dy > 0 && direction.y === 0) nextDirection = { x: 0, y: 1 };
+        if (dy < 0 && direction.y === 0) nextDirection = { x: 0, y: -1 };
+    }
+}
+
+canvas.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse') return;
+    touchStart = { x: event.clientX, y: event.clientY };
+    canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointermove', (event) => {
+    if (!touchStart) return;
+    const current = { x: event.clientX, y: event.clientY };
+    handleSwipe(touchStart, current);
+    touchStart = current;
+});
+
+canvas.addEventListener('pointerup', () => {
+    touchStart = null;
+});
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);

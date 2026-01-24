@@ -311,7 +311,7 @@ async function checkBreach() {
         const match = lines.find((line) => line.startsWith(suffix));
         if (match) {
             const count = match.split(':')[1]?.trim();
-            breachResult.textContent = `⚠️ Found in ${Number(count).toLocaleString()} breaches.`;
+            breachResult.innerHTML = `⚠️ Found in ${Number(count).toLocaleString()} breaches. <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Learn more</a>`;
         } else {
             breachResult.textContent = '✅ Not found in known breaches.';
         }
