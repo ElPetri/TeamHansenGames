@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow Way! — Team Hansen Games</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" href="../index.html">← Back to Team Hansen Games</a>
+
+        <header class="page-header">
+            <div class="title-row">
+                <div class="title-icon">❄️</div>
+                <div>
+                    <h1>Snow Way!</h1>
+                    <p class="subtitle">Predict snowfall and the return-to-work date. One guess, locked in.</p>
+                </div>
+            </div>
+            <div class="multiplier-banner" id="multiplier-banner">
+                <span class="banner-label">Current Multiplier</span>
+                <span class="banner-value" id="current-multiplier">3x</span>
+                <span class="banner-note">Late entries after Friday are 0.5x.</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Lock in your prediction</h2>
+                    <div class="slots" id="slots-remaining">Slots remaining: 10</div>
+                </div>
+
+                <form id="prediction-form" class="prediction-form">
+                    <div class="field">
+                        <label for="name">Name</label>
+                        <input id="name" name="name" type="text" placeholder="Jane Doe" maxlength="30" required>
+                    </div>
+                    <div class="field">
+                        <label for="snowfall">Snowfall (inches)</label>
+                        <input id="snowfall" name="snowfall" type="number" step="0.1" min="0" placeholder="8.5" required>
+                    </div>
+                    <div class="field">
+                        <label for="return-date">Return-to-work date</label>
+                        <div class="date-input">
+                            <input id="return-date" name="returnDate" type="date" required>
+                            <button class="date-button" type="button" data-target="return-date" aria-label="Pick return date">📅</button>
+                        </div>
+                        <p class="field-hint">Tap the calendar icon to pick a date.</p>
+                    </div>
+                    <div class="field">
+                        <label for="submission-date">Date submitted</label>
+                        <div class="date-input">
+                            <input id="submission-date" name="submissionDate" type="date" required>
+                            <button class="date-button" type="button" data-target="submission-date" aria-label="Pick submission date">📅</button>
+                        </div>
+                        <p class="field-hint">Use the date the person actually made their guess.</p>
+                    </div>
+                    <button class="primary" type="submit">Submit Prediction</button>
+                    <div class="form-message error" id="form-error" hidden></div>
+                    <div class="form-message success" id="locked-message" hidden>Your prediction is locked!</div>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Enter actual results</h2>
+                    <p class="panel-subtitle">Both values are required to score predictions.</p>
+                </div>
+                <form id="results-form" class="results-form">
+                    <div class="field">
+                        <label for="actual-snowfall">Actual snowfall (inches)</label>
+                        <input id="actual-snowfall" name="actualSnowfall" type="number" step="0.1" min="0" placeholder="12.0" required>
+                    </div>
+                    <div class="field">
+                        <label for="actual-return">Actual return-to-work date</label>
+                        <div class="date-input">
+                            <input id="actual-return" name="actualReturn" type="date" required>
+                            <button class="date-button" type="button" data-target="actual-return" aria-label="Pick actual return date">📅</button>
+                        </div>
+                        <p class="field-hint">Use the calendar picker so scoring is accurate.</p>
+                    </div>
+                    <button class="secondary" type="submit">Compute Scores</button>
+                    <div class="form-message error" id="results-error" hidden></div>
+                </form>
+                <div class="results-summary" id="results-summary" hidden>
+                    <div class="summary-title">🏆 Winner</div>
+                    <div class="summary-winner" id="winner-name">—</div>
+                    <div class="summary-details" id="winner-details"></div>
+                </div>
+            </section>
+
+            <section class="panel full">
+                <div class="panel-header">
+                    <h2>Prediction board</h2>
+                    <p class="panel-subtitle">First submission wins any ties. Up to 10 entries.</p>
+                </div>
+                <div class="table-wrapper">
+                    <table class="predictions-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Snowfall</th>
+                                <th>Return Date</th>
+                                <th>Multiplier</th>
+                                <th>Submitted</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="predictions-body">
+                            <tr>
+                                <td colspan="7" class="empty-state">No predictions yet. Claim the first slot for max points!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel full">
+                <div class="panel-header">
+                    <h2>How scoring works</h2>
+                    <p class="panel-subtitle">Lower error means higher score. Time multipliers boost early entries.</p>
+                </div>
+                <div class="score-explain">
+                    <div class="score-card">
+                        <h3>Snowfall accuracy</h3>
+                        <p>Start with 1 point, then divide by (1 + inches off).</p>
+                        <p class="hint">Example: 2 inches off → 1 ÷ 3 = 0.33 points.</p>
+                    </div>
+                    <div class="score-card">
+                        <h3>Date accuracy</h3>
+                        <p>Start with 1 point, then divide by (1 + days off).</p>
+                        <p class="hint">Example: 1 day off → 1 ÷ 2 = 0.5 points.</p>
+                    </div>
+                    <div class="score-card">
+                        <h3>Total score</h3>
+                        <p>Add the two scores, multiply by the time bonus, then scale × 100.</p>
+                        <p class="hint">Ties go to the earliest submission.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel footer-panel">
+                <div class="panel-header">
+                    <h2>Next event</h2>
+                    <p class="panel-subtitle">Clear all predictions and results to start fresh.</p>
+                </div>
+                <button class="danger" id="reset-button" type="button">Reset for Next Event</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
