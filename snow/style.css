@@ -1,3 +1,49 @@
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15);
+}
+
+:root[data-theme='light'] {
+    --bg-dark: #f7f6f2;
+    --bg-card: #f2f1ec;
+    --border: #d6d3c9;
+    --text: #222;
+    --text-dim: #888;
+    --accent: #00b6d6;
+    --accent-glow: rgba(0, 182, 214, 0.13);
+    --success: #00b67a;
+    --warning: #e6a700;
+    --danger: #e65a6a;
+}
+
+body.snow-bg {
+    position: relative;
+    overflow-x: hidden;
+}
+
+#snow-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+}
+/* Snow burst effect canvas */
+#snow-burst-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1001;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
 * {
     margin: 0;
     padding: 0;
@@ -185,6 +231,15 @@ input {
     font-size: 1rem;
 }
 
+select {
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #0b0b12;
+    color: var(--text);
+    font-size: 1rem;
+}
+
 .date-input {
     display: flex;
     align-items: center;
@@ -272,6 +327,12 @@ input:focus {
     color: #b4ffe1;
     background: rgba(0, 255, 136, 0.12);
     border: 1px solid rgba(0, 255, 136, 0.5);
+}
+
+.form-message.warning {
+    color: #ffe0a1;
+    background: rgba(255, 170, 0, 0.12);
+    border: 1px solid rgba(255, 170, 0, 0.5);
 }
 
 .results-summary {
@@ -385,6 +446,150 @@ input:focus {
     margin-top: 0.4rem;
     font-size: 0.8rem;
     color: var(--text-dim);
+}
+
+.lookup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.range-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+.lookup-result {
+    margin-top: 0.4rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0, 240, 255, 0.08);
+    display: grid;
+    gap: 0.6rem;
+}
+
+.lookup-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.lookup-range {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.lookup-attribution {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+}
+
+.results-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.scoreboard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.score-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) 2fr minmax(70px, auto);
+    align-items: center;
+    gap: 1rem;
+}
+
+.score-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.multiplier-badge {
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 240, 255, 0.45);
+    background: rgba(0, 240, 255, 0.12);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.score-bar {
+    height: 12px;
+    border-radius: 999px;
+    background: #1b1b2a;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.score-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.65), rgba(0, 255, 136, 0.85));
+}
+
+.score-row.winner .score-fill {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.6), rgba(255, 170, 0, 0.95));
+}
+
+.score-value {
+    text-align: right;
+    font-weight: 600;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 18, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 50;
+}
+
+.modal-backdrop.hidden {
+    display: none;
+}
+
+.modal {
+    width: min(520px, 100%);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.modal-header {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.modal-text {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 @media (max-width: 720px) {

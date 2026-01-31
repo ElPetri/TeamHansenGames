@@ -29,7 +29,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h2>Lock in your prediction</h2>
-                    <div class="slots" id="slots-remaining">Slots remaining: 10</div>
+                    <div class="slots" id="slots-remaining">Entries: 0</div>
                 </div>
 
                 <form id="prediction-form" class="prediction-form">
@@ -65,6 +65,53 @@
 
             <section class="panel">
                 <div class="panel-header">
+                    <h2>Snowfall lookup</h2>
+                    <p class="panel-subtitle">Search recent totals before entering results.</p>
+                </div>
+                <form id="lookup-form" class="lookup-form">
+                    <div class="field">
+                        <label for="snow-location">City</label>
+                        <input id="snow-location" name="snowLocation" type="text" placeholder="Hampton" required>
+                    </div>
+                    <div class="field">
+                        <label for="range-type">Date range</label>
+                        <select id="range-type" name="rangeType">
+                            <option value="24">Last 24 hours</option>
+                            <option value="48">Last 48 hours</option>
+                            <option value="72" selected>Last 72 hours</option>
+                            <option value="custom">Custom range</option>
+                        </select>
+                    </div>
+                    <div class="range-row" id="custom-range" hidden>
+                        <div class="field">
+                            <label for="range-start">Start date</label>
+                            <div class="date-input">
+                                <input id="range-start" name="rangeStart" type="date">
+                                <button class="date-button" type="button" data-target="range-start" aria-label="Pick start date">📅</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="range-end">End date</label>
+                            <div class="date-input">
+                                <input id="range-end" name="rangeEnd" type="date">
+                                <button class="date-button" type="button" data-target="range-end" aria-label="Pick end date">📅</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="secondary" id="lookup-button" type="submit">Lookup Snowfall</button>
+                    <div class="form-message warning" id="lookup-warning" hidden>Recent data may be preliminary.</div>
+                    <div class="form-message error" id="lookup-error" hidden></div>
+                    <div class="lookup-result" id="lookup-result" hidden>
+                        <div class="lookup-value" id="lookup-value">—</div>
+                        <div class="lookup-range" id="lookup-range">—</div>
+                        <button class="primary" type="button" id="use-lookup">Use This Value</button>
+                    </div>
+                    <!-- <div class="lookup-attribution"></div> -->
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
                     <h2>Enter actual results</h2>
                     <p class="panel-subtitle">Both values are required to score predictions.</p>
                 </div>
@@ -89,12 +136,25 @@
                     <div class="summary-winner" id="winner-name">—</div>
                     <div class="summary-details" id="winner-details"></div>
                 </div>
+                <div class="results-actions" id="results-actions" hidden>
+                    <button class="secondary" type="button" id="copy-scores">Copy Scores</button>
+                    <button class="secondary" type="button" id="share-button">Share Results</button>
+                    <button class="danger" type="button" id="reset-winner">Reset Winner</button>
+                </div>
+            </section>
+
+            <section class="panel full" id="scoreboard-panel" hidden>
+                <div class="panel-header">
+                    <h2>Scoreboard</h2>
+                    <p class="panel-subtitle">Total score with multiplier highlighted.</p>
+                </div>
+                <div class="scoreboard" id="scoreboard"></div>
             </section>
 
             <section class="panel full">
                 <div class="panel-header">
                     <h2>Prediction board</h2>
-                    <p class="panel-subtitle">First submission wins any ties. Up to 10 entries.</p>
+                    <p class="panel-subtitle">First submission wins any ties.</p>
                 </div>
                 <div class="table-wrapper">
                     <table class="predictions-table">
@@ -150,6 +210,18 @@
                 <button class="danger" id="reset-button" type="button">Reset for Next Event</button>
             </section>
         </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="share-modal" aria-hidden="true">
+        <div class="modal">
+            <div class="modal-header">Share results</div>
+            <p class="modal-text">Copy this link to share the full results view.</p>
+            <input id="share-url" type="text" readonly>
+            <div class="modal-actions">
+                <button class="secondary" type="button" id="share-copy">Copy Link</button>
+                <button class="primary" type="button" id="share-close">Close</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
