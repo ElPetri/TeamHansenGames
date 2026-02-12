@@ -3,6 +3,7 @@ const RESULTS_KEY = 'snowWay_results';
 const LAST_NAME_KEY = 'snowWay_lastName';
 const LOCATION_KEY = 'snowWay_location';
 const LOOKUP_CACHE_KEY = 'snowWay_lookupCache';
+const DEADLINE_KEY = 'snowWay_deadline';
 
 const predictionForm = document.getElementById('prediction-form');
 const resultsForm = document.getElementById('results-form');
@@ -10,6 +11,7 @@ const formError = document.getElementById('form-error');
 const lockedMessage = document.getElementById('locked-message');
 const slotsRemaining = document.getElementById('slots-remaining');
 const multiplierDisplay = document.getElementById('current-multiplier');
+const multiplierNote = document.getElementById('multiplier-note');
 const predictionsBody = document.getElementById('predictions-body');
 const resultsError = document.getElementById('results-error');
 const resultsSummary = document.getElementById('results-summary');
@@ -45,6 +47,7 @@ const nameInput = document.getElementById('name');
 const snowfallInput = document.getElementById('snowfall');
 const returnDateInput = document.getElementById('return-date');
 const submissionDateInput = document.getElementById('submission-date');
+const deadlineDateInput = document.getElementById('deadline-date');
 const actualSnowfallInput = document.getElementById('actual-snowfall');
 const actualReturnInput = document.getElementById('actual-return');
 
@@ -55,12 +58,16 @@ function getLocalDateString(date = new Date()) {
     return `${year}-${month}-${day}`;
 }
 
-function getMultiplier(date = new Date()) {
-    const key = getLocalDateString(date);
-    if (key === '2026-01-28') return 3;
-    if (key === '2026-01-29') return 2;
-    if (key === '2026-01-30') return 1;
-    if (key < '2026-01-28') return 3;
+function getMultiplier(submissionDateString, deadlineDateString) {
+    if (!submissionDateString || !deadlineDateString) return 1;
+
+    const daysLate = dateDiffSigned(submissionDateString, deadlineDateString);
+    if (daysLate > 0) return 0.5;
+
+    const daysEarly = Math.abs(daysLate);
+    if (daysEarly >= 2) return 3;
+    if (daysEarly === 1) return 2;
+    if (daysEarly === 0) return 1;
     return 0.5;
 }
 
@@ -77,6 +84,19 @@ function loadPredictions() {
     } catch (error) {
         return [];
     }
+}
+
+function loadDeadline() {
+    const raw = localStorage.getItem(DEADLINE_KEY);
+    return raw || '';
+}
+
+function saveDeadline(deadlineDate) {
+    if (!deadlineDate) {
+        localStorage.removeItem(DEADLINE_KEY);
+        return;
+    }
+    localStorage.setItem(DEADLINE_KEY, deadlineDate);
 }
 
 function savePredictions(predictions) {
@@ -175,8 +195,55 @@ function formatDateTime(isoString) {
 
 function updateMultiplierDisplay() {
     const submittedDate = submissionDateInput.value || getLocalDateString();
-    const multiplier = getMultiplier(toLocalDate(submittedDate));
+    const deadlineDate = deadlineDateInput.value || loadDeadline();
+
+    if (!deadlineDate) {
+        multiplierDisplay.textContent = '—';
+        if (multiplierNote) {
+            multiplierNote.textContent = 'Set a deadline date to enable multipliers.';
+        }
+        return;
+    }
+
+    const multiplier = getMultiplier(submittedDate, deadlineDate);
     multiplierDisplay.textContent = `${multiplier}x`;
+
+    if (multiplierNote) {
+        const daysLate = dateDiffSigned(submittedDate, deadlineDate);
+        if (daysLate > 0) {
+            multiplierNote.textContent = `Deadline was ${formatDate(deadlineDate)}. Late entries are 0.5x.`;
+        } else if (daysLate === 0) {
+            multiplierNote.textContent = `Deadline is ${formatDate(deadlineDate)}. Entries today are 1x.`;
+        } else {
+            const daysEarly = Math.abs(daysLate);
+            multiplierNote.textContent = `Deadline: ${formatDate(deadlineDate)}. ${daysEarly} day${daysEarly === 1 ? '' : 's'} early.`;
+        }
+    }
+}
+
+function syncDeadlineState() {
+    const predictions = loadPredictions();
+    let deadline = loadDeadline();
+
+    if (!deadline && predictions.length > 0) {
+        const firstSubmitted = predictions
+            .map((entry) => entry?.submittedAt)
+            .filter(Boolean)
+            .sort((a, b) => new Date(a) - new Date(b))[0];
+        if (firstSubmitted) {
+            deadline = getLocalDateString(new Date(firstSubmitted));
+            saveDeadline(deadline);
+        }
+    }
+
+    deadlineDateInput.value = deadline;
+
+    const shouldLockDeadline = predictions.length > 0;
+    deadlineDateInput.disabled = shouldLockDeadline;
+    const deadlineButton = document.querySelector('.date-button[data-target="deadline-date"]');
+    if (deadlineButton) {
+        deadlineButton.disabled = shouldLockDeadline;
+    }
 }
 
 function populateResultsForm() {
@@ -762,8 +829,15 @@ predictionForm.addEventListener('submit', (event) => {
     const snowfall = parseFloat(snowfallInput.value);
     const returnDate = returnDateInput.value;
     const submissionDate = submissionDateInput.value || getLocalDateString();
+    const deadlineDate = loadDeadline() || deadlineDateInput.value;
 
-    if (!name || !Number.isFinite(snowfall) || !returnDate || !submissionDate) {
+    if (!deadlineDate) {
+        formError.textContent = 'Please set a deadline date first.';
+        formError.hidden = false;
+        return;
+    }
+
+    if (!name || !Number.isFinite(snowfall) || !returnDate || !submissionDate || !deadlineDate) {
         formError.textContent = 'Please complete all fields.';
         formError.hidden = false;
         return;
@@ -782,19 +856,26 @@ predictionForm.addEventListener('submit', (event) => {
         name,
         snowfall,
         returnDate,
-        multiplier: getMultiplier(toLocalDate(submissionDate)),
+        multiplier: getMultiplier(submissionDate, deadlineDate),
         submittedAt: toLocalDate(submissionDate).toISOString()
     };
 
     predictions.push(prediction);
+    if (!loadDeadline()) {
+        saveDeadline(deadlineDate);
+    }
     savePredictions(predictions);
     localStorage.setItem(LAST_NAME_KEY, name);
 
     lockedMessage.textContent = `Your prediction is locked, ${name}!`;
     lockedMessage.hidden = false;
 
+    const persistedDeadline = loadDeadline();
     predictionForm.reset();
+    deadlineDateInput.value = persistedDeadline;
+    syncDeadlineState();
     renderPredictions();
+    updateMultiplierDisplay();
     showSnowBurst(); // Only snow burst, not confetti
 });
 
@@ -964,7 +1045,7 @@ shareModal.addEventListener('click', (event) => {
     }
 });
 
-[nameInput, snowfallInput, returnDateInput, submissionDateInput].forEach((input) => {
+[nameInput, snowfallInput, returnDateInput, submissionDateInput, deadlineDateInput].forEach((input) => {
     input.addEventListener('input', () => {
         formError.hidden = true;
         lockedMessage.hidden = true;
@@ -978,10 +1059,13 @@ resetButton.addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(RESULTS_KEY);
     localStorage.removeItem(LAST_NAME_KEY);
+    localStorage.removeItem(DEADLINE_KEY);
     predictionForm.reset();
     resultsForm.reset();
     resultsSummary.hidden = true;
     lockedMessage.hidden = true;
+    syncDeadlineState();
+    updateMultiplierDisplay();
     renderPredictions();
 });
 
@@ -999,8 +1083,14 @@ document.querySelectorAll('.date-button').forEach((button) => {
 });
 
 submissionDateInput.value = getLocalDateString();
+syncDeadlineState();
 updateMultiplierDisplay();
 submissionDateInput.addEventListener('change', updateMultiplierDisplay);
+deadlineDateInput.addEventListener('change', () => {
+    if (deadlineDateInput.disabled) return;
+    saveDeadline(deadlineDateInput.value);
+    updateMultiplierDisplay();
+});
 customRange.hidden = true;
 rangeSelect.dispatchEvent(new Event('change'));
 rangeStartInput.value = getLocalDateString(addDays(new Date(), -2));
@@ -1032,6 +1122,8 @@ function loadSharedResults() {
 }
 
 loadSharedResults();
+syncDeadlineState();
+updateMultiplierDisplay();
 
 const lookupAttribution = document.querySelector('.lookup-attribution');
 if (lookupAttribution) {

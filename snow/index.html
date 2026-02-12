@@ -21,7 +21,7 @@
             <div class="multiplier-banner" id="multiplier-banner">
                 <span class="banner-label">Current Multiplier</span>
                 <span class="banner-value" id="current-multiplier">3x</span>
-                <span class="banner-note">Late entries after Friday are 0.5x.</span>
+                <span class="banner-note" id="multiplier-note">Set a deadline date to enable multipliers.</span>
             </div>
         </header>
 
@@ -56,6 +56,14 @@
                             <button class="date-button" type="button" data-target="submission-date" aria-label="Pick submission date">📅</button>
                         </div>
                         <p class="field-hint">Use the date the person actually made their guess.</p>
+                    </div>
+                    <div class="field">
+                        <label for="deadline-date">Last date submissions are allowed</label>
+                        <div class="date-input">
+                            <input id="deadline-date" name="deadlineDate" type="date" required>
+                            <button class="date-button" type="button" data-target="deadline-date" aria-label="Pick deadline date">📅</button>
+                        </div>
+                        <p class="field-hint">Required before first submission. This date locks after the first entry.</p>
                     </div>
                     <button class="primary" type="submit">Submit Prediction</button>
                     <div class="form-message error" id="form-error" hidden></div>
