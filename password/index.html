@@ -32,11 +32,13 @@
                 </div>
                 <div class="pw-meter-meta">
                     <span id="strength-label">Strength: —</span>
-                    <span id="entropy-label">Entropy: 0 bits</span>
-                </div>
-                <div class="pw-info">
-                    <button id="entropy-toggle" class="pw-info-toggle" type="button">What is entropy?</button>
-                    <div id="entropy-info" class="pw-info-panel">Entropy estimates how many guesses it takes to brute‑force a password. Higher bits = more possible combinations.</div>
+                    <div class="pw-entropy-side">
+                        <span id="entropy-label">Entropy: 0 bits</span>
+                        <div class="pw-info">
+                            <button id="entropy-toggle" class="pw-info-toggle" type="button">What is entropy?</button>
+                            <div id="entropy-info" class="pw-info-panel">Entropy estimates how many guesses it takes to brute‑force a password. Higher bits = more possible combinations.</div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -51,10 +53,20 @@
                     <div class="pw-row">
                         <label for="attack-speed">Attack Scenario</label>
                         <select id="attack-speed" class="pw-select">
-                            <option value="1000">Online (rate-limited)</option>
-                            <option value="100000">Online (fast)</option>
                             <option value="10000000">Offline (CPU)</option>
-                            <option value="10000000000" selected>Offline (GPU)</option>
+                            <option value="10000000000" selected>Offline (1 GPU)</option>
+                            <option value="20000000000">Offline (2 GPUs)</option>
+                            <option value="40000000000">Offline (4 GPUs)</option>
+                            <option value="100000000000">Offline (10 GPUs)</option>
+                        </select>
+                    </div>
+                    <div class="pw-row">
+                        <label for="hash-type">Hash Type</label>
+                        <select id="hash-type" class="pw-select">
+                            <option value="fast" selected>Fast hash (MD5/SHA-1)</option>
+                            <option value="sha256">SHA-256</option>
+                            <option value="bcrypt">bcrypt (cost 10)</option>
+                            <option value="argon2">Argon2 (moderate params)</option>
                         </select>
                     </div>
                     <div class="pw-crack" id="crack-time">Instant</div>

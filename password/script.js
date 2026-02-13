@@ -9,6 +9,7 @@ const crackDetail = document.getElementById('crack-detail');
 const dictAttack = document.getElementById('dict-attack');
 const warningsEl = document.getElementById('warnings');
 const attackSelect = document.getElementById('attack-speed');
+const hashTypeSelect = document.getElementById('hash-type');
 const breachBtn = document.getElementById('breach-btn');
 const breachResult = document.getElementById('breach-result');
 const sparkline = document.getElementById('sparkline');
@@ -25,13 +26,28 @@ const criteria = [
 ];
 
 const attackDescriptions = {
-    1000: 'At 1K guesses/sec.',
-    100000: 'At 100K guesses/sec.',
-    10000000: 'At 10M guesses/sec.',
-    10000000000: 'At 10B guesses/sec.'
+    10000000: 'Offline (CPU) at 10M guesses/sec.',
+    10000000000: 'Offline (1 GPU) at 10B guesses/sec.',
+    20000000000: 'Offline (2 GPUs) at 20B guesses/sec.',
+    40000000000: 'Offline (4 GPUs) at 40B guesses/sec.',
+    100000000000: 'Offline (10 GPUs) at 100B guesses/sec.'
 };
 
+const hashProfiles = {
+    fast: { multiplier: 1, label: 'Fast hash (MD5/SHA-1)' },
+    sha256: { multiplier: 0.3, label: 'SHA-256' },
+    bcrypt: { multiplier: 0.00001, label: 'bcrypt (cost 10)' },
+    argon2: { multiplier: 0.000005, label: 'Argon2 (moderate params)' }
+};
+
+const PUBLIC_WORDLIST_SIZE = 50000000;
+
 let strengthHistory = [];
+let breachState = {
+    checked: false,
+    compromised: false,
+    count: 0
+};
 
 function initCriteria() {
     criteriaList.innerHTML = '';
@@ -121,7 +137,7 @@ function estimateCrackTime(value) {
     const pool = calculatePoolSize(value);
     if (!pool) return { label: 'Instant', seconds: 0 };
     const log10Guesses = value.length * Math.log10(pool);
-    const speed = Number(attackSelect.value);
+    const speed = getEffectiveSpeed();
     const log10Seconds = log10Guesses - Math.log10(speed);
     if (log10Seconds <= 0) {
         return { label: 'Instant', seconds: 0 };
@@ -132,6 +148,83 @@ function estimateCrackTime(value) {
 function formatDurationFromSeconds(seconds) {
     if (seconds <= 1) return 'Instant';
     return formatDurationFromLog10(Math.log10(seconds));
+}
+
+function formatSpeed(value) {
+    if (value >= 1e9) return `${(value / 1e9).toFixed(value >= 1e10 ? 0 : 1)}B guesses/sec`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(value >= 1e7 ? 0 : 1)}M guesses/sec`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(value >= 1e4 ? 0 : 1)}K guesses/sec`;
+    return `${Math.max(1, Math.round(value)).toLocaleString()} guesses/sec`;
+}
+
+function getEffectiveSpeed() {
+    const base = Number(attackSelect.value);
+    const profile = hashProfiles[hashTypeSelect.value] || hashProfiles.fast;
+    return Math.max(1, base * profile.multiplier);
+}
+
+function normalizeLeet(value) {
+    return value
+        .toLowerCase()
+        .replace(/[@4]/g, 'a')
+        .replace(/3/g, 'e')
+        .replace(/[1!]/g, 'i')
+        .replace(/0/g, 'o')
+        .replace(/[5$]/g, 's')
+        .replace(/7/g, 't');
+}
+
+function detectRuleBasedPattern(value) {
+    if (!value) return null;
+
+    if (/^[A-Z]?[a-z]{4,}$/.test(value)) {
+        return {
+            message: 'Word-only pattern detected. Attackers use huge public wordlists before brute-force.',
+            ruleSpace: 300
+        };
+    }
+
+    if (/^[A-Z]?[a-z]{4,}\d{1,4}$/.test(value)) {
+        return {
+            message: 'Word + digits pattern detected. This is a top rule-based attack target.',
+            ruleSpace: 2000
+        };
+    }
+
+    if (/^[A-Z]?[a-z]{4,}(19\d{2}|20\d{2})[!@#$%^&*._-]{0,2}$/.test(value)) {
+        return {
+            message: 'Word + year pattern detected. Attack tools prioritize years and seasons.',
+            ruleSpace: 2500
+        };
+    }
+
+    if (/^[A-Z]?[a-z]{4,}\d{1,4}[!@#$%^&*._-]{1,2}$/.test(value) || /^[!@#$%^&*._-]{1,2}[A-Z]?[a-z]{4,}\d{1,4}$/.test(value)) {
+        return {
+            message: 'Word + digits + symbol pattern detected. Hydra/Hashcat rules try these quickly.',
+            ruleSpace: 5000
+        };
+    }
+
+    const leet = normalizeLeet(value);
+    if (leet !== value.toLowerCase() && /^[a-z]{4,}\d{0,4}[!@#$%^&*._-]{0,2}$/.test(leet)) {
+        return {
+            message: 'Leet-style word pattern detected. Rule engines test these substitutions automatically.',
+            ruleSpace: 7000
+        };
+    }
+
+    return null;
+}
+
+function estimateRuleBasedTime(value) {
+    const pattern = detectRuleBasedPattern(value);
+    if (!pattern) return null;
+    const speed = getEffectiveSpeed();
+    const guesses = PUBLIC_WORDLIST_SIZE * pattern.ruleSpace;
+    return {
+        ...pattern,
+        seconds: guesses / speed
+    };
 }
 
 function getWarnings(value) {
@@ -171,6 +264,11 @@ function getWarnings(value) {
     if (/[^\x00-\x7F]/.test(value)) {
         warnings.push('Emoji/unicode detected: extra entropy, but some systems may reject it.');
     }
+
+        const rulePattern = detectRuleBasedPattern(value);
+        if (rulePattern) {
+            warnings.push(rulePattern.message);
+        }
 
     return warnings;
 }
@@ -227,37 +325,54 @@ function updateUI() {
     const value = passwordInput.value;
     const entropy = calculateEntropy(value);
     const score = scoreFromEntropy(entropy);
+    const profile = hashProfiles[hashTypeSelect.value] || hashProfiles.fast;
+    const speed = getEffectiveSpeed();
 
     meterFill.style.width = `${score}%`;
     strengthLabel.textContent = `Strength: ${strengthLabelFromScore(score)}`;
     entropyLabel.textContent = `Entropy: ${formatEntropy(entropy)}`;
+    meterFill.parentElement.classList.remove('compromised');
 
     updateCriteria(value);
 
     const crackEstimate = estimateCrackTime(value);
     const dictMatch = getDictionaryMatch(value);
-    const speed = Number(attackSelect.value);
     const dictSize = window.PASSWORD_WORDLIST ? window.PASSWORD_WORDLIST.length : 1000;
     const baseDictSeconds = dictSize / speed;
     const ruleMultiplier = dictMatch && isSimpleMangling(value, dictMatch) ? 2000 : 200;
     const dictSeconds = baseDictSeconds * (dictMatch ? ruleMultiplier : 1);
+    const ruleBasedEstimate = estimateRuleBasedTime(value);
 
-    if (dictMatch) {
-        const dictLabel = formatDurationFromSeconds(dictSeconds);
+    if (dictMatch || ruleBasedEstimate) {
+        const dictLikeSeconds = dictMatch ? dictSeconds : Infinity;
+        const ruleSeconds = ruleBasedEstimate ? ruleBasedEstimate.seconds : Infinity;
+        const likelySeconds = Math.min(dictLikeSeconds, ruleSeconds);
+        const likelyLabel = formatDurationFromSeconds(likelySeconds);
         const bruteLabel = crackEstimate.label;
-        crackTime.textContent = `Likely: ${dictLabel}`;
-        crackDetail.textContent = `Brute-force: ${bruteLabel} · Dictionary+rules: ${dictLabel}`;
+        crackTime.textContent = `Likely: ${likelyLabel}`;
+        crackDetail.textContent = `Brute-force: ${bruteLabel} · Rule-based likely: ${likelyLabel}`;
     } else {
         crackTime.textContent = crackEstimate.label;
-        crackDetail.textContent = attackDescriptions[attackSelect.value];
+        crackDetail.textContent = `${attackDescriptions[attackSelect.value]} · ${profile.label} at ${formatSpeed(speed)}.`;
     }
 
     if (!value.length) {
         dictAttack.textContent = 'Dictionary attack: Instant';
     } else if (dictMatch) {
         dictAttack.textContent = `Dictionary+rules: ~${formatDurationFromSeconds(Math.max(dictSeconds, 1e-9))} (matched “${dictMatch}”)`;
+    } else if (ruleBasedEstimate) {
+        dictAttack.textContent = `Rule-based attack: ~${formatDurationFromSeconds(Math.max(ruleBasedEstimate.seconds, 1e-9))}. Attackers use public lists + mangling rules.`;
     } else {
-        dictAttack.textContent = 'Dictionary attack: no common match detected (top 1,000 list).';
+        dictAttack.textContent = 'No strong wordlist pattern detected. Still assume attackers try leaked lists first.';
+    }
+
+    if (breachState.compromised && value.length) {
+        meterFill.style.width = '100%';
+        meterFill.parentElement.classList.add('compromised');
+        strengthLabel.textContent = 'Strength: Compromised';
+        crackTime.textContent = 'Instant (Leaked Password)';
+        crackDetail.textContent = `Found in ${breachState.count.toLocaleString()} breaches. Attackers test leaked lists first.`;
+        dictAttack.textContent = 'Known leaked password: treat as immediately guessable.';
     }
 
     const warnings = getWarnings(value);
@@ -310,21 +425,52 @@ async function checkBreach() {
         const lines = text.split('\n');
         const match = lines.find((line) => line.startsWith(suffix));
         if (match) {
-            const count = match.split(':')[1]?.trim();
-            breachResult.innerHTML = `⚠️ Found in ${Number(count).toLocaleString()} breaches. <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Learn more</a>`;
+            const count = Number(match.split(':')[1]?.trim() || '0');
+            breachState = {
+                checked: true,
+                compromised: true,
+                count
+            };
+            breachResult.innerHTML = `⚠️ Found in ${count.toLocaleString()} breaches. <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Learn more</a>`;
+            breachResult.classList.add('compromised');
         } else {
+            breachState = {
+                checked: true,
+                compromised: false,
+                count: 0
+            };
             breachResult.textContent = '✅ Not found in known breaches.';
+            breachResult.classList.remove('compromised');
         }
     } catch (err) {
+        breachState = {
+            checked: false,
+            compromised: false,
+            count: 0
+        };
         breachResult.textContent = 'Could not reach breach service. Try again later.';
+        breachResult.classList.remove('compromised');
     }
+
+    updateUI();
 }
 
 passwordInput.addEventListener('input', () => {
+    breachState = {
+        checked: false,
+        compromised: false,
+        count: 0
+    };
+    breachResult.textContent = 'Not checked.';
+    breachResult.classList.remove('compromised');
     updateUI();
 });
 
 attackSelect.addEventListener('change', () => {
+    updateUI();
+});
+
+hashTypeSelect.addEventListener('change', () => {
     updateUI();
 });
 
