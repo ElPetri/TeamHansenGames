@@ -153,19 +153,16 @@ function saveBestScore(value) {
 }
 
 function onPress(el, handler) {
-    let justTouched = false;
+    let lastPressTs = 0;
 
-    el.addEventListener('touchend', (event) => {
-        event.preventDefault();
-        justTouched = true;
+    el.addEventListener('pointerup', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        lastPressTs = Date.now();
         handler(event);
-        setTimeout(() => {
-            justTouched = false;
-        }, 350);
-    }, { passive: false });
+    });
 
     el.addEventListener('click', (event) => {
-        if (justTouched) return;
+        if (Date.now() - lastPressTs < 350) return;
         handler(event);
     });
 }
