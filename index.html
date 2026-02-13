@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <canvas id="binary-rain" aria-hidden="true"></canvas>
     <div class="container">
         <header>
             <h1>⚡ Team Hansen Games</h1>
@@ -114,39 +115,124 @@
         </main>
 
         <footer>
-            <p>Made with ☕ by Team Hansen</p>
-            <p class="visitor-counter">Visitors: <span id="visitor-count">...</span></p>
+            <p>Made with <button id="energy-boost" class="energy-boost" type="button" aria-label="Boost binary rain">🥤</button> by Team Hansen</p>
         </footer>
     </div>
 
     <script>
         (function () {
-            const counter = document.getElementById('visitor-count');
-            const endpoints = [
-                'https://api.countapi.xyz/hit/teamhansengames/homepage?format=json',
-                'https://countapi.xyz/hit/teamhansengames/homepage?format=json'
-            ];
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
 
-            const tryFetch = (index) => {
-                if (index >= endpoints.length) {
-                    counter.textContent = 'Unavailable';
-                    return;
-                }
-                fetch(endpoints[index], { cache: 'no-store', referrerPolicy: 'no-referrer' })
-                    .then(response => response.json())
-                    .then(data => {
-                        const value = data.value ?? data.count ?? data.total;
-                        if (typeof value === 'number') {
-                            counter.textContent = value.toLocaleString();
-                        } else {
-                            tryFetch(index + 1);
+            const canvas = document.getElementById('binary-rain');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            let width = 0;
+            let height = 0;
+            let dpr = 1;
+            let bits = [];
+            let lastTime = 0;
+            let rainSpeedMultiplier = 1;
+            let boosted = false;
+
+            const energyBoost = document.getElementById('energy-boost');
+            if (energyBoost) {
+                energyBoost.addEventListener('click', () => {
+                    if (boosted) return;
+                    boosted = true;
+                    rainSpeedMultiplier = 4;
+
+                    const extraCount = bits.length * 5;
+                    for (let i = 0; i < extraCount; i += 1) {
+                        bits.push(createBit(true));
+                    }
+
+                    for (const bit of bits) {
+                        bit.alpha = Math.min(bit.alpha * 1.8, 0.45);
+                        bit.color = '#ffc850';
+                    }
+
+                    setTimeout(() => {
+                        for (const bit of bits) {
+                            bit.color = null;
                         }
-                    })
-                    .catch(() => tryFetch(index + 1));
+                    }, 1200);
+
+                    energyBoost.classList.add('active');
+                    energyBoost.setAttribute('title', 'Binary boost enabled');
+                });
+            }
+
+            const createBit = (randomY = false) => ({
+                x: Math.random() * width,
+                y: randomY ? Math.random() * height : -20 - Math.random() * 80,
+                speed: 14 + Math.random() * 26,
+                size: 12 + Math.random() * 8,
+                drift: (Math.random() - 0.5) * 10,
+                alpha: 0.07 + Math.random() * 0.16,
+                value: Math.random() > 0.5 ? '1' : '0',
+                phase: Math.random() * Math.PI * 2
+            });
+
+            const resize = () => {
+                dpr = window.devicePixelRatio || 1;
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = Math.floor(width * dpr);
+                canvas.height = Math.floor(height * dpr);
+                canvas.style.width = `${width}px`;
+                canvas.style.height = `${height}px`;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                const targetCount = Math.max(24, Math.min(88, Math.round((width * height) / 24000)));
+                if (bits.length > targetCount) {
+                    bits = bits.slice(0, targetCount);
+                }
+                while (bits.length < targetCount) {
+                    bits.push(createBit(true));
+                }
             };
 
-            tryFetch(0);
+            const animate = (time) => {
+                const dt = Math.min(0.05, (time - lastTime) / 1000 || 0.016);
+                lastTime = time;
+
+                ctx.clearRect(0, 0, width, height);
+                ctx.textBaseline = 'top';
+
+                for (const bit of bits) {
+                    bit.y += bit.speed * rainSpeedMultiplier * dt;
+                    bit.x += Math.sin((bit.y / 60) + bit.phase) * bit.drift * dt;
+
+                    if (Math.random() < 0.003) {
+                        bit.value = bit.value === '1' ? '0' : '1';
+                    }
+
+                    if (bit.y > height + 24) {
+                        Object.assign(bit, createBit(false), { x: Math.random() * width });
+                    }
+
+                    ctx.globalAlpha = bit.alpha;
+                    ctx.fillStyle = bit.color || '#7be8f2';
+                    ctx.font = `${bit.size}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+                    ctx.fillText(bit.value, bit.x, bit.y);
+                }
+
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(animate);
+            };
+
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame((time) => {
+                lastTime = time;
+                requestAnimationFrame(animate);
+            });
         })();
+
     </script>
 </body>
 </html>
