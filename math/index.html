@@ -27,7 +27,16 @@
         <div id="start-screen" class="screen">
             <h1>MATH BLASTER</h1>
             <p class="subtitle">Solve to destroy incoming problems</p>
-            <div class="mode-select">
+            <p class="grade-helper">Choose your grade level</p>
+            <div class="grade-select">
+                <button class="grade-btn" data-grade="k2">K-2</button>
+                <button class="grade-btn" data-grade="34">3-4</button>
+                <button class="grade-btn" data-grade="56">5-6</button>
+                <button class="grade-btn" data-grade="78">7-8</button>
+                <button class="grade-btn" data-grade="9+">9+</button>
+            </div>
+            <button id="change-grade-btn" class="change-grade hidden" type="button">↩ Change Grade</button>
+            <div class="mode-select hidden">
                 <button class="mode-btn" data-mode="arithmetic">Arithmetic</button>
                 <button class="mode-btn" data-mode="prealgebra">Pre‑Algebra</button>
                 <button class="mode-btn" data-mode="algebra">Algebra</button>
