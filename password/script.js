@@ -329,7 +329,7 @@ function updateUI() {
     const speed = getEffectiveSpeed();
 
     meterFill.style.width = `${score}%`;
-    strengthLabel.textContent = `Strength: ${strengthLabelFromScore(score)}`;
+    strengthLabel.textContent = `Entropy Strength: ${strengthLabelFromScore(score)}`;
     entropyLabel.textContent = `Entropy: ${formatEntropy(entropy)}`;
     meterFill.parentElement.classList.remove('compromised');
 
@@ -369,7 +369,7 @@ function updateUI() {
     if (breachState.compromised && value.length) {
         meterFill.style.width = '100%';
         meterFill.parentElement.classList.add('compromised');
-        strengthLabel.textContent = 'Strength: Compromised';
+        strengthLabel.textContent = 'Entropy Strength: Compromised';
         crackTime.textContent = 'Instant (Leaked Password)';
         crackDetail.textContent = `Found in ${breachState.count.toLocaleString()} breaches. Attackers test leaked lists first.`;
         dictAttack.textContent = 'Known leaked password: treat as immediately guessable.';
