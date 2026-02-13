@@ -135,13 +135,39 @@ function applyGradeToModes() {
 }
 
 function loadBestScore() {
-    const raw = localStorage.getItem(HIGH_SCORE_KEY);
-    const value = Number.parseInt(raw || '0', 10);
-    return Number.isFinite(value) ? value : 0;
+    try {
+        const raw = localStorage.getItem(HIGH_SCORE_KEY);
+        const value = Number.parseInt(raw || '0', 10);
+        return Number.isFinite(value) ? value : 0;
+    } catch {
+        return 0;
+    }
 }
 
 function saveBestScore(value) {
-    localStorage.setItem(HIGH_SCORE_KEY, String(value));
+    try {
+        localStorage.setItem(HIGH_SCORE_KEY, String(value));
+    } catch {
+        // Ignore storage errors on restricted/private mobile browsers.
+    }
+}
+
+function onPress(el, handler) {
+    let justTouched = false;
+
+    el.addEventListener('touchend', (event) => {
+        event.preventDefault();
+        justTouched = true;
+        handler(event);
+        setTimeout(() => {
+            justTouched = false;
+        }, 350);
+    }, { passive: false });
+
+    el.addEventListener('click', (event) => {
+        if (justTouched) return;
+        handler(event);
+    });
 }
 
 function updateBestScoreUI() {
@@ -535,17 +561,17 @@ function rand(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-submitBtn.addEventListener('click', submitAnswer);
+onPress(submitBtn, submitAnswer);
 answerInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitAnswer();
 });
 
-restartBtn.addEventListener('click', returnToMenu);
+onPress(restartBtn, returnToMenu);
 
-menuBtn.addEventListener('click', returnToMenu);
+onPress(menuBtn, returnToMenu);
 
 startScreen.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    onPress(btn, () => {
         if (btn.classList.contains('locked') || !selectedGrade) return;
         gameMode = btn.dataset.mode;
         startGame();
@@ -553,7 +579,7 @@ startScreen.querySelectorAll('.mode-btn').forEach(btn => {
 });
 
 startScreen.querySelectorAll('.grade-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    onPress(btn, () => {
         startScreen.querySelectorAll('.grade-btn').forEach(el => el.classList.remove('active'));
         btn.classList.add('active');
         selectedGrade = btn.dataset.grade;
@@ -562,7 +588,7 @@ startScreen.querySelectorAll('.grade-btn').forEach(btn => {
     });
 });
 
-changeGradeBtn.addEventListener('click', () => {
+onPress(changeGradeBtn, () => {
     selectedGrade = null;
     startScreen.querySelectorAll('.grade-btn').forEach(el => el.classList.remove('active'));
     showGradeSelection();
