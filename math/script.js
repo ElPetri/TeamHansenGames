@@ -122,7 +122,9 @@ function showGradeSelection() {
 
 function showModeSelection() {
     gradeSelect.classList.add('hidden');
-    modeSelect.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modeSelect.classList.remove('hidden');
+    });
     changeGradeBtn.classList.remove('hidden');
 }
 
