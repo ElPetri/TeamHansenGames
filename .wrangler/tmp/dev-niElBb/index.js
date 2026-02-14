@@ -120,6 +120,22 @@ function validatePlayerName(name) {
   return { valid: true, name: trimmed };
 }
 __name(validatePlayerName, "validatePlayerName");
+function validateSuggestionText(text) {
+  if (typeof text !== "string") {
+    return { valid: false, reason: "Suggestion not allowed" };
+  }
+  const trimmed = text.trim();
+  if (trimmed.length < 5 || trimmed.length > 140) {
+    return { valid: false, reason: "Suggestion must be 5-140 characters" };
+  }
+  const normalized = normalizeName(trimmed).replace(/[^a-z0-9]/g, "");
+  const blocked = BLOCKED_TERMS.some((term) => normalized.includes(term));
+  if (blocked) {
+    return { valid: false, reason: "Suggestion not allowed" };
+  }
+  return { valid: true, text: trimmed };
+}
+__name(validateSuggestionText, "validateSuggestionText");
 
 // worker/index.js
 var ALLOWED_GAMES = {
@@ -366,6 +382,63 @@ async function handlePostScores(request, env) {
   }, 200, origin);
 }
 __name(handlePostScores, "handlePostScores");
+async function handleGetSuggestions(request, env) {
+  const origin = getOrigin(request);
+  const result = await env.DB.prepare(
+    `SELECT id, suggestion_text, player_name, created_at
+         FROM suggestions
+         ORDER BY created_at DESC
+         LIMIT 5`
+  ).all();
+  return json({ suggestions: result.results || [] }, 200, origin);
+}
+__name(handleGetSuggestions, "handleGetSuggestions");
+async function handlePostSuggestions(request, env) {
+  const origin = getOrigin(request);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400, origin);
+  }
+  const textValidation = validateSuggestionText(body?.text || "");
+  if (!textValidation.valid) {
+    return json({ error: textValidation.reason || "Suggestion not allowed" }, 400, origin);
+  }
+  let playerName = null;
+  const rawName = typeof body?.name === "string" ? body.name.trim() : "";
+  if (rawName) {
+    const nameValidation = validatePlayerName(rawName);
+    if (!nameValidation.valid) {
+      return json({ error: nameValidation.reason || "Name not allowed" }, 400, origin);
+    }
+    playerName = nameValidation.name;
+  }
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const ipHash = await sha256Hex(ip);
+  const throttleCutoff = new Date(Date.now() - 3e4).toISOString();
+  const throttleHit = await env.DB.prepare(
+    `SELECT id
+         FROM suggestions
+         WHERE ip_hash = ? AND created_at >= ?
+         ORDER BY created_at DESC
+         LIMIT 1`
+  ).bind(ipHash, throttleCutoff).first();
+  if (throttleHit) {
+    return json({ error: "Too many submissions. Try again in a moment." }, 429, origin);
+  }
+  await env.DB.prepare(
+    `INSERT INTO suggestions (suggestion_text, player_name, created_at, ip_hash)
+         VALUES (?, ?, ?, ?)`
+  ).bind(
+    textValidation.text,
+    playerName,
+    (/* @__PURE__ */ new Date()).toISOString(),
+    ipHash
+  ).run();
+  return json({ success: true }, 200, origin);
+}
+__name(handlePostSuggestions, "handlePostSuggestions");
 var worker_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -377,6 +450,12 @@ var worker_default = {
     }
     if (url.pathname === "/api/scores" && request.method === "POST") {
       return handlePostScores(request, env);
+    }
+    if (url.pathname === "/api/suggestions" && request.method === "GET") {
+      return handleGetSuggestions(request, env);
+    }
+    if (url.pathname === "/api/suggestions" && request.method === "POST") {
+      return handlePostSuggestions(request, env);
     }
     if (env.ASSETS) {
       return env.ASSETS.fetch(request);

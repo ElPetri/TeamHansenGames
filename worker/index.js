@@ -1,4 +1,4 @@
-import { validatePlayerName } from './profanity.js';
+import { validatePlayerName, validateSuggestionText } from './profanity.js';
 
 const ALLOWED_GAMES = {
     balloon: new Set(['classic', 'chaos']),
@@ -270,6 +270,70 @@ async function handlePostScores(request, env) {
     }, 200, origin);
 }
 
+async function handleGetSuggestions(request, env) {
+    const origin = getOrigin(request);
+    const result = await env.DB.prepare(
+        `SELECT id, suggestion_text, player_name, created_at
+         FROM suggestions
+         ORDER BY created_at DESC
+         LIMIT 5`
+    ).all();
+
+    return json({ suggestions: result.results || [] }, 200, origin);
+}
+
+async function handlePostSuggestions(request, env) {
+    const origin = getOrigin(request);
+    let body;
+    try {
+        body = await request.json();
+    } catch {
+        return json({ error: 'Invalid JSON body' }, 400, origin);
+    }
+
+    const textValidation = validateSuggestionText(body?.text || '');
+    if (!textValidation.valid) {
+        return json({ error: textValidation.reason || 'Suggestion not allowed' }, 400, origin);
+    }
+
+    let playerName = null;
+    const rawName = typeof body?.name === 'string' ? body.name.trim() : '';
+    if (rawName) {
+        const nameValidation = validatePlayerName(rawName);
+        if (!nameValidation.valid) {
+            return json({ error: nameValidation.reason || 'Name not allowed' }, 400, origin);
+        }
+        playerName = nameValidation.name;
+    }
+
+    const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+    const ipHash = await sha256Hex(ip);
+    const throttleCutoff = new Date(Date.now() - 30000).toISOString();
+    const throttleHit = await env.DB.prepare(
+        `SELECT id
+         FROM suggestions
+         WHERE ip_hash = ? AND created_at >= ?
+         ORDER BY created_at DESC
+         LIMIT 1`
+    ).bind(ipHash, throttleCutoff).first();
+
+    if (throttleHit) {
+        return json({ error: 'Too many submissions. Try again in a moment.' }, 429, origin);
+    }
+
+    await env.DB.prepare(
+        `INSERT INTO suggestions (suggestion_text, player_name, created_at, ip_hash)
+         VALUES (?, ?, ?, ?)`
+    ).bind(
+        textValidation.text,
+        playerName,
+        new Date().toISOString(),
+        ipHash
+    ).run();
+
+    return json({ success: true }, 200, origin);
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -284,6 +348,14 @@ export default {
 
         if (url.pathname === '/api/scores' && request.method === 'POST') {
             return handlePostScores(request, env);
+        }
+
+        if (url.pathname === '/api/suggestions' && request.method === 'GET') {
+            return handleGetSuggestions(request, env);
+        }
+
+        if (url.pathname === '/api/suggestions' && request.method === 'POST') {
+            return handlePostSuggestions(request, env);
         }
 
         if (env.ASSETS) {

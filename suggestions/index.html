@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suggestions - Team Hansen Games</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💡 Suggestions Board</h1>
+            <p>Submit ideas, features, or bug fixes. Top 5 newest suggestions are visible to everyone.</p>
+        </header>
+
+        <main>
+            <section class="panel">
+                <h2>Submit Suggestion</h2>
+                <form id="suggestion-form" novalidate>
+                    <label for="suggestion-name">Player Name (optional)</label>
+                    <input id="suggestion-name" name="name" type="text" maxlength="10" placeholder="Enter name">
+
+                    <label for="suggestion-text">Suggestion</label>
+                    <textarea id="suggestion-text" name="text" maxlength="140" rows="4" placeholder="Share your idea, feature request, or bug fix..."></textarea>
+
+                    <div class="row">
+                        <span id="char-count">0 / 140</span>
+                        <button type="submit">Submit</button>
+                    </div>
+                    <p id="status" class="status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section class="panel">
+                <h2>Public Suggestions (Top 5 Newest)</h2>
+                <ul id="suggestions-list" class="suggestions-list"></ul>
+            </section>
+
+            <a class="back-link" href="../index.html">← Back to Games</a>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -55,4 +55,23 @@ export function validatePlayerName(name) {
     return { valid: true, name: trimmed };
 }
 
+export function validateSuggestionText(text) {
+    if (typeof text !== 'string') {
+        return { valid: false, reason: 'Suggestion not allowed' };
+    }
+
+    const trimmed = text.trim();
+    if (trimmed.length < 5 || trimmed.length > 140) {
+        return { valid: false, reason: 'Suggestion must be 5-140 characters' };
+    }
+
+    const normalized = normalizeName(trimmed).replace(/[^a-z0-9]/g, '');
+    const blocked = BLOCKED_TERMS.some(term => normalized.includes(term));
+    if (blocked) {
+        return { valid: false, reason: 'Suggestion not allowed' };
+    }
+
+    return { valid: true, text: trimmed };
+}
+
 export { BLOCKED_TERMS };
