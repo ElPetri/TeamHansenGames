@@ -219,6 +219,12 @@ button:hover {
 .top-table td:last-child,
 .top-table th:last-child {
     text-align: right;
+    width: 96px;
+}
+
+.top-table td:nth-last-child(2),
+.top-table th:nth-last-child(2) {
+    text-align: right;
     width: 70px;
 }
 

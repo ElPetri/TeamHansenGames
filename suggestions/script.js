@@ -9,6 +9,7 @@
     const VOTER_TOKEN_KEY = 'suggestions_voterToken';
     const SUBMIT_COOLDOWN_KEY = 'suggestions_lastSubmitAt';
     const SUBMIT_COOLDOWN_MS = 120000;
+    const SUGGESTIONS_LIMIT = 10;
 
     let votedSuggestionId = null;
 
@@ -43,9 +44,10 @@
     }
 
     async function fetchSuggestionsApi(method, body, queryParams) {
-        let lastError = null;
+        let lastNetworkError = null;
 
         for (const baseUrl of API_CANDIDATES) {
+            let response;
             try {
                 const url = new URL(baseUrl);
                 if (queryParams) {
@@ -56,26 +58,32 @@
                     });
                 }
 
-                const response = await fetch(url.toString(), {
+                response = await fetch(url.toString(), {
                     method,
                     headers: body ? { 'Content-Type': 'application/json' } : undefined,
                     body: body ? JSON.stringify(body) : undefined
                 });
-
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    const error = new Error(data.error || 'Request failed');
-                    error.code = response.status;
-                    error.data = data;
-                    throw error;
-                }
-                return data;
             } catch (error) {
-                lastError = error;
+                lastNetworkError = error;
+                continue;
             }
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (response.status === 404 || response.status === 405) {
+                    continue;
+                }
+
+                const error = new Error(data.error || 'Request failed');
+                error.code = response.status;
+                error.data = data;
+                throw error;
+            }
+
+            return data;
         }
 
-        throw lastError || new Error('Unable to reach suggestions API');
+        throw lastNetworkError || new Error('Unable to reach suggestions service. Check your connection and try again.');
     }
 
     async function fetchVoteApi(payload) {
@@ -172,6 +180,41 @@
         return button;
     }
 
+    function createTopVoteButton(item) {
+        const button = document.createElement('button');
+        button.className = 'vote-btn';
+        button.type = 'button';
+
+        if (votedSuggestionId) {
+            button.disabled = true;
+            button.textContent = Number(item.id) === Number(votedSuggestionId) ? 'Voted' : 'Locked';
+            return button;
+        }
+
+        button.textContent = 'Vote';
+        button.addEventListener('click', async () => {
+            try {
+                setStatus('Submitting vote…');
+                await fetchVoteApi({
+                    suggestionId: item.id,
+                    voterToken: getVoterToken()
+                });
+                setStatus('Vote submitted!', 'success');
+                await loadSuggestions();
+            } catch (error) {
+                if (error.code === 409 && error.data && Number.isFinite(Number(error.data.votedSuggestionId))) {
+                    votedSuggestionId = Number(error.data.votedSuggestionId);
+                    setStatus('You already used your vote.', 'error');
+                    await loadSuggestions();
+                    return;
+                }
+                setStatus(error.message || 'Unable to submit vote', 'error');
+            }
+        });
+
+        return button;
+    }
+
     function renderSuggestions(items) {
         listEl.innerHTML = '';
 
@@ -185,7 +228,7 @@
             return;
         }
 
-        items.slice(0, 5).forEach((item, index) => {
+        items.slice(0, SUGGESTIONS_LIMIT).forEach((item, index) => {
             const li = document.createElement('li');
             const row = document.createElement('div');
             row.className = 'suggestion-row';
@@ -228,7 +271,7 @@
         if (!Array.isArray(items) || !items.length) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 3;
+            cell.colSpan = 4;
             cell.className = 'top-empty';
             cell.textContent = 'No voted suggestions yet.';
             row.appendChild(cell);
@@ -236,7 +279,7 @@
             return;
         }
 
-        items.slice(0, 5).forEach((item, index) => {
+        items.slice(0, SUGGESTIONS_LIMIT).forEach((item, index) => {
             const row = document.createElement('tr');
 
             const rank = document.createElement('td');
@@ -249,9 +292,13 @@
             const votes = document.createElement('td');
             votes.textContent = String(Number(item.votes) || 0);
 
+            const action = document.createElement('td');
+            action.appendChild(createTopVoteButton(item));
+
             row.appendChild(rank);
             row.appendChild(suggestion);
             row.appendChild(votes);
+            row.appendChild(action);
             topBodyEl.appendChild(row);
         });
     }
@@ -284,6 +331,11 @@
 
         if (!text) {
             setStatus('Suggestion is required.', 'error');
+            return;
+        }
+
+        if (text.length < 5) {
+            setStatus('Suggestion must be at least 5 characters.', 'error');
             return;
         }
 

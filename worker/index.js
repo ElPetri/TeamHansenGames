@@ -11,6 +11,7 @@ const SCORE_LIMITS = {
     snake: 99999,
     math: 99999
 };
+const SUGGESTIONS_LIMIT = 10;
 
 const PERIOD_CONFIG = {
     daily: { limit: 10, keyColumn: 'day_key' },
@@ -290,8 +291,8 @@ async function handleGetSuggestions(request, env) {
              GROUP BY suggestion_id
          ) v ON v.suggestion_id = s.id
          ORDER BY s.created_at DESC
-         LIMIT 5`
-    ).all();
+            LIMIT ?`
+        ).bind(SUGGESTIONS_LIMIT).all();
 
     const topResult = await env.DB.prepare(
         `SELECT s.id,
@@ -304,8 +305,8 @@ async function handleGetSuggestions(request, env) {
          GROUP BY s.id, s.suggestion_text, s.player_name, s.created_at
          HAVING COUNT(v.id) >= 1
          ORDER BY votes DESC, s.created_at DESC
-         LIMIT 5`
-    ).all();
+            LIMIT ?`
+        ).bind(SUGGESTIONS_LIMIT).all();
 
     let votedSuggestionId = null;
     if (voterToken) {
