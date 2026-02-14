@@ -145,34 +145,33 @@
         }
     }
 
+    async function submitVoteForSuggestion(suggestionId) {
+        setStatus('Submitting vote…');
+        await fetchVoteApi({
+            suggestionId,
+            voterToken: getVoterToken()
+        });
+        setStatus('Vote updated!', 'success');
+        await loadSuggestions();
+    }
+
     function createVoteButton(item) {
         const button = document.createElement('button');
         button.className = 'vote-btn';
         button.type = 'button';
 
-        if (votedSuggestionId) {
+        const isCurrentVote = Number(item.id) === Number(votedSuggestionId);
+        if (isCurrentVote) {
             button.disabled = true;
-            button.textContent = Number(item.id) === Number(votedSuggestionId) ? 'Voted' : 'Locked';
+            button.textContent = 'Your vote';
             return button;
         }
 
-        button.textContent = 'Vote';
+        button.textContent = votedSuggestionId ? 'Move vote' : 'Vote';
         button.addEventListener('click', async () => {
             try {
-                setStatus('Submitting vote…');
-                await fetchVoteApi({
-                    suggestionId: item.id,
-                    voterToken: getVoterToken()
-                });
-                setStatus('Vote submitted!', 'success');
-                await loadSuggestions();
+                await submitVoteForSuggestion(item.id);
             } catch (error) {
-                if (error.code === 409 && error.data && Number.isFinite(Number(error.data.votedSuggestionId))) {
-                    votedSuggestionId = Number(error.data.votedSuggestionId);
-                    setStatus('You already used your vote.', 'error');
-                    await loadSuggestions();
-                    return;
-                }
                 setStatus(error.message || 'Unable to submit vote', 'error');
             }
         });
@@ -185,29 +184,18 @@
         button.className = 'vote-btn';
         button.type = 'button';
 
-        if (votedSuggestionId) {
+        const isCurrentVote = Number(item.id) === Number(votedSuggestionId);
+        if (isCurrentVote) {
             button.disabled = true;
-            button.textContent = Number(item.id) === Number(votedSuggestionId) ? 'Voted' : 'Locked';
+            button.textContent = 'Your vote';
             return button;
         }
 
-        button.textContent = 'Vote';
+        button.textContent = votedSuggestionId ? 'Move vote' : 'Vote';
         button.addEventListener('click', async () => {
             try {
-                setStatus('Submitting vote…');
-                await fetchVoteApi({
-                    suggestionId: item.id,
-                    voterToken: getVoterToken()
-                });
-                setStatus('Vote submitted!', 'success');
-                await loadSuggestions();
+                await submitVoteForSuggestion(item.id);
             } catch (error) {
-                if (error.code === 409 && error.data && Number.isFinite(Number(error.data.votedSuggestionId))) {
-                    votedSuggestionId = Number(error.data.votedSuggestionId);
-                    setStatus('You already used your vote.', 'error');
-                    await loadSuggestions();
-                    return;
-                }
                 setStatus(error.message || 'Unable to submit vote', 'error');
             }
         });
@@ -254,7 +242,7 @@
 
             const voteNote = document.createElement('p');
             voteNote.className = 'vote-note';
-            voteNote.textContent = votedSuggestionId ? 'One vote total' : 'Cast one vote';
+            voteNote.textContent = votedSuggestionId ? 'One vote total (you can move it)' : 'Cast one vote';
             voteWrap.appendChild(voteNote);
 
             row.appendChild(content);

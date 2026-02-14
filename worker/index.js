@@ -415,10 +415,22 @@ async function handlePostSuggestionVote(request, env) {
     ).bind(voterHash).first();
 
     if (previousVote) {
-        return json({
-            error: 'You already voted for a suggestion.',
-            votedSuggestionId: previousVote.suggestion_id
-        }, 409, origin);
+        if (Number(previousVote.suggestion_id) === suggestionId) {
+            return json({ success: true, votedSuggestionId: suggestionId }, 200, origin);
+        }
+
+        await env.DB.prepare(
+            `UPDATE suggestion_votes
+             SET suggestion_id = ?, created_at = ?, ip_hash = ?
+             WHERE voter_hash = ?`
+        ).bind(
+            suggestionId,
+            new Date().toISOString(),
+            await sha256Hex(request.headers.get('cf-connecting-ip') || 'unknown'),
+            voterHash
+        ).run();
+
+        return json({ success: true, moved: true, votedSuggestionId: suggestionId }, 200, origin);
     }
 
     const ip = request.headers.get('cf-connecting-ip') || 'unknown';
