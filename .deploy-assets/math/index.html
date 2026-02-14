@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Blaster</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/leaderboard.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="starfield"></div>
+
+        <div id="hud">
+            <div class="hud-block">Score: <span id="score">0</span></div>
+            <div class="hud-block">Lives: <span id="lives">3</span></div>
+            <div class="hud-block">Streak: <span id="streak">0</span></div>
+            <button id="menu-btn" class="menu-btn" type="button">Menu</button>
+        </div>
+
+        <div id="event-banner" class="event-banner hidden" aria-live="polite"></div>
+
+        <div id="problem-layer"></div>
+
+        <div id="input-panel">
+            <input id="answer-input" type="text" placeholder="Type answer" autocomplete="off" />
+            <button id="submit-btn" type="button">Fire</button>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <h1>MATH BLASTER</h1>
+            <p class="subtitle">Solve to destroy incoming problems</p>
+            <p class="best-score">Best Score: <span id="best-score-start">0</span></p>
+            <p class="grade-helper">Choose your grade level</p>
+            <div class="grade-select">
+                <button class="grade-btn" data-grade="k2" type="button">K-2</button>
+                <button class="grade-btn" data-grade="34" type="button">3-4</button>
+                <button class="grade-btn" data-grade="56" type="button">5-6</button>
+                <button class="grade-btn" data-grade="78" type="button">7-8</button>
+                <button class="grade-btn" data-grade="9+" type="button">9+</button>
+            </div>
+            <button id="change-grade-btn" class="change-grade hidden" type="button">↩ Change Grade</button>
+            <div class="mode-select hidden">
+                <button class="mode-btn" data-mode="arithmetic" type="button">Arithmetic</button>
+                <button class="mode-btn" data-mode="prealgebra" type="button">Pre‑Algebra</button>
+                <button class="mode-btn" data-mode="algebra" type="button">Algebra</button>
+                <button class="mode-btn" data-mode="mixed" type="button">Mixed</button>
+            </div>
+            <div class="tips">
+                <p>Type the answer and press Enter or Fire.</p>
+            </div>
+            <div id="global-leaderboard" class="leaderboard-shell"></div>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+
+        <div id="game-over" class="screen hidden">
+            <h1>GAME OVER</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <p class="best-score">Best Score: <span id="best-score-over">0</span></p>
+            <input type="text" id="player-name" placeholder="Enter Name" maxlength="10" />
+            <span id="name-error" class="name-error hidden"></span>
+            <button id="save-score-btn" type="button">Save Score</button>
+            <button id="restart-btn" type="button">Play Again</button>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+    </div>
+
+    <script src="../shared/leaderboard.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

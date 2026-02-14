@@ -1,6 +1,9 @@
 {
 	"name": "teamhansengames",
 	"compatibility_date": "2026-01-24",
+	"build": {
+		"command": "node scripts/prepare-assets.mjs"
+	},
 	"main": "worker/index.js",
 	"d1_databases": [
 		{
@@ -10,6 +13,6 @@
 		}
 	],
 	"assets": {
-		"directory": "./"
+		"directory": "./.deploy-assets"
 	}
 }

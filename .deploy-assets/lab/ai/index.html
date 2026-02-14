@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lab - Learn by Playing</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="ai-shell">
+        <header class="ai-header">
+            <div class="ai-title-row">
+                <div>
+                    <h1>🤖 AI Lab</h1>
+                    <p class="ai-subtitle">Learn machine learning concepts through short experiments.</p>
+                </div>
+                <div class="ai-links">
+                    <a class="lab-back" href="../index.html">← Lab Home</a>
+                    <a class="lab-back" href="../../index.html">← Back to Games</a>
+                </div>
+            </div>
+        </header>
+
+        <section class="experiment-strip" id="experiment-strip"></section>
+
+        <main class="ai-main">
+            <section class="experiment-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 id="exp-title">Experiment</h2>
+                        <p id="exp-desc" class="panel-desc"></p>
+                    </div>
+                    <div class="timer-panel">
+                        <div class="timer-label">Time</div>
+                        <div class="timer-value" id="timer-value">02:00</div>
+                        <div class="par-time" id="par-time">Par 01:00</div>
+                    </div>
+                </div>
+
+                <div class="hint-row">
+                    <button id="hint-btn" class="hint-btn">Hint (Locked)</button>
+                    <div id="hint-text" class="hint-text">Hints unlock as time passes.</div>
+                </div>
+
+                <div id="workspace" class="workspace"></div>
+
+                <div class="panel-footer">
+                    <div class="status-text" id="status-text">Status: Ready</div>
+                    <button id="reset-btn" class="reset-btn">Reset</button>
+                </div>
+            </section>
+        </main>
+
+        <div class="modal hidden" id="complete-modal">
+            <div class="modal-card">
+                <h3 id="complete-title">Experiment Complete</h3>
+                <p id="complete-fact"></p>
+                <div class="medal-row" id="medal-row"></div>
+                <details class="deep-dive" id="deep-dive">
+                    <summary>🔬 Deep Dive</summary>
+                    <div class="deep-dive-body">
+                        <div class="deep-dive-section">
+                            <h4>Formula</h4>
+                            <div id="deep-dive-formula" class="deep-dive-content"></div>
+                        </div>
+                        <div class="deep-dive-section">
+                            <h4>Code</h4>
+                            <pre id="deep-dive-code" class="deep-dive-code"></pre>
+                        </div>
+                    </div>
+                </details>
+                <div class="modal-actions">
+                    <button id="continue-btn" class="reset-btn">Keep Playing</button>
+                    <button id="next-btn" class="primary-btn">Next Experiment →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script src="../core.js"></script>
+    <script src="experiments.js"></script>
+    <script src="viz.js"></script>
+    <script src="doodle.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

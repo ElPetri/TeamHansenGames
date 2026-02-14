@@ -20,6 +20,8 @@ const PERIOD_CONFIG = {
 };
 
 const ET_TIMEZONE = 'America/New_York';
+const SCORE_SUBMIT_COOLDOWN_MS = 30000;
+const SUGGESTION_SUBMIT_COOLDOWN_MS = 120000;
 
 function json(data, status = 200, origin = '*') {
     return new Response(JSON.stringify(data), {
@@ -230,13 +232,13 @@ async function handlePostScores(request, env) {
 
     const ip = request.headers.get('cf-connecting-ip') || 'unknown';
     const ipHash = await sha256Hex(ip);
-    const throttleCutoff = new Date(Date.now() - 30000).toISOString();
+    const throttleCutoff = new Date(Date.now() - SCORE_SUBMIT_COOLDOWN_MS).toISOString();
     const throttleStmt = env.DB.prepare(
         `SELECT id FROM scores WHERE ip_hash = ? AND game = ? AND created_at >= ? ORDER BY created_at DESC LIMIT 1`
     );
     const throttleHit = await throttleStmt.bind(ipHash, game, throttleCutoff).first();
     if (throttleHit) {
-        return json({ error: 'Too many submissions. Try again in a moment.' }, 429, origin);
+        return json({ error: 'Please wait before posting again (max 1 suggestion every 2 minutes).' }, 429, origin);
     }
 
     const keys = getPeriodKeys();
@@ -272,14 +274,56 @@ async function handlePostScores(request, env) {
 
 async function handleGetSuggestions(request, env) {
     const origin = getOrigin(request);
-    const result = await env.DB.prepare(
-        `SELECT id, suggestion_text, player_name, created_at
-         FROM suggestions
-         ORDER BY created_at DESC
+    const url = new URL(request.url);
+    const voterToken = (url.searchParams.get('voter') || '').trim();
+
+    const recentResult = await env.DB.prepare(
+        `SELECT s.id,
+                s.suggestion_text,
+                s.player_name,
+                s.created_at,
+                COALESCE(v.vote_count, 0) AS votes
+         FROM suggestions s
+         LEFT JOIN (
+             SELECT suggestion_id, COUNT(*) AS vote_count
+             FROM suggestion_votes
+             GROUP BY suggestion_id
+         ) v ON v.suggestion_id = s.id
+         ORDER BY s.created_at DESC
          LIMIT 5`
     ).all();
 
-    return json({ suggestions: result.results || [] }, 200, origin);
+    const topResult = await env.DB.prepare(
+        `SELECT s.id,
+                s.suggestion_text,
+                s.player_name,
+                s.created_at,
+                COUNT(v.id) AS votes
+         FROM suggestions s
+         JOIN suggestion_votes v ON v.suggestion_id = s.id
+         GROUP BY s.id, s.suggestion_text, s.player_name, s.created_at
+         HAVING COUNT(v.id) >= 1
+         ORDER BY votes DESC, s.created_at DESC
+         LIMIT 5`
+    ).all();
+
+    let votedSuggestionId = null;
+    if (voterToken) {
+        const voterHash = await sha256Hex(voterToken);
+        const vote = await env.DB.prepare(
+            `SELECT suggestion_id
+             FROM suggestion_votes
+             WHERE voter_hash = ?
+             LIMIT 1`
+        ).bind(voterHash).first();
+        votedSuggestionId = vote?.suggestion_id ?? null;
+    }
+
+    return json({
+        suggestions: recentResult.results || [],
+        topSuggestions: topResult.results || [],
+        votedSuggestionId
+    }, 200, origin);
 }
 
 async function handlePostSuggestions(request, env) {
@@ -308,7 +352,7 @@ async function handlePostSuggestions(request, env) {
 
     const ip = request.headers.get('cf-connecting-ip') || 'unknown';
     const ipHash = await sha256Hex(ip);
-    const throttleCutoff = new Date(Date.now() - 30000).toISOString();
+    const throttleCutoff = new Date(Date.now() - SUGGESTION_SUBMIT_COOLDOWN_MS).toISOString();
     const throttleHit = await env.DB.prepare(
         `SELECT id
          FROM suggestions
@@ -318,7 +362,7 @@ async function handlePostSuggestions(request, env) {
     ).bind(ipHash, throttleCutoff).first();
 
     if (throttleHit) {
-        return json({ error: 'Too many submissions. Try again in a moment.' }, 429, origin);
+        return json({ error: 'Please wait before posting again (max 1 suggestion every 2 minutes).' }, 429, origin);
     }
 
     await env.DB.prepare(
@@ -327,6 +371,64 @@ async function handlePostSuggestions(request, env) {
     ).bind(
         textValidation.text,
         playerName,
+        new Date().toISOString(),
+        ipHash
+    ).run();
+
+    return json({ success: true }, 200, origin);
+}
+
+async function handlePostSuggestionVote(request, env) {
+    const origin = getOrigin(request);
+    let body;
+    try {
+        body = await request.json();
+    } catch {
+        return json({ error: 'Invalid JSON body' }, 400, origin);
+    }
+
+    const suggestionId = Number.parseInt(body?.suggestionId, 10);
+    const voterToken = typeof body?.voterToken === 'string' ? body.voterToken.trim() : '';
+
+    if (!Number.isFinite(suggestionId) || suggestionId <= 0) {
+        return json({ error: 'Invalid suggestion' }, 400, origin);
+    }
+
+    if (!voterToken || voterToken.length < 12 || voterToken.length > 128) {
+        return json({ error: 'Invalid voter token' }, 400, origin);
+    }
+
+    const exists = await env.DB.prepare(
+        `SELECT id FROM suggestions WHERE id = ? LIMIT 1`
+    ).bind(suggestionId).first();
+    if (!exists) {
+        return json({ error: 'Suggestion not found' }, 404, origin);
+    }
+
+    const voterHash = await sha256Hex(voterToken);
+    const previousVote = await env.DB.prepare(
+        `SELECT suggestion_id
+         FROM suggestion_votes
+         WHERE voter_hash = ?
+         LIMIT 1`
+    ).bind(voterHash).first();
+
+    if (previousVote) {
+        return json({
+            error: 'You already voted for a suggestion.',
+            votedSuggestionId: previousVote.suggestion_id
+        }, 409, origin);
+    }
+
+    const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+    const ipHash = await sha256Hex(ip);
+
+    await env.DB.prepare(
+        `INSERT INTO suggestion_votes (suggestion_id, voter_hash, created_at, ip_hash)
+         VALUES (?, ?, ?, ?)`
+    ).bind(
+        suggestionId,
+        voterHash,
         new Date().toISOString(),
         ipHash
     ).run();
@@ -356,6 +458,10 @@ export default {
 
         if (url.pathname === '/api/suggestions' && request.method === 'POST') {
             return handlePostSuggestions(request, env);
+        }
+
+        if (url.pathname === '/api/suggestions/vote' && request.method === 'POST') {
+            return handlePostSuggestionVote(request, env);
         }
 
         if (env.ASSETS) {

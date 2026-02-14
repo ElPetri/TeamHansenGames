@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pop The Balloons</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/leaderboard.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui-layer">
+            <div id="score-block">
+                <div id="score-display">Score: <span id="score">0</span></div>
+                <div id="money-display">Cash: $<span id="money">0</span></div>
+                <div id="wave-display" style="color: var(--neon-pink); font-size: 18px; margin-top: 5px;">Wave: <span id="wave">1</span></div>
+                <div id="lives-display" style="color: var(--neon-green); font-size: 16px; margin-top: 5px;">Lives: <span id="lives">3</span></div>
+                <div id="weapon-display" style="color: var(--neon-blue); font-size: 14px; margin-top: 5px;">Weapon: <span id="weapon-name">Standard</span> <span style="color:#888; font-size:12px;">(F)</span></div>
+            </div>
+            <div id="high-score-display">High Score: <span id="high-score">0</span></div>
+
+            <div id="chaos-hud" class="hidden">
+                <div id="mode-display">Mode: <span id="mode-label">Classic</span></div>
+                <div id="boss-hp" class="hidden">
+                    <div id="boss-hp-label">Boss</div>
+                    <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+                </div>
+                <div id="powerup-status">
+                    <div class="powerup-row" id="status-shield">
+                        <span class="powerup-ring" id="ring-shield"></span>
+                        <span class="powerup-label">🛡 Shield</span>
+                        <span class="powerup-value" id="value-shield">0</span>
+                    </div>
+                    <div class="powerup-row" id="status-slowmo">
+                        <span class="powerup-ring" id="ring-slowmo"></span>
+                        <span class="powerup-label">⏱ Slow-Mo</span>
+                        <span class="powerup-value" id="value-slowmo">0.0s</span>
+                    </div>
+                    <div class="powerup-row" id="status-doublecash">
+                        <span class="powerup-ring" id="ring-doublecash"></span>
+                        <span class="powerup-label">💰 Double Cash</span>
+                        <span class="powerup-value" id="value-doublecash">0.0s</span>
+                    </div>
+                    <div class="powerup-row" id="status-rapidfire">
+                        <span class="powerup-ring" id="ring-rapidfire"></span>
+                        <span class="powerup-label">⚡ Rapid Fire</span>
+                        <span class="powerup-value" id="value-rapidfire">0.0s</span>
+                    </div>
+                    <div class="powerup-row" id="status-homing">
+                        <span class="powerup-ring" id="ring-homing"></span>
+                        <span class="powerup-label">🎯 Homing</span>
+                        <span class="powerup-value" id="value-homing">0.0s</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="upgrade-btn">Upgrades (Space)</button>
+            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                <button id="weapon-cycle-btn" style="background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); font-size: 14px; cursor: pointer; padding: 6px 10px;">Swap (F)</button>
+                <button id="pause-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer;">⏸</button>
+                <button id="audio-btn" style="background: transparent; border: none; font-size: 24px; cursor: pointer;">🔇</button>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <h1>POP THE BALLOONS</h1>
+            <div class="difficulty-select">
+                <button class="diff-btn" data-mode="easy">Easy</button>
+                <button class="diff-btn" data-mode="medium">Medium</button>
+                <button class="diff-btn" data-mode="nuclear">NUCLEAR</button>
+            </div>
+            <div id="global-leaderboard" class="leaderboard-shell"></div>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+
+        <!-- Mode Screen -->
+        <div id="mode-screen" class="screen hidden">
+            <h1>SELECT MODE</h1>
+            <div class="mode-select">
+                <button class="mode-btn" data-mode="classic">Classic</button>
+                <button class="mode-btn" data-mode="chaos">Chaos</button>
+            </div>
+            <div id="mode-unlocks" class="mode-unlocks"></div>
+            <div id="mode-tips" class="mode-tips">
+                Chaos Tips: Power-ups drop after the first boss. Screen shake unlocks after the second boss.
+                Watch for boss shield phases on later waves.
+            </div>
+            <button id="mode-back-btn" class="mode-back-btn">Back</button>
+        </div>
+
+        <!-- Upgrade Menu (Act as Pause Screen) -->
+        <div id="upgrade-menu" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--neon-pink);">PAUSED / UPGRADES</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="menu-btn" style="background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 6px 10px; font-size: 12px; cursor: pointer; text-transform: uppercase;">Menu</button>
+                    <button id="close-menu-btn" style="background: transparent; border: none; font-size: 24px; color: var(--neon-pink); cursor: pointer; font-family: sans-serif;">▶ RESUME</button>
+                </div>
+            </div>
+            <div class="upgrade-item">
+                <p>Fire Rate Buff</p>
+                <p>Cost: <span id="cost-firerate">100</span></p>
+                <div class="progress-bar"><div id="bar-firerate"></div></div>
+                <button id="buy-firerate">Buy</button>
+            </div>
+            <div class="upgrade-item">
+                <p>Multi-Shot</p>
+                <p>Cost: <span id="cost-multishot">200</span></p>
+                <div class="progress-bar"><div id="bar-multishot"></div></div>
+                <button id="buy-multishot">Buy</button>
+            </div>
+            
+            <!-- New Weapons -->
+            <div class="upgrade-item">
+                <p>Unlock Shotgun</p>
+                <p>Cost: <span id="cost-shotgun">1000</span></p>
+                <button id="buy-shotgun">Purchase</button>
+            </div>
+            <div class="upgrade-item">
+                <p>Unlock Laser</p>
+                <p>Cost: <span id="cost-laser">2500</span></p>
+                <button id="buy-laser">Purchase</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 id="go-title">GAME OVER</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <input type="text" id="player-name" placeholder="Enter Name for Leaderboard" maxlength="10">
+            <span id="name-error" class="name-error hidden"></span>
+            <button id="save-score-btn">Save & Menu</button>
+            <button id="restart-btn">Try Again</button>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+    </div>
+
+    <script src="../shared/leaderboard.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
