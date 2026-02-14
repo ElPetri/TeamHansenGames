@@ -1,4 +1,5 @@
 let canvas, ctx, scoreEl, highScoreEl, finalScoreEl, startScreen, gameOverScreen, startBtn, restartBtn, pauseBtn, menuBtn;
+let playerNameInput, nameErrorEl, saveScoreBtn, globalLeaderboardEl;
 
 const HIGH_SCORE_KEY = 'snakeNeon_highScore';
 const CAPTURE_HIGH_SCORE_KEY = 'snakeCapture_highScore';
@@ -50,7 +51,23 @@ function setMode(mode) {
     if (highScoreEl) {
         highScoreEl.innerText = mode === 'capture' ? getCaptureHighScore() : getHighScore();
     }
+    renderGlobalLeaderboard();
     startGame();
+}
+
+function renderGlobalLeaderboard() {
+    if (!window.LeaderboardAPI || !globalLeaderboardEl) return;
+    const playerName = (playerNameInput && playerNameInput.value) || window.LeaderboardAPI.getSavedName() || '';
+    window.LeaderboardAPI.renderTabbedLeaderboard({
+        container: globalLeaderboardEl,
+        game: 'snake',
+        mode: gameMode,
+        modes: [
+            { value: 'classic', label: 'Classic' },
+            { value: 'capture', label: 'Capture' }
+        ],
+        playerName
+    });
 }
 
 window.addEventListener('resize', () => {
@@ -569,6 +586,7 @@ function returnToMenu() {
     pauseBtn.innerText = '⏸';
     startScreen.classList.remove('hidden');
     gameOverScreen.classList.add('hidden');
+    renderGlobalLeaderboard();
 }
 
 function getHighScore() {
@@ -622,6 +640,15 @@ window.addEventListener('DOMContentLoaded', () => {
     restartBtn = document.getElementById('restart-btn');
     pauseBtn = document.getElementById('pause-btn');
     menuBtn = document.getElementById('menu-btn');
+    playerNameInput = document.getElementById('player-name');
+    nameErrorEl = document.getElementById('name-error');
+    saveScoreBtn = document.getElementById('save-score-btn');
+    globalLeaderboardEl = document.getElementById('global-leaderboard');
+
+    if (window.LeaderboardAPI && playerNameInput) {
+        const savedName = window.LeaderboardAPI.getSavedName();
+        if (savedName) playerNameInput.value = savedName;
+    }
 
     const classicBtn = document.getElementById('classic-btn');
     const captureBtn = document.getElementById('capture-btn');
@@ -633,7 +660,29 @@ window.addEventListener('DOMContentLoaded', () => {
     if (restartBtn) restartBtn.addEventListener('click', startGame);
     if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
     if (menuBtn) menuBtn.addEventListener('click', returnToMenu);
+    if (saveScoreBtn) {
+        saveScoreBtn.addEventListener('click', () => {
+            if (!window.LeaderboardAPI || !playerNameInput) return;
+            const fallbackName = window.LeaderboardAPI.getSavedName() || 'Player';
+            const name = playerNameInput.value || fallbackName;
+            window.LeaderboardAPI.validateAndSubmit({
+                game: 'snake',
+                mode: gameMode,
+                name,
+                score,
+                inputElement: playerNameInput,
+                errorElement: nameErrorEl
+            }).then(result => {
+                if (result.success) {
+                    gameOverScreen.classList.add('hidden');
+                    startScreen.classList.remove('hidden');
+                    renderGlobalLeaderboard();
+                }
+            });
+        });
+    }
     highScoreEl.innerText = gameMode === 'capture' ? getCaptureHighScore() : getHighScore();
+    renderGlobalLeaderboard();
     resizeCanvas();
     draw();
     window.addEventListener('keydown', handleKey);

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Hansen Games</title>
+    <link rel="stylesheet" href="shared/leaderboard.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +16,11 @@
         </header>
 
         <main class="games-grid">
+            <section class="hub-score-section">
+                <h2>Today's Top Scores</h2>
+                <div id="hub-daily-scores" class="leaderboard-shell"></div>
+            </section>
+
             <a href="balloon/index.html" class="game-card">
                 <div class="game-icon">🎈</div>
                 <div class="game-info">
@@ -119,6 +125,7 @@
         </footer>
     </div>
 
+    <script src="shared/leaderboard.js"></script>
     <script>
         (function () {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -135,15 +142,25 @@
             let dpr = 1;
             let bits = [];
             let lastTime = 0;
-            let rainSpeedMultiplier = 1;
+            let rainSpeedMultiplier = 4;
             let boosted = false;
 
             const energyBoost = document.getElementById('energy-boost');
             if (energyBoost) {
                 energyBoost.addEventListener('click', () => {
-                    if (boosted) return;
+                    if (boosted) {
+                        boosted = false;
+                        rainSpeedMultiplier = 4;
+                        for (const bit of bits) {
+                            bit.color = null;
+                        }
+                        energyBoost.classList.remove('active');
+                        energyBoost.setAttribute('title', 'Boost binary rain');
+                        return;
+                    }
+
                     boosted = true;
-                    rainSpeedMultiplier = 4;
+                    rainSpeedMultiplier = 400;
 
                     const extraCount = bits.length * 5;
                     for (let i = 0; i < extraCount; i += 1) {
@@ -156,6 +173,7 @@
                     }
 
                     setTimeout(() => {
+                        if (!boosted) return;
                         for (const bit of bits) {
                             bit.color = null;
                         }
@@ -233,6 +251,13 @@
             });
         })();
 
+    </script>
+    <script>
+        (function () {
+            const container = document.getElementById('hub-daily-scores');
+            if (!container || !window.LeaderboardAPI) return;
+            window.LeaderboardAPI.renderHubDailyWidget(container);
+        })();
     </script>
 </body>
 </html>

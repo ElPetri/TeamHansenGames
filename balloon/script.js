@@ -19,7 +19,8 @@ const barFireRate = document.getElementById('bar-firerate');
 const barMultiShot = document.getElementById('bar-multishot');
 const finalScoreEl = document.getElementById('final-score');
 const playerNameInput = document.getElementById('player-name');
-const topScoresList = document.getElementById('top-scores-list');
+const nameErrorEl = document.getElementById('name-error');
+const globalLeaderboardEl = document.getElementById('global-leaderboard');
 const livesEl = document.getElementById('lives');
 const weaponNameEl = document.getElementById('weapon-name');
 const audioToggleBtn = document.getElementById('audio-btn');
@@ -762,6 +763,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         gameMode = btn.getAttribute('data-mode');
         localStorage.setItem(LAST_MODE_KEY, gameMode);
+        renderGlobalLeaderboard();
         startGame();
     });
 });
@@ -797,9 +799,28 @@ audioToggleBtn.addEventListener('click', () => {
 });
 
 document.getElementById('save-score-btn').addEventListener('click', () => {
-    const name = playerNameInput.value || "Anonymous";
-    saveScore(name, score);
-    restart();
+    const fallbackName = (window.LeaderboardAPI && window.LeaderboardAPI.getSavedName()) || 'Player';
+    const name = playerNameInput.value || fallbackName;
+
+    if (!window.LeaderboardAPI) {
+        saveScore(name, score);
+        restart();
+        return;
+    }
+
+    window.LeaderboardAPI.validateAndSubmit({
+        game: 'balloon',
+        mode: gameMode,
+        name,
+        score,
+        inputElement: playerNameInput,
+        errorElement: nameErrorEl
+    }).then(result => {
+        if (result.success) {
+            saveScore(result.name, score);
+            restart();
+        }
+    });
 });
 
 function showModeScreen() {
@@ -820,6 +841,21 @@ function updateModeUnlocks() {
 
 function getLeaderboardKey(mode = gameMode) {
     return mode === 'chaos' ? LEADERBOARD_KEYS.chaos : LEADERBOARD_KEYS.classic;
+}
+
+function renderGlobalLeaderboard() {
+    if (!window.LeaderboardAPI || !globalLeaderboardEl) return;
+    const playerName = playerNameInput.value || window.LeaderboardAPI.getSavedName() || '';
+    window.LeaderboardAPI.renderTabbedLeaderboard({
+        container: globalLeaderboardEl,
+        game: 'balloon',
+        mode: gameMode,
+        modes: [
+            { value: 'classic', label: 'Classic' },
+            { value: 'chaos', label: 'Chaos' }
+        ],
+        playerName
+    });
 }
 
 function getSlowMoFactor() {
@@ -1410,6 +1446,18 @@ function updateScoreUI() {
     scoreEl.innerText = score;
     moneyEl.innerText = money;
     livesEl.innerText = lives;
+    checkUpgradeGlow();
+}
+
+function checkUpgradeGlow() {
+    const btn = document.getElementById('upgrade-btn');
+    if (!btn) return;
+    const canAfford =
+        (upgrades.fireRate.level < MAX_UPGRADES && money >= upgrades.fireRate.cost) ||
+        (upgrades.multiShot.level < MAX_UPGRADES && money >= upgrades.multiShot.cost) ||
+        (!upgrades.shotgun.unlocked && money >= upgrades.shotgun.cost) ||
+        (!upgrades.laser.unlocked && money >= upgrades.laser.cost);
+    btn.classList.toggle('upgrade-glow', canAfford);
 }
 
 function updateWeaponUI() {
@@ -1433,14 +1481,9 @@ function cycleWeapon() {
 function loadLeaderboard(mode = gameMode) {
     const key = getLeaderboardKey(mode);
     const list = JSON.parse(localStorage.getItem(key) || '[]');
-    topScoresList.innerHTML = '';
-    list.slice(0, 10).forEach((entry, i) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>#${i+1} ${entry.name}</span> <span>${entry.score}</span>`;
-        topScoresList.appendChild(li);
-    });
     const currHigh = list.length > 0 ? list[0].score : 0;
     document.getElementById('high-score').innerText = currHigh;
+    renderGlobalLeaderboard();
 }
 
 function saveScore(name, finalScore) {
@@ -1490,3 +1533,10 @@ function updateUpgradeUI() {
 
 loadLeaderboard();
 updateModeUnlocks();
+
+if (window.LeaderboardAPI) {
+    const savedName = window.LeaderboardAPI.getSavedName();
+    if (savedName) {
+        playerNameInput.value = savedName;
+    }
+}

@@ -192,10 +192,20 @@ canvas {
     touch-action: manipulation;
 }
 
+#upgrade-btn.upgrade-glow {
+    animation: upgradeGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes upgradeGlow {
+    0%, 100% { box-shadow: 0 0 15px var(--neon-pink); }
+    50% { box-shadow: 0 0 30px var(--neon-pink), 0 0 60px var(--neon-pink); border-color: #fff; }
+}
+
 #upgrade-btn:hover, #upgrade-btn:active {
     background: var(--neon-pink);
     color: black;
     box-shadow: 0 0 25px var(--neon-pink);
+    animation: none;
 }
 
 #weapon-cycle-btn {
@@ -222,9 +232,12 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: safe center;
     z-index: 10;
     backdrop-filter: blur(5px);
+    overflow-y: auto;
+    padding: 30px 0;
+    box-sizing: border-box;
 }
 
 .hidden {
@@ -484,26 +497,15 @@ h1 {
 
 /* --- Leaderboard --- */
 
-#leaderboard-preview {
-    margin-top: 30px;
-    background: transparent;
-    border: 1px solid var(--neon-purple);
-    padding: 20px;
+#global-leaderboard {
+    margin-top: 14px;
     width: 80%;
     max-width: 400px;
-    box-shadow: 0 0 15px rgba(189, 0, 255, 0.2);
 }
 
-#leaderboard-preview h3 {
-    color: var(--neon-purple);
-    margin-top: 0;
-}
-
-#top-scores-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--neon-purple);
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
+#global-leaderboard .leaderboard-tab.active {
+    background: var(--neon-purple);
+    color: #000;
 }
 
 /* Inputs */
@@ -515,6 +517,10 @@ input#player-name {
     font-family: var(--font-heading);
     text-transform: uppercase;
     outline: none;
+    width: 60%;
+}
+
+#name-error {
     width: 60%;
 }
 
@@ -568,6 +574,12 @@ input#player-name:focus {
     .difficulty-select {
         flex-direction: column;
         width: 80%;
+    }
+
+    #global-leaderboard,
+    input#player-name,
+    #name-error {
+        width: 90%;
     }
     
     .diff-btn {

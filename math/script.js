@@ -16,6 +16,10 @@ const eventBanner = document.getElementById('event-banner');
 const modeSelect = startScreen.querySelector('.mode-select');
 const gradeSelect = startScreen.querySelector('.grade-select');
 const changeGradeBtn = document.getElementById('change-grade-btn');
+const playerNameInput = document.getElementById('player-name');
+const nameErrorEl = document.getElementById('name-error');
+const saveScoreBtn = document.getElementById('save-score-btn');
+const globalLeaderboardEl = document.getElementById('global-leaderboard');
 
 const HIGH_SCORE_KEY = 'mathBlaster_bestScore';
 const MAX_LIVES = 5;
@@ -126,6 +130,17 @@ function showModeSelection() {
         modeSelect.classList.remove('hidden');
     });
     changeGradeBtn.classList.remove('hidden');
+}
+
+function renderGlobalLeaderboard() {
+    if (!window.LeaderboardAPI || !globalLeaderboardEl) return;
+    const playerName = (playerNameInput && playerNameInput.value) || window.LeaderboardAPI.getSavedName() || '';
+    window.LeaderboardAPI.renderTabbedLeaderboard({
+        container: globalLeaderboardEl,
+        game: 'math',
+        mode: 'standard',
+        playerName
+    });
 }
 
 function applyGradeToModes() {
@@ -362,6 +377,7 @@ function returnToMenu() {
     gameContainer.classList.remove('hit-flash', 'freeze-flash');
     showGradeSelection();
     updateBestScoreUI();
+    renderGlobalLeaderboard();
 }
 
 function loop(timestamp) {
@@ -567,12 +583,31 @@ answerInput.addEventListener('keydown', (e) => {
 
 onPress(restartBtn, returnToMenu);
 
+onPress(saveScoreBtn, () => {
+    if (!window.LeaderboardAPI || !playerNameInput) return;
+    const fallbackName = window.LeaderboardAPI.getSavedName() || 'Player';
+    const name = playerNameInput.value || fallbackName;
+    window.LeaderboardAPI.validateAndSubmit({
+        game: 'math',
+        mode: 'standard',
+        name,
+        score,
+        inputElement: playerNameInput,
+        errorElement: nameErrorEl
+    }).then(result => {
+        if (result.success) {
+            returnToMenu();
+        }
+    });
+});
+
 onPress(menuBtn, returnToMenu);
 
 startScreen.querySelectorAll('.mode-btn').forEach(btn => {
     onPress(btn, () => {
         if (btn.classList.contains('locked') || !selectedGrade) return;
         gameMode = btn.dataset.mode;
+        renderGlobalLeaderboard();
         startGame();
     });
 });
@@ -595,3 +630,12 @@ onPress(changeGradeBtn, () => {
 
 updateBestScoreUI();
 showGradeSelection();
+
+if (window.LeaderboardAPI && playerNameInput) {
+    const savedName = window.LeaderboardAPI.getSavedName();
+    if (savedName) {
+        playerNameInput.value = savedName;
+    }
+}
+
+renderGlobalLeaderboard();

@@ -1,7 +1,15 @@
 {
-  "name": "teamhansengames",
-  "compatibility_date": "2026-01-24",
-  "assets": {
-    "directory": "./"
-  }
+	"name": "teamhansengames",
+	"compatibility_date": "2026-01-24",
+	"main": "worker/index.js",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "teamhansen-scores",
+			"database_id": "f8b0b3f5-97ba-4647-98cc-d4c3a6120ac4"
+		}
+	],
+	"assets": {
+		"directory": "./"
+	}
 }
