@@ -4,6 +4,7 @@ node_modules/
 # Cloudflare Wrangler
 .wrangler/
 .mf/
+.deploy-assets/
 
 # System files
 .DS_Store
