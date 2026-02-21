@@ -22,6 +22,9 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 #ingredients{display:flex;gap:6px}
 .ing{padding:6px 8px;border-radius:8px;border:1px solid #c4dff6;background:#fff;color:#1b3f56;cursor:pointer}
 .ing.selected{background:#4aa3ff;color:#fff}
+#food-options,#outfit-options{display:flex;gap:6px;flex-wrap:wrap}
+.food,.outfit{padding:6px 8px;border-radius:8px;border:1px solid #c4dff6;background:#fff;color:#1b3f56;cursor:pointer}
+.food.selected,.outfit.selected{background:#4aa3ff;color:#fff}
 #pet-bars{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .bar-row{font-size:13px;color:#234a6a}
 .bar{width:220px;height:12px;background:#e8f4fb;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.04)}

@@ -20,9 +20,14 @@ const toolWashBtn = document.getElementById('tool-wash');
 const toolExamineBtn = document.getElementById('tool-examine');
 const toolTreatBtn = document.getElementById('tool-treat');
 const toolPetBtn = document.getElementById('tool-pet');
+const toolFeedBtn = document.getElementById('tool-feed');
 const toolDressBtn = document.getElementById('tool-dress');
 const ingredientsEl = document.getElementById('ingredients');
 const ingButtons = document.querySelectorAll('#ingredients .ing');
+const foodOptionsEl = document.getElementById('food-options');
+const foodButtons = document.querySelectorAll('#food-options .food');
+const outfitOptionsEl = document.getElementById('outfit-options');
+const outfitButtons = document.querySelectorAll('#outfit-options .outfit');
 const barClean = document.getElementById('bar-clean');
 const barHappy = document.getElementById('bar-happy');
 
@@ -36,6 +41,8 @@ let coins = 0;
 let reputation = 0;
 let activeTool = null;
 let selectedIngredient = null;
+let selectedFood = null;
+let selectedOutfit = null;
 let isPetting = false;
 let lastPetX = 0, lastPetY = 0;
 let sceneTime = 0;
@@ -209,7 +216,23 @@ function drawClinic() {
 
         if (p.outfit) {
             ctx.font = '28px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
-            ctx.fillText('🎀', 22, -24);
+            const outfitEmojiMap = {
+                bow: '🎀',
+                glasses: '🕶️',
+                hat: '🎩',
+                cape: '🦸'
+            };
+            ctx.fillText(outfitEmojiMap[p.outfit] || '🎀', 22, -24);
+        }
+
+        if (p.fedFood) {
+            const foodEmojiMap = {
+                kibble: '🥣',
+                fish: '🐟',
+                carrot: '🥕'
+            };
+            ctx.font = '22px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+            ctx.fillText(foodEmojiMap[p.fedFood] || '🥣', -30, 22);
         }
 
         ctx.fillStyle = '#111';
@@ -341,12 +364,14 @@ function spawnCustomerForDoor(door) {
     if (Math.random() < 0.7) required.push('wash');
     if (chosenAilment) required.push('treat');
     required.push('pet'); // always pet before finish
+    required.push('feed');
+    required.push('dress');
 
     currentCustomer = {
         doorIndex: doors.indexOf(door),
         owner: 'Alex',
         request: chosenAilment ? `Please ${required.join(' & ')} — my pet has ${chosenAilment}` : `Please ${required.join(' & ')}`,
-        pet: { type: selectedType.toLowerCase(), name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false, animSeed: Math.random() * Math.PI * 2 },
+        pet: { type: selectedType.toLowerCase(), name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false, animSeed: Math.random() * Math.PI * 2, fedFood: null, outfit: null },
         requiredTasks: required,
         progress: { wash: 0, pet: 0 }
     };
@@ -421,11 +446,16 @@ canvas.addEventListener('pointerdown', (ev) => {
                     // start petting — pointermove can add more
                     isPetting = true;
                     lastPetX = x; lastPetY = y;
+                } else if (activeTool === 'feed') {
+                    foodOptionsEl.classList.remove('hidden');
+                    if (selectedFood !== null) {
+                        applyFeedByChoice(selectedFood);
+                    }
                 } else if (activeTool === 'dress') {
-                    // toggle simple outfit flag
-                    currentCustomer.pet.outfit = currentCustomer.pet.outfit ? null : 'bow';
-                    Sound.click();
-                    maybeFinishCare();
+                    outfitOptionsEl.classList.remove('hidden');
+                    if (selectedOutfit !== null) {
+                        applyOutfitChoice(selectedOutfit);
+                    }
                 }
             }
         }
@@ -522,6 +552,16 @@ function resetIngredientSelection() {
     ingButtons.forEach((button) => button.classList.remove('selected'));
 }
 
+function resetFoodSelection() {
+    selectedFood = null;
+    foodButtons.forEach((button) => button.classList.remove('selected'));
+}
+
+function resetOutfitSelection() {
+    selectedOutfit = null;
+    outfitButtons.forEach((button) => button.classList.remove('selected'));
+}
+
 function applyTreatmentByIngredient(ingredientCode) {
     if (!currentCustomer) return;
     if (!currentCustomer.requiredTasks.includes('treat')) {
@@ -553,19 +593,66 @@ function applyTreatmentByIngredient(ingredientCode) {
     resetIngredientSelection();
 }
 
+function applyFeedByChoice(foodChoice) {
+    if (!currentCustomer) return;
+    if (!currentCustomer.requiredTasks.includes('feed')) {
+        foodOptionsEl.classList.add('hidden');
+        resetFoodSelection();
+        return;
+    }
+
+    currentCustomer.pet.fedFood = foodChoice;
+    currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'feed');
+    currentCustomer.pet.happiness = Math.min(100, currentCustomer.pet.happiness + 15);
+    barHappy.style.width = `${currentCustomer.pet.happiness}%`;
+    Sound.success();
+    showToast('Pet fed! 🍽️');
+    maybeFinishCare();
+
+    foodOptionsEl.classList.add('hidden');
+    resetFoodSelection();
+}
+
+function applyOutfitChoice(outfitChoice) {
+    if (!currentCustomer) return;
+    if (!currentCustomer.requiredTasks.includes('dress')) {
+        outfitOptionsEl.classList.add('hidden');
+        resetOutfitSelection();
+        return;
+    }
+
+    currentCustomer.pet.outfit = outfitChoice;
+    currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'dress');
+    Sound.success();
+    showToast('Outfit applied! ✨');
+    maybeFinishCare();
+
+    outfitOptionsEl.classList.add('hidden');
+    resetOutfitSelection();
+}
+
 // Tool button handlers
 function setActiveTool(tool) {
     activeTool = tool;
-    [toolWashBtn, toolExamineBtn, toolTreatBtn, toolPetBtn, toolDressBtn].forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+    [toolWashBtn, toolExamineBtn, toolTreatBtn, toolPetBtn, toolFeedBtn, toolDressBtn].forEach((button) => button.classList.remove('active'));
     // highlight active button manually since dataset not set
     toolWashBtn.classList.toggle('active', tool === 'wash');
     toolExamineBtn.classList.toggle('active', tool === 'examine');
     toolTreatBtn.classList.toggle('active', tool === 'treat');
     toolPetBtn.classList.toggle('active', tool === 'pet');
+    toolFeedBtn.classList.toggle('active', tool === 'feed');
     toolDressBtn.classList.toggle('active', tool === 'dress');
     if (tool !== 'treat') {
         ingredientsEl.classList.add('hidden');
         resetIngredientSelection();
+    }
+    if (tool !== 'feed') {
+        foodOptionsEl.classList.add('hidden');
+        resetFoodSelection();
+    }
+    if (tool !== 'dress') {
+        outfitOptionsEl.classList.add('hidden');
+        resetOutfitSelection();
     }
 
     if (!currentCustomer) return;
@@ -580,6 +667,24 @@ function setActiveTool(tool) {
         } else {
             ingredientsEl.classList.add('hidden');
             showToast('This pet does not need medicine right now.');
+        }
+    }
+
+    if (tool === 'feed') {
+        if (currentCustomer.requiredTasks.includes('feed')) {
+            foodOptionsEl.classList.remove('hidden');
+            showToast('Choose food for the pet.');
+        } else {
+            showToast('This pet is already fed.');
+        }
+    }
+
+    if (tool === 'dress') {
+        if (currentCustomer.requiredTasks.includes('dress')) {
+            outfitOptionsEl.classList.remove('hidden');
+            showToast('Pick an outfit for the pet.');
+        } else {
+            showToast('This pet is already dressed.');
         }
     }
 
@@ -615,6 +720,7 @@ toolWashBtn.addEventListener('click', () => setActiveTool('wash'));
 toolExamineBtn.addEventListener('click', () => setActiveTool('examine'));
 toolTreatBtn.addEventListener('click', () => setActiveTool('treat'));
 toolPetBtn.addEventListener('click', () => setActiveTool('pet'));
+toolFeedBtn.addEventListener('click', () => setActiveTool('feed'));
 toolDressBtn.addEventListener('click', () => setActiveTool('dress'));
 
 ingButtons.forEach(b => b.addEventListener('click', (ev) => {
@@ -624,6 +730,26 @@ ingButtons.forEach(b => b.addEventListener('click', (ev) => {
 
     if (activeTool === 'treat' && currentCustomer && currentCustomer.requiredTasks.includes('treat')) {
         applyTreatmentByIngredient(selectedIngredient);
+    }
+}));
+
+foodButtons.forEach((button) => button.addEventListener('click', () => {
+    foodButtons.forEach((item) => item.classList.remove('selected'));
+    button.classList.add('selected');
+    selectedFood = button.dataset.food;
+
+    if (activeTool === 'feed' && currentCustomer && currentCustomer.requiredTasks.includes('feed')) {
+        applyFeedByChoice(selectedFood);
+    }
+}));
+
+outfitButtons.forEach((button) => button.addEventListener('click', () => {
+    outfitButtons.forEach((item) => item.classList.remove('selected'));
+    button.classList.add('selected');
+    selectedOutfit = button.dataset.outfit;
+
+    if (activeTool === 'dress' && currentCustomer && currentCustomer.requiredTasks.includes('dress')) {
+        applyOutfitChoice(selectedOutfit);
     }
 }));
 
