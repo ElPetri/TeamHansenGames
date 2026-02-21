@@ -12,6 +12,15 @@ const petsTreatedEl = document.getElementById('pets-treated');
 const coinsEl = document.getElementById('vet-coins');
 const repEl = document.getElementById('vet-rep');
 const globalLeaderboardEl = document.getElementById('global-leaderboard');
+const toolWashBtn = document.getElementById('tool-wash');
+const toolExamineBtn = document.getElementById('tool-examine');
+const toolTreatBtn = document.getElementById('tool-treat');
+const toolPetBtn = document.getElementById('tool-pet');
+const toolDressBtn = document.getElementById('tool-dress');
+const ingredientsEl = document.getElementById('ingredients');
+const ingButtons = document.querySelectorAll('#ingredients .ing');
+const barClean = document.getElementById('bar-clean');
+const barHappy = document.getElementById('bar-happy');
 
 let width = 800, height = 600;
 let lastTime = 0;
@@ -21,6 +30,27 @@ let currentCustomer = null;
 let petsTreated = 0;
 let coins = 0;
 let reputation = 0;
+let activeTool = null;
+let selectedIngredient = null;
+let isPetting = false;
+let lastPetX = 0, lastPetY = 0;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const Sound = {
+    tone(freq, type = 'sine', dur = 0.08, gain = 0.06) {
+        try {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            g.gain.setValueAtTime(gain, audioCtx.currentTime);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + dur);
+        } catch (e) {}
+    },
+    click() { Sound.tone(580, 'triangle', 0.06, 0.04); },
+    wash() { Sound.tone(420, 'sine', 0.08, 0.06); },
+    success() { Sound.tone(880, 'sawtooth', 0.12, 0.08); }
+};
 
 function resize() {
     width = canvas.clientWidth || window.innerWidth;
@@ -97,12 +127,26 @@ function spawnCustomerForDoor(door) {
     const name = petTypes[Math.floor(Math.random()*petTypes.length)] + '-' + Math.floor(Math.random()*90+10);
     const colors = ['#ffd6b6','#cde8ff','#ffe6f2','#e8ffda'];
 
+    // create a small set of possible ailments and required tasks
+    const ailments = ['scratched', 'fever', 'ear'];
+    const chosenAilment = Math.random() < 0.6 ? ailments[Math.floor(Math.random()*ailments.length)] : null;
+    const required = [];
+    // washing is recommended if random or chosen indicates dirty
+    if (Math.random() < 0.7) required.push('wash');
+    if (chosenAilment) required.push('treat');
+    required.push('pet'); // always pet before finish
+
     currentCustomer = {
         doorIndex: doors.indexOf(door),
         owner: 'Alex',
-        request: 'Please wash and check the pet',
-        pet: { type: 'dog', name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0 }
+        request: chosenAilment ? `Please ${required.join(' & ')} — my pet has ${chosenAilment}` : `Please ${required.join(' & ')}`,
+        pet: { type: 'dog', name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false },
+        requiredTasks: required,
+        progress: { wash: 0, pet: 0 }
     };
+    // reset UI
+    barClean.style.width = '0%';
+    barHappy.style.width = '0%';
 }
 
 canvas.addEventListener('pointerdown', (ev) => {
@@ -120,17 +164,86 @@ canvas.addEventListener('pointerdown', (ev) => {
                 return;
             }
         }
-        // if clicking pet area and a customer exists, increase cleanliness
+        // pet interactions depend on active tool
         if (currentCustomer) {
             const px = width*0.5, py = height*0.75;
             const dx = x - px, dy = y - py;
-            if (dx*dx + dy*dy < 60*60) {
-                currentCustomer.pet.cleanliness += 1;
-                if (currentCustomer.pet.cleanliness >= 3) finishCare();
+            if (dx*dx + dy*dy < 80*80) {
+                if (activeTool === 'wash') {
+                    currentCustomer.progress.wash += 1;
+                    currentCustomer.pet.cleanliness = Math.min(100, currentCustomer.progress.wash * 34);
+                    barClean.style.width = `${currentCustomer.pet.cleanliness}%`;
+                    Sound.wash();
+                    if (currentCustomer.progress.wash >= 3) {
+                        // washing done
+                        const idx = currentCustomer.requiredTasks.indexOf('wash');
+                        if (idx >= 0) currentCustomer.requiredTasks.splice(idx,1);
+                        Sound.click();
+                    }
+                } else if (activeTool === 'examine') {
+                    // reveal ailment
+                    if (currentCustomer.pet.ailment) {
+                        alert(`Diagnosis: ${currentCustomer.pet.ailment}`);
+                        Sound.click();
+                    } else {
+                        alert('No obvious issues found');
+                    }
+                } else if (activeTool === 'treat') {
+                    if (!selectedIngredient) {
+                        // prompt to pick ingredient
+                        ingredientsEl.classList.remove('hidden');
+                    } else {
+                        // simple treatment check: map ingredients to ailments
+                        const map = { '0': 'scratched', '1': 'fever', '2': 'ear' };
+                        if (map[selectedIngredient] === currentCustomer.pet.ailment) {
+                            currentCustomer.pet.treated = true;
+                            currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter(t => t !== 'treat');
+                            Sound.success();
+                        } else {
+                            Sound.click();
+                            reputation = Math.max(0, reputation - 1);
+                        }
+                        // hide ingredients after attempt
+                        ingredientsEl.classList.add('hidden');
+                        selectedIngredient = null;
+                        ingButtons.forEach(b => b.classList.remove('selected'));
+                    }
+                } else if (activeTool === 'pet') {
+                    // start petting — pointermove will increase happiness
+                    isPetting = true;
+                    lastPetX = x; lastPetY = y;
+                } else if (activeTool === 'dress') {
+                    // toggle simple outfit flag
+                    currentCustomer.pet.outfit = currentCustomer.pet.outfit ? null : 'bow';
+                    Sound.click();
+                }
             }
         }
     }
 });
+
+canvas.addEventListener('pointermove', (ev) => {
+    if (!isPetting || !currentCustomer) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (ev.clientX - rect.left);
+    const y = (ev.clientY - rect.top);
+    const dx = Math.abs(x - lastPetX) + Math.abs(y - lastPetY);
+    if (dx > 6) {
+        currentCustomer.progress.pet = (currentCustomer.progress.pet || 0) + Math.min(8, Math.floor(dx/6));
+        currentCustomer.pet.happiness = Math.min(100, (currentCustomer.progress.pet));
+        barHappy.style.width = `${currentCustomer.pet.happiness}%`;
+        lastPetX = x; lastPetY = y;
+        Sound.tone(720, 'sine', 0.04, 0.02);
+        if (currentCustomer.pet.happiness >= 60) {
+            // mark pet task as done
+            const idx = currentCustomer.requiredTasks.indexOf('pet');
+            if (idx >= 0) currentCustomer.requiredTasks.splice(idx,1);
+            isPetting = false;
+        }
+    }
+});
+
+canvas.addEventListener('pointerup', () => { isPetting = false; });
 
 function finishCare() {
     if (!currentCustomer) return;
@@ -154,6 +267,31 @@ function finishCare() {
     resultScreen.classList.remove('hidden');
     gameState = 'RESULT';
 }
+
+// Tool button handlers
+function setActiveTool(tool) {
+    activeTool = tool;
+    [toolWashBtn, toolExamineBtn, toolTreatBtn, toolPetBtn, toolDressBtn].forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+    // highlight active button manually since dataset not set
+    toolWashBtn.classList.toggle('active', tool === 'wash');
+    toolExamineBtn.classList.toggle('active', tool === 'examine');
+    toolTreatBtn.classList.toggle('active', tool === 'treat');
+    toolPetBtn.classList.toggle('active', tool === 'pet');
+    toolDressBtn.classList.toggle('active', tool === 'dress');
+    if (tool !== 'treat') ingredientsEl.classList.add('hidden');
+}
+
+toolWashBtn.addEventListener('click', () => setActiveTool('wash'));
+toolExamineBtn.addEventListener('click', () => setActiveTool('examine'));
+toolTreatBtn.addEventListener('click', () => setActiveTool('treat'));
+toolPetBtn.addEventListener('click', () => setActiveTool('pet'));
+toolDressBtn.addEventListener('click', () => setActiveTool('dress'));
+
+ingButtons.forEach(b => b.addEventListener('click', (ev) => {
+    ingButtons.forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    selectedIngredient = b.dataset.ing;
+}));
 
 function frame(time) {
     if (!lastTime) lastTime = time;

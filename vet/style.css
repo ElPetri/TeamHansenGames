@@ -11,3 +11,20 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 #clinic-topbar{position:absolute;top:12px;left:12px;display:flex;gap:8px}
 #hud{position:absolute;top:12px;right:12px;padding:8px 12px;background:rgba(255,255,255,0.9);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
 @media (max-width:640px){.screen h1{font-size:22px}.screen p{font-size:14px}}
+
+/* Vet UI styles */
+.vet-ui{position:absolute;left:12px;bottom:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+#tool-bar{display:flex;gap:8px}
+.tool-btn{padding:8px 10px;border-radius:8px;border:1px solid #4aa3ff;background:#ffffff;font-weight:700;color:#2b6b9a;cursor:pointer}
+.tool-btn.active{background:#4aa3ff;color:#fff}
+#ingredients{display:flex;gap:6px}
+.ing{padding:6px 8px;border-radius:8px;border:1px solid #c4dff6;background:#fff;color:#1b3f56;cursor:pointer}
+.ing.selected{background:#4aa3ff;color:#fff}
+#pet-bars{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.bar-row{font-size:13px;color:#234a6a}
+.bar{width:220px;height:12px;background:#e8f4fb;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.04)}
+.bar > div{height:100%;background:linear-gradient(90deg,#ffd66d,#6fe7a9)}
+
+/* Result screen polish */
+#result-screen h2{color:#2b6b9a}
+#clinic-canvas-wrap{position:relative;width:100%;height:100%}

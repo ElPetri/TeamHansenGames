@@ -33,6 +33,26 @@
                 <button id="open-shop">Shop</button>
             </div>
             <div id="clinic-canvas-wrap"></div>
+            <div id="vet-ui" class="vet-ui">
+                <div id="tool-bar">
+                    <button id="tool-wash" class="tool-btn">Wash</button>
+                    <button id="tool-examine" class="tool-btn">Examine</button>
+                    <button id="tool-treat" class="tool-btn">Treat</button>
+                    <button id="tool-pet" class="tool-btn">Pet</button>
+                    <button id="tool-dress" class="tool-btn">Dress</button>
+                </div>
+
+                <div id="ingredients" class="hidden">
+                    <button class="ing" data-ing="0">Antiseptic</button>
+                    <button class="ing" data-ing="1">Syrup</button>
+                    <button class="ing" data-ing="2">EarDrops</button>
+                </div>
+
+                <div id="pet-bars">
+                    <div class="bar-row">Clean: <div class="bar"><div id="bar-clean" style="width:0%"></div></div></div>
+                    <div class="bar-row">Happy: <div class="bar"><div id="bar-happy" style="width:0%"></div></div></div>
+                </div>
+            </div>
         </div>
 
         <div id="result-screen" class="screen hidden">
