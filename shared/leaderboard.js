@@ -297,7 +297,8 @@
             { label: 'Snake (Classic)', game: 'snake', mode: 'classic' },
             { label: 'Snake (Capture)', game: 'snake', mode: 'capture' },
             { label: 'Math Blaster', game: 'math', mode: 'standard' },
-            { label: 'Goomba Invaders (Arena)', game: 'goomba', mode: 'arena' }
+            { label: 'Goomba Invaders (Arena)', game: 'goomba', mode: 'arena' },
+            { label: 'Vet Clinic', game: 'vet', mode: 'sandbox' }
         ];
 
         container.innerHTML = '<p class="leaderboard-loading">Loading scores…</p>';

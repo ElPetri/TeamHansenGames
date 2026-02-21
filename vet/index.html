@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Vet Clinic</title>
+    <link rel="stylesheet" href="../shared/leaderboard.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui-layer">
+            <div id="hud" class="hidden">
+                <div>Pets Treated: <span id="pets-treated">0</span></div>
+                <div>Coins: <span id="vet-coins">0</span></div>
+                <div>Reputation: <span id="vet-rep">0</span></div>
+            </div>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <h1>VET CLINIC</h1>
+            <p>Care for pets — wash, examine, treat, pet, and dress them.</p>
+            <button id="start-btn">Start</button>
+            <div id="global-leaderboard" class="leaderboard-shell"></div>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+
+        <div id="clinic-screen" class="screen hidden">
+            <div id="clinic-topbar">
+                <button id="back-to-menu">Menu</button>
+                <button id="open-shop">Shop</button>
+            </div>
+            <div id="clinic-canvas-wrap"></div>
+        </div>
+
+        <div id="result-screen" class="screen hidden">
+            <h2 id="result-title">Good Job!</h2>
+            <p>Pet happiness: <span id="result-happy">5</span> ♥</p>
+            <p>Coins earned: <span id="result-coins">10</span></p>
+            <button id="result-continue">Continue</button>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+    </div>
+
+    <script src="../shared/leaderboard.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

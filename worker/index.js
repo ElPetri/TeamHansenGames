@@ -4,14 +4,16 @@ const ALLOWED_GAMES = {
     balloon: new Set(['classic', 'chaos']),
     snake: new Set(['classic', 'capture']),
     math: new Set(['standard']),
-    goomba: new Set(['arena', 'story', 'standard'])
+    goomba: new Set(['arena', 'story', 'standard']),
+    vet: new Set(['sandbox'])
 };
 
 const SCORE_LIMITS = {
     balloon: 999999,
     snake: 99999,
     math: 99999,
-    goomba: 999999
+    goomba: 999999,
+    vet: 999999
 };
 const SUGGESTIONS_LIMIT = 10;
 
