@@ -477,6 +477,36 @@ function finishCare() {
     gameState = 'RESULT';
 }
 
+function showToast(message, kind = 'info') {
+    if (!message) return;
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.position = 'fixed';
+    toast.style.left = '50%';
+    toast.style.bottom = '28px';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.padding = '10px 14px';
+    toast.style.borderRadius = '10px';
+    toast.style.fontFamily = 'Arial, sans-serif';
+    toast.style.fontSize = '13px';
+    toast.style.zIndex = '9999';
+    toast.style.color = '#ffffff';
+    toast.style.background = kind === 'error' ? 'rgba(192, 54, 54, 0.95)' : 'rgba(36, 91, 140, 0.95)';
+    toast.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 150ms ease';
+
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 170);
+    }, 1400);
+}
+
 function resetIngredientSelection() {
     selectedIngredient = null;
     ingButtons.forEach((button) => button.classList.remove('selected'));
@@ -497,11 +527,12 @@ function applyTreatmentByIngredient(ingredientCode) {
         currentCustomer.pet.treated = true;
         currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'treat');
         Sound.success();
+        showToast('Treatment worked! ✅');
         maybeFinishCare();
     } else {
         Sound.click();
         reputation = Math.max(0, reputation - 1);
-        alert('That medicine does not match this pet issue. Try another.');
+        showToast('Wrong medicine for this issue. Try another.', 'error');
     }
 
     ingredientsEl.classList.add('hidden');
