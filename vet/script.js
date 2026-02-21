@@ -151,25 +151,45 @@ function createDoors() {
 }
 
 function drawClinic() {
-    // floor
-    ctx.fillStyle = '#f8ffff';
+    // playful clinic floor gradient
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#dff6ff');
+    bg.addColorStop(0.55, '#f4ecff');
+    bg.addColorStop(1, '#fff7dc');
+    ctx.fillStyle = bg;
     ctx.fillRect(0,0,width,height);
+
+    // fun soft bubbles in background
+    for (let i = 0; i < 10; i += 1) {
+        const x = ((i * 137) % width) + Math.sin(sceneTime * 0.6 + i) * 18;
+        const y = ((i * 91) % height) + Math.cos(sceneTime * 0.5 + i * 0.7) * 12;
+        ctx.fillStyle = i % 2 ? 'rgba(255,182,217,0.16)' : 'rgba(143,210,255,0.16)';
+        ctx.beginPath();
+        ctx.arc(x, y, 20 + (i % 3) * 8, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // doors
     for (const d of doors) {
         ctx.save();
         ctx.translate(d.x, d.y);
-        ctx.fillStyle = d.unlocked ? '#cfefff' : '#e9eef2';
+        ctx.fillStyle = d.unlocked ? '#ffe8f4' : '#e9eef2';
         ctx.fillRect(-d.w/2, -d.h/2, d.w, d.h);
-        ctx.fillStyle = '#8aa6c7';
+        ctx.fillStyle = d.unlocked ? '#ff9bd2' : '#8aa6c7';
         ctx.fillRect(-d.w/2 + 12, -d.h/2 + 12, d.w - 24, d.h - 24);
         if (!d.open) {
             ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.fillRect(-d.w/2, -d.h/2, d.w, d.h);
             ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillText('Closed', -18, 8);
         } else {
             ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillText('Open', -12, 8);
         }
         ctx.restore();
