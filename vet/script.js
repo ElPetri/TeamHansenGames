@@ -395,25 +395,9 @@ canvas.addEventListener('pointerdown', (ev) => {
                         alert('No obvious issues found');
                     }
                 } else if (activeTool === 'treat') {
-                    if (!selectedIngredient) {
-                        // prompt to pick ingredient
-                        ingredientsEl.classList.remove('hidden');
-                    } else {
-                        // simple treatment check: map ingredients to ailments
-                        const map = { '0': 'scratched', '1': 'fever', '2': 'ear' };
-                        if (map[selectedIngredient] === currentCustomer.pet.ailment) {
-                            currentCustomer.pet.treated = true;
-                            currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter(t => t !== 'treat');
-                            Sound.success();
-                            maybeFinishCare();
-                        } else {
-                            Sound.click();
-                            reputation = Math.max(0, reputation - 1);
-                        }
-                        // hide ingredients after attempt
-                        ingredientsEl.classList.add('hidden');
-                        selectedIngredient = null;
-                        ingButtons.forEach(b => b.classList.remove('selected'));
+                    ingredientsEl.classList.remove('hidden');
+                    if (selectedIngredient !== null) {
+                        applyTreatmentByIngredient(selectedIngredient);
                     }
                 } else if (activeTool === 'pet') {
                     // tapping also pets immediately
@@ -493,6 +477,37 @@ function finishCare() {
     gameState = 'RESULT';
 }
 
+function resetIngredientSelection() {
+    selectedIngredient = null;
+    ingButtons.forEach((button) => button.classList.remove('selected'));
+}
+
+function applyTreatmentByIngredient(ingredientCode) {
+    if (!currentCustomer) return;
+    if (!currentCustomer.requiredTasks.includes('treat')) {
+        ingredientsEl.classList.add('hidden');
+        resetIngredientSelection();
+        return;
+    }
+
+    const treatmentMap = { '0': 'scratched', '1': 'fever', '2': 'ear' };
+    const targetAilment = treatmentMap[ingredientCode];
+
+    if (targetAilment === currentCustomer.pet.ailment) {
+        currentCustomer.pet.treated = true;
+        currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'treat');
+        Sound.success();
+        maybeFinishCare();
+    } else {
+        Sound.click();
+        reputation = Math.max(0, reputation - 1);
+        alert('That medicine does not match this pet issue. Try another.');
+    }
+
+    ingredientsEl.classList.add('hidden');
+    resetIngredientSelection();
+}
+
 // Tool button handlers
 function setActiveTool(tool) {
     activeTool = tool;
@@ -503,9 +518,20 @@ function setActiveTool(tool) {
     toolTreatBtn.classList.toggle('active', tool === 'treat');
     toolPetBtn.classList.toggle('active', tool === 'pet');
     toolDressBtn.classList.toggle('active', tool === 'dress');
-    if (tool !== 'treat') ingredientsEl.classList.add('hidden');
+    if (tool !== 'treat') {
+        ingredientsEl.classList.add('hidden');
+        resetIngredientSelection();
+    }
 
     if (!currentCustomer) return;
+
+    if (tool === 'treat') {
+        if (currentCustomer.requiredTasks.includes('treat')) {
+            ingredientsEl.classList.remove('hidden');
+        } else {
+            ingredientsEl.classList.add('hidden');
+        }
+    }
 
     // Immediate feedback so selecting a tool always does something noticeable.
     if (tool === 'wash') {
@@ -545,6 +571,10 @@ ingButtons.forEach(b => b.addEventListener('click', (ev) => {
     ingButtons.forEach(x => x.classList.remove('selected'));
     b.classList.add('selected');
     selectedIngredient = b.dataset.ing;
+
+    if (activeTool === 'treat' && currentCustomer && currentCustomer.requiredTasks.includes('treat')) {
+        applyTreatmentByIngredient(selectedIngredient);
+    }
 }));
 
 window.addEventListener('keydown', (ev) => {
