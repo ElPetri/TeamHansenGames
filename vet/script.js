@@ -39,6 +39,7 @@ let selectedIngredient = null;
 let isPetting = false;
 let lastPetX = 0, lastPetY = 0;
 let sceneTime = 0;
+const particles = [];
 
 const AVATAR_KEY = 'vet_avatar_v1';
 const avatar = {
@@ -256,6 +257,53 @@ function drawAvatar(x, y) {
     ctx.restore();
 }
 
+function emitPetParticles(x, y, petType, intensity = 5) {
+    const symbolsByType = {
+        dog: ['🐾', '✨'],
+        cat: ['💖', '✨'],
+        bunny: ['🌟', '💗']
+    };
+    const symbols = symbolsByType[petType] || ['✨'];
+    for (let i = 0; i < intensity; i += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 24 + Math.random() * 48;
+        particles.push({
+            x: x + (Math.random() - 0.5) * 24,
+            y: y + (Math.random() - 0.5) * 24,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 12,
+            life: 0.55 + Math.random() * 0.35,
+            maxLife: 0.9,
+            symbol: symbols[Math.floor(Math.random() * symbols.length)],
+            size: 16 + Math.random() * 8
+        });
+    }
+}
+
+function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i -= 1) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 50 * dt;
+        p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function drawParticles() {
+    for (const p of particles) {
+        const alpha = Math.max(0, Math.min(1, p.life / p.maxLife));
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = `${p.size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.symbol, p.x, p.y);
+        ctx.restore();
+    }
+}
+
 function openNextDoor() {
     if (gameState !== 'CLINIC') return;
     if (currentCustomer) return;
@@ -374,6 +422,7 @@ canvas.addEventListener('pointerdown', (ev) => {
                     barHappy.style.width = `${currentCustomer.pet.happiness}%`;
                     Sound.tone(720, 'sine', 0.05, 0.03);
                     Sound.petVocal(currentCustomer.pet.type);
+                    emitPetParticles(px, py, currentCustomer.pet.type, 6);
 
                     if (currentCustomer.pet.happiness >= 60) {
                         const idx = currentCustomer.requiredTasks.indexOf('pet');
@@ -408,6 +457,7 @@ canvas.addEventListener('pointermove', (ev) => {
         lastPetX = x; lastPetY = y;
         Sound.tone(720, 'sine', 0.04, 0.02);
         if (Math.random() < 0.25) Sound.petVocal(currentCustomer.pet.type);
+        if (Math.random() < 0.65) emitPetParticles(x, y, currentCustomer.pet.type, 2);
         if (currentCustomer.pet.happiness >= 60) {
             // mark pet task as done
             const idx = currentCustomer.requiredTasks.indexOf('pet');
@@ -476,6 +526,7 @@ function setActiveTool(tool) {
         barHappy.style.width = `${currentCustomer.pet.happiness}%`;
         Sound.tone(720, 'sine', 0.05, 0.03);
         Sound.petVocal(currentCustomer.pet.type);
+        emitPetParticles(width * 0.5, height * 0.75, currentCustomer.pet.type, 4);
         if (currentCustomer.pet.happiness >= 60) {
             const idx = currentCustomer.requiredTasks.indexOf('pet');
             if (idx >= 0) currentCustomer.requiredTasks.splice(idx, 1);
@@ -526,9 +577,11 @@ function frame(time) {
     const dt = Math.min(0.033, (time - lastTime)/1000);
     lastTime = time;
     sceneTime += dt;
+    updateParticles(dt);
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawClinic();
+    drawParticles();
     requestAnimationFrame(frame);
 }
 
