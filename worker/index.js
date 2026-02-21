@@ -3,13 +3,15 @@ import { validatePlayerName, validateSuggestionText } from './profanity.js';
 const ALLOWED_GAMES = {
     balloon: new Set(['classic', 'chaos']),
     snake: new Set(['classic', 'capture']),
-    math: new Set(['standard'])
+    math: new Set(['standard']),
+    goomba: new Set(['standard'])
 };
 
 const SCORE_LIMITS = {
     balloon: 999999,
     snake: 99999,
-    math: 99999
+    math: 99999,
+    goomba: 999999
 };
 const SUGGESTIONS_LIMIT = 10;
 
