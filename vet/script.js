@@ -42,6 +42,7 @@ let sceneTime = 0;
 const particles = [];
 const toastQueue = [];
 let activeToast = null;
+let treatHintShownForCustomer = false;
 
 const AVATAR_KEY = 'vet_avatar_v1';
 const avatar = {
@@ -349,6 +350,7 @@ function spawnCustomerForDoor(door) {
         requiredTasks: required,
         progress: { wash: 0, pet: 0 }
     };
+    treatHintShownForCustomer = false;
     // reset UI
     barClean.style.width = '0%';
     barHappy.style.width = '0%';
@@ -538,9 +540,13 @@ function applyTreatmentByIngredient(ingredientCode) {
         showToast('Treatment worked! ✅');
         maybeFinishCare();
     } else {
+        // Fail-safe: still allow progress so players can finish tasks.
+        currentCustomer.pet.treated = true;
+        currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'treat');
         Sound.click();
         reputation = Math.max(0, reputation - 1);
-        showToast('Wrong medicine for this issue. Try another.', 'error');
+        showToast('Not the best match, but treatment helped 👍', 'error');
+        maybeFinishCare();
     }
 
     ingredientsEl.classList.add('hidden');
@@ -567,8 +573,13 @@ function setActiveTool(tool) {
     if (tool === 'treat') {
         if (currentCustomer.requiredTasks.includes('treat')) {
             ingredientsEl.classList.remove('hidden');
+            if (!treatHintShownForCustomer) {
+                showToast('Pick a medicine below to treat the pet.');
+                treatHintShownForCustomer = true;
+            }
         } else {
             ingredientsEl.classList.add('hidden');
+            showToast('This pet does not need medicine right now.');
         }
     }
 
