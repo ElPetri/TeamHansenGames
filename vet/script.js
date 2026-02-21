@@ -38,6 +38,7 @@ let activeTool = null;
 let selectedIngredient = null;
 let isPetting = false;
 let lastPetX = 0, lastPetY = 0;
+let sceneTime = 0;
 
 const AVATAR_KEY = 'vet_avatar_v1';
 const avatar = {
@@ -61,8 +62,31 @@ const Sound = {
     },
     click() { Sound.tone(580, 'triangle', 0.06, 0.04); },
     wash() { Sound.tone(420, 'sine', 0.08, 0.06); },
-    success() { Sound.tone(880, 'sawtooth', 0.12, 0.08); }
+    success() { Sound.tone(880, 'sawtooth', 0.12, 0.08); },
+    bark() {
+        Sound.tone(320, 'square', 0.06, 0.05);
+        setTimeout(() => Sound.tone(220, 'square', 0.05, 0.04), 55);
+    },
+    meow() {
+        Sound.tone(620, 'triangle', 0.07, 0.045);
+        setTimeout(() => Sound.tone(760, 'triangle', 0.06, 0.04), 45);
+    },
+    squeak() {
+        Sound.tone(900, 'sine', 0.05, 0.035);
+        setTimeout(() => Sound.tone(820, 'sine', 0.05, 0.03), 35);
+    },
+    petVocal(petType) {
+        if (petType === 'dog') return Sound.bark();
+        if (petType === 'cat') return Sound.meow();
+        if (petType === 'bunny') return Sound.squeak();
+    }
 };
+
+function ensureAudio() {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+    }
+}
 
 function resize() {
     width = canvas.clientWidth || window.innerWidth;
@@ -151,6 +175,27 @@ function drawClinic() {
             bunny: '🐰'
         };
         const petEmoji = petEmojiMap[p.type] || '🐾';
+
+        // pet emoji animation by type
+        const animT = sceneTime + (p.animSeed || 0);
+        let offsetX = 0;
+        let offsetY = 0;
+        let rotation = 0;
+
+        if (p.type === 'dog') {
+            offsetX = Math.sin(animT * 5.2) * 3;
+            rotation = Math.sin(animT * 6.2) * 0.03;
+        } else if (p.type === 'cat') {
+            offsetY = Math.sin(animT * 3.4) * 4;
+            rotation = Math.sin(animT * 2.5) * 0.02;
+        } else if (p.type === 'bunny') {
+            const hop = Math.max(0, Math.sin(animT * 4.8));
+            offsetY = -hop * 8;
+            rotation = Math.sin(animT * 4.8) * 0.015;
+        }
+
+        ctx.translate(offsetX, offsetY);
+        ctx.rotate(rotation);
 
         // pet emoji
         ctx.font = '72px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
@@ -250,7 +295,7 @@ function spawnCustomerForDoor(door) {
         doorIndex: doors.indexOf(door),
         owner: 'Alex',
         request: chosenAilment ? `Please ${required.join(' & ')} — my pet has ${chosenAilment}` : `Please ${required.join(' & ')}`,
-        pet: { type: selectedType.toLowerCase(), name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false },
+        pet: { type: selectedType.toLowerCase(), name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false, animSeed: Math.random() * Math.PI * 2 },
         requiredTasks: required,
         progress: { wash: 0, pet: 0 }
     };
@@ -260,6 +305,7 @@ function spawnCustomerForDoor(door) {
 }
 
 canvas.addEventListener('pointerdown', (ev) => {
+    ensureAudio();
     // map coords
     const rect = canvas.getBoundingClientRect();
     const x = (ev.clientX - rect.left);
@@ -284,6 +330,7 @@ canvas.addEventListener('pointerdown', (ev) => {
                     currentCustomer.pet.cleanliness = Math.min(100, currentCustomer.progress.wash * 34);
                     barClean.style.width = `${currentCustomer.pet.cleanliness}%`;
                     Sound.wash();
+                    if (Math.random() < 0.35) Sound.petVocal(currentCustomer.pet.type);
                     if (currentCustomer.progress.wash >= 3) {
                         // washing done
                         const idx = currentCustomer.requiredTasks.indexOf('wash');
@@ -326,6 +373,7 @@ canvas.addEventListener('pointerdown', (ev) => {
                     currentCustomer.pet.happiness = Math.min(100, currentCustomer.progress.pet);
                     barHappy.style.width = `${currentCustomer.pet.happiness}%`;
                     Sound.tone(720, 'sine', 0.05, 0.03);
+                    Sound.petVocal(currentCustomer.pet.type);
 
                     if (currentCustomer.pet.happiness >= 60) {
                         const idx = currentCustomer.requiredTasks.indexOf('pet');
@@ -359,6 +407,7 @@ canvas.addEventListener('pointermove', (ev) => {
         barHappy.style.width = `${currentCustomer.pet.happiness}%`;
         lastPetX = x; lastPetY = y;
         Sound.tone(720, 'sine', 0.04, 0.02);
+        if (Math.random() < 0.25) Sound.petVocal(currentCustomer.pet.type);
         if (currentCustomer.pet.happiness >= 60) {
             // mark pet task as done
             const idx = currentCustomer.requiredTasks.indexOf('pet');
@@ -426,6 +475,7 @@ function setActiveTool(tool) {
         currentCustomer.pet.happiness = Math.min(100, currentCustomer.progress.pet);
         barHappy.style.width = `${currentCustomer.pet.happiness}%`;
         Sound.tone(720, 'sine', 0.05, 0.03);
+        Sound.petVocal(currentCustomer.pet.type);
         if (currentCustomer.pet.happiness >= 60) {
             const idx = currentCustomer.requiredTasks.indexOf('pet');
             if (idx >= 0) currentCustomer.requiredTasks.splice(idx, 1);
@@ -475,6 +525,7 @@ function frame(time) {
     if (!lastTime) lastTime = time;
     const dt = Math.min(0.033, (time - lastTime)/1000);
     lastTime = time;
+    sceneTime += dt;
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawClinic();
