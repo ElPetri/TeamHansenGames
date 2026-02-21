@@ -40,6 +40,8 @@ let isPetting = false;
 let lastPetX = 0, lastPetY = 0;
 let sceneTime = 0;
 const particles = [];
+const toastQueue = [];
+let activeToast = null;
 
 const AVATAR_KEY = 'vet_avatar_v1';
 const avatar = {
@@ -479,19 +481,38 @@ function finishCare() {
 
 function showToast(message, kind = 'info') {
     if (!message) return;
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.className = `vet-toast ${kind === 'error' ? 'error' : 'info'}`;
 
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-    });
+    toastQueue.push({ message, kind });
+    if (activeToast) return;
 
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 170);
-    }, 1400);
+    const showNextToast = () => {
+        if (!toastQueue.length) {
+            activeToast = null;
+            return;
+        }
+
+        const next = toastQueue.shift();
+        const toast = document.createElement('div');
+        activeToast = toast;
+        toast.textContent = next.message;
+        toast.className = `vet-toast ${next.kind === 'error' ? 'error' : 'info'}`;
+
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+                activeToast = null;
+                showNextToast();
+            }, 170);
+        }, 1400);
+    };
+
+    showNextToast();
 }
 
 function resetIngredientSelection() {
