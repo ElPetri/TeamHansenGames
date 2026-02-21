@@ -22,7 +22,44 @@
         <div id="start-screen" class="screen">
             <h1>VET CLINIC</h1>
             <p>Care for pets — wash, examine, treat, pet, and dress them.</p>
+            <p class="tip">Tip: Press <strong>O</strong> during clinic play to open a door for a new customer.</p>
             <button id="start-btn">Start</button>
+            <button id="avatar-btn">Customize Avatar</button>
+            <div id="avatar-panel" class="avatar-panel hidden">
+                <h3>Avatar Customization</h3>
+                <div class="avatar-group">
+                    <span>Gender</span>
+                    <div class="avatar-options" id="opt-gender">
+                        <button type="button" data-group="gender" data-value="girl">Girl</button>
+                        <button type="button" data-group="gender" data-value="boy">Boy</button>
+                    </div>
+                </div>
+                <div class="avatar-group">
+                    <span>Skin</span>
+                    <div class="avatar-options" id="opt-skin">
+                        <button type="button" data-group="skin" data-value="#f5cfa0">Light</button>
+                        <button type="button" data-group="skin" data-value="#d9a67a">Tan</button>
+                        <button type="button" data-group="skin" data-value="#8f5f3f">Deep</button>
+                    </div>
+                </div>
+                <div class="avatar-group">
+                    <span>Hair</span>
+                    <div class="avatar-options" id="opt-hair">
+                        <button type="button" data-group="hair" data-value="#2f221a">Brown</button>
+                        <button type="button" data-group="hair" data-value="#111111">Black</button>
+                        <button type="button" data-group="hair" data-value="#c08a42">Blonde</button>
+                    </div>
+                </div>
+                <div class="avatar-group">
+                    <span>Outfit</span>
+                    <div class="avatar-options" id="opt-outfit">
+                        <button type="button" data-group="outfit" data-value="#4aa3ff">Blue</button>
+                        <button type="button" data-group="outfit" data-value="#ff79a1">Pink</button>
+                        <button type="button" data-group="outfit" data-value="#77c37a">Green</button>
+                    </div>
+                </div>
+                <button id="avatar-save" type="button">Save Avatar</button>
+            </div>
             <div id="global-leaderboard" class="leaderboard-shell"></div>
             <a href="../index.html" class="menu-link">Back to Games</a>
         </div>
@@ -34,6 +71,7 @@
             </div>
             <div id="clinic-canvas-wrap"></div>
             <div id="vet-ui" class="vet-ui">
+                <div id="controls-tip" class="controls-tip">Tip: Press <strong>O</strong> to open a door for customers.</div>
                 <div id="tool-bar">
                     <button id="tool-wash" class="tool-btn">Wash</button>
                     <button id="tool-examine" class="tool-btn">Examine</button>

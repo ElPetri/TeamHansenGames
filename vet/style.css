@@ -7,6 +7,7 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 .screen.hidden{display:none}
 .screen h1{font-size:28px;color:var(--accent);margin:0 0 10px}
 .screen p{color:var(--muted);max-width:720px;text-align:center}
+.screen .tip{font-size:14px;color:#335d7f}
 .screen button, .menu-link{margin-top:12px;padding:10px 14px;border-radius:10px;border:1px solid var(--accent);background:#fff;color:var(--accent);cursor:pointer;text-decoration:none}
 #clinic-topbar{position:absolute;top:12px;left:12px;display:flex;gap:8px}
 #hud{position:absolute;top:12px;right:12px;padding:8px 12px;background:rgba(255,255,255,0.9);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
@@ -14,6 +15,7 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 
 /* Vet UI styles */
 .vet-ui{position:absolute;left:12px;bottom:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+.controls-tip{font-size:13px;color:#335d7f;background:rgba(255,255,255,0.92);padding:8px 10px;border-radius:10px;max-width:460px}
 #tool-bar{display:flex;gap:8px}
 .tool-btn{padding:8px 10px;border-radius:8px;border:1px solid #4aa3ff;background:#ffffff;font-weight:700;color:#2b6b9a;cursor:pointer}
 .tool-btn.active{background:#4aa3ff;color:#fff}
@@ -28,3 +30,11 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 /* Result screen polish */
 #result-screen h2{color:#2b6b9a}
 #clinic-canvas-wrap{position:relative;width:100%;height:100%}
+
+.avatar-panel{margin-top:8px;padding:10px;border:1px solid #b9dffc;background:rgba(255,255,255,0.96);border-radius:12px;display:flex;flex-direction:column;gap:8px;min-width:320px;max-width:520px}
+.avatar-panel h3{margin:0;color:#2a5d8a}
+.avatar-group{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.avatar-group span{font-size:13px;color:#2b5675}
+.avatar-options{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.avatar-options button{margin-top:0;padding:6px 8px;font-size:12px;border-radius:8px}
+.avatar-options button.active{background:#4aa3ff;color:#fff}

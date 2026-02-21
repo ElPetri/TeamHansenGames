@@ -7,6 +7,10 @@ const resultScreen = document.getElementById('result-screen');
 const startBtn = document.getElementById('start-btn');
 const backToMenu = document.getElementById('back-to-menu');
 const resultContinue = document.getElementById('result-continue');
+const avatarBtn = document.getElementById('avatar-btn');
+const avatarPanel = document.getElementById('avatar-panel');
+const avatarSaveBtn = document.getElementById('avatar-save');
+const avatarOptionButtons = document.querySelectorAll('#avatar-panel [data-group]');
 
 const petsTreatedEl = document.getElementById('pets-treated');
 const coinsEl = document.getElementById('vet-coins');
@@ -35,6 +39,14 @@ let selectedIngredient = null;
 let isPetting = false;
 let lastPetX = 0, lastPetY = 0;
 
+const AVATAR_KEY = 'vet_avatar_v1';
+const avatar = {
+    gender: 'girl',
+    skin: '#f5cfa0',
+    hair: '#2f221a',
+    outfit: '#4aa3ff'
+};
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const Sound = {
     tone(freq, type = 'sine', dur = 0.08, gain = 0.06) {
@@ -58,6 +70,33 @@ function resize() {
     canvas.width = Math.max(320, Math.floor(width * devicePixelRatio));
     canvas.height = Math.max(240, Math.floor(height * devicePixelRatio));
     ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+
+function loadAvatar() {
+    try {
+        const raw = localStorage.getItem(AVATAR_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        avatar.gender = parsed.gender || avatar.gender;
+        avatar.skin = parsed.skin || avatar.skin;
+        avatar.hair = parsed.hair || avatar.hair;
+        avatar.outfit = parsed.outfit || avatar.outfit;
+    } catch (e) {}
+}
+
+function saveAvatar() {
+    try {
+        localStorage.setItem(AVATAR_KEY, JSON.stringify(avatar));
+    } catch (e) {}
+}
+
+function syncAvatarUi() {
+    avatarOptionButtons.forEach((btn) => {
+        const group = btn.dataset.group;
+        const value = btn.dataset.value;
+        btn.classList.toggle('active', avatar[group] === value);
+    });
 }
 
 function createDoors() {
@@ -106,16 +145,86 @@ function drawClinic() {
         const p = currentCustomer.pet;
         ctx.save();
         ctx.translate(width*0.5, height*0.75);
-        // pet circle
-        ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(0,0,40,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#111'; ctx.fillText(p.name, -10, 50);
+        const petEmojiMap = {
+            dog: '🐶',
+            cat: '🐱',
+            bunny: '🐰'
+        };
+        const petEmoji = petEmojiMap[p.type] || '🐾';
+
+        // pet emoji
+        ctx.font = '72px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(petEmoji, 0, 0);
+
+        if (p.outfit) {
+            ctx.font = '28px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+            ctx.fillText('🎀', 22, -24);
+        }
+
+        ctx.fillStyle = '#111';
+        ctx.font = '14px Arial, sans-serif';
+        ctx.fillText(p.name, 0, 54);
         // speech bubble
         ctx.fillStyle = 'rgba(255,255,255,0.95)';
         ctx.fillRect(-140, -130, 280, 48);
-        ctx.fillStyle = '#222'; ctx.fillText(currentCustomer.request, -128, -110);
+        ctx.fillStyle = '#222';
+        ctx.font = '13px Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(currentCustomer.request, -128, -106);
         ctx.restore();
     }
+
+    // player avatar
+    drawAvatar(95, height - 110);
+}
+
+function drawAvatar(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = avatar.outfit;
+    ctx.fillRect(-18, -2, 36, 42);
+
+    ctx.fillStyle = avatar.skin;
+    ctx.beginPath();
+    ctx.arc(0, -22, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = avatar.hair;
+    if (avatar.gender === 'girl') {
+        ctx.fillRect(-14, -36, 28, 10);
+        ctx.fillRect(-15, -30, 8, 12);
+        ctx.fillRect(7, -30, 8, 12);
+    } else {
+        ctx.fillRect(-12, -36, 24, 8);
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(6, 7, 5, 5);
+
+    ctx.fillStyle = '#1f4d70';
+    ctx.font = '12px Arial';
+    ctx.fillText('You', -10, 58);
+    ctx.restore();
+}
+
+function openNextDoor() {
+    if (gameState !== 'CLINIC') return;
+    if (currentCustomer) return;
+    const targetDoor = doors.find((door) => door.unlocked && !door.open);
+    if (targetDoor) {
+        spawnCustomerForDoor(targetDoor);
+        Sound.click();
+    }
+}
+
+function maybeFinishCare() {
+    if (!currentCustomer) return;
+    if (currentCustomer.requiredTasks.length > 0) return;
+    finishCare();
 }
 
 function spawnCustomerForDoor(door) {
@@ -123,8 +232,9 @@ function spawnCustomerForDoor(door) {
     if (currentCustomer) return;
     door.open = true;
 
-    const petTypes = ['Dog','Cat','Bunny'];
-    const name = petTypes[Math.floor(Math.random()*petTypes.length)] + '-' + Math.floor(Math.random()*90+10);
+    const petTypes = ['Dog', 'Cat', 'Bunny'];
+    const selectedType = petTypes[Math.floor(Math.random() * petTypes.length)];
+    const name = selectedType + '-' + Math.floor(Math.random()*90+10);
     const colors = ['#ffd6b6','#cde8ff','#ffe6f2','#e8ffda'];
 
     // create a small set of possible ailments and required tasks
@@ -140,7 +250,7 @@ function spawnCustomerForDoor(door) {
         doorIndex: doors.indexOf(door),
         owner: 'Alex',
         request: chosenAilment ? `Please ${required.join(' & ')} — my pet has ${chosenAilment}` : `Please ${required.join(' & ')}`,
-        pet: { type: 'dog', name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false },
+        pet: { type: selectedType.toLowerCase(), name, color: colors[Math.floor(Math.random()*colors.length)], cleanliness: 0, happiness: 0, ailment: chosenAilment, treated: false },
         requiredTasks: required,
         progress: { wash: 0, pet: 0 }
     };
@@ -179,6 +289,7 @@ canvas.addEventListener('pointerdown', (ev) => {
                         const idx = currentCustomer.requiredTasks.indexOf('wash');
                         if (idx >= 0) currentCustomer.requiredTasks.splice(idx,1);
                         Sound.click();
+                        maybeFinishCare();
                     }
                 } else if (activeTool === 'examine') {
                     // reveal ailment
@@ -199,6 +310,7 @@ canvas.addEventListener('pointerdown', (ev) => {
                             currentCustomer.pet.treated = true;
                             currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter(t => t !== 'treat');
                             Sound.success();
+                            maybeFinishCare();
                         } else {
                             Sound.click();
                             reputation = Math.max(0, reputation - 1);
@@ -209,13 +321,26 @@ canvas.addEventListener('pointerdown', (ev) => {
                         ingButtons.forEach(b => b.classList.remove('selected'));
                     }
                 } else if (activeTool === 'pet') {
-                    // start petting — pointermove will increase happiness
+                    // tapping also pets immediately
+                    currentCustomer.progress.pet = (currentCustomer.progress.pet || 0) + 20;
+                    currentCustomer.pet.happiness = Math.min(100, currentCustomer.progress.pet);
+                    barHappy.style.width = `${currentCustomer.pet.happiness}%`;
+                    Sound.tone(720, 'sine', 0.05, 0.03);
+
+                    if (currentCustomer.pet.happiness >= 60) {
+                        const idx = currentCustomer.requiredTasks.indexOf('pet');
+                        if (idx >= 0) currentCustomer.requiredTasks.splice(idx,1);
+                        maybeFinishCare();
+                    }
+
+                    // start petting — pointermove can add more
                     isPetting = true;
                     lastPetX = x; lastPetY = y;
                 } else if (activeTool === 'dress') {
                     // toggle simple outfit flag
                     currentCustomer.pet.outfit = currentCustomer.pet.outfit ? null : 'bow';
                     Sound.click();
+                    maybeFinishCare();
                 }
             }
         }
@@ -239,6 +364,7 @@ canvas.addEventListener('pointermove', (ev) => {
             const idx = currentCustomer.requiredTasks.indexOf('pet');
             if (idx >= 0) currentCustomer.requiredTasks.splice(idx,1);
             isPetting = false;
+            maybeFinishCare();
         }
     }
 });
@@ -279,6 +405,33 @@ function setActiveTool(tool) {
     toolPetBtn.classList.toggle('active', tool === 'pet');
     toolDressBtn.classList.toggle('active', tool === 'dress');
     if (tool !== 'treat') ingredientsEl.classList.add('hidden');
+
+    if (!currentCustomer) return;
+
+    // Immediate feedback so selecting a tool always does something noticeable.
+    if (tool === 'wash') {
+        currentCustomer.progress.wash += 1;
+        currentCustomer.pet.cleanliness = Math.min(100, currentCustomer.progress.wash * 34);
+        barClean.style.width = `${currentCustomer.pet.cleanliness}%`;
+        Sound.wash();
+        if (currentCustomer.progress.wash >= 3) {
+            const idx = currentCustomer.requiredTasks.indexOf('wash');
+            if (idx >= 0) currentCustomer.requiredTasks.splice(idx, 1);
+            maybeFinishCare();
+        }
+    }
+
+    if (tool === 'pet') {
+        currentCustomer.progress.pet = (currentCustomer.progress.pet || 0) + 16;
+        currentCustomer.pet.happiness = Math.min(100, currentCustomer.progress.pet);
+        barHappy.style.width = `${currentCustomer.pet.happiness}%`;
+        Sound.tone(720, 'sine', 0.05, 0.03);
+        if (currentCustomer.pet.happiness >= 60) {
+            const idx = currentCustomer.requiredTasks.indexOf('pet');
+            if (idx >= 0) currentCustomer.requiredTasks.splice(idx, 1);
+            maybeFinishCare();
+        }
+    }
 }
 
 toolWashBtn.addEventListener('click', () => setActiveTool('wash'));
@@ -292,6 +445,31 @@ ingButtons.forEach(b => b.addEventListener('click', (ev) => {
     b.classList.add('selected');
     selectedIngredient = b.dataset.ing;
 }));
+
+window.addEventListener('keydown', (ev) => {
+    if (ev.code === 'KeyO') {
+        openNextDoor();
+    }
+});
+
+avatarBtn.addEventListener('click', () => {
+    avatarPanel.classList.toggle('hidden');
+});
+
+avatarOptionButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+        const group = btn.dataset.group;
+        const value = btn.dataset.value;
+        avatar[group] = value;
+        syncAvatarUi();
+    });
+});
+
+avatarSaveBtn.addEventListener('click', () => {
+    saveAvatar();
+    avatarPanel.classList.add('hidden');
+    Sound.success();
+});
 
 function frame(time) {
     if (!lastTime) lastTime = time;
@@ -337,4 +515,6 @@ if (window.LeaderboardAPI && globalLeaderboardEl) {
     });
 }
 
+loadAvatar();
+syncAvatarUi();
 resize(); createDoors(); requestAnimationFrame(frame);
