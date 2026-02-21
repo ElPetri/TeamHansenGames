@@ -228,6 +228,26 @@ function drawClinic() {
         ctx.translate(offsetX, offsetY);
         ctx.rotate(rotation);
 
+        // high-contrast backdrop so emoji stay visible on bright backgrounds
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 36, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(47,106,152,0.45)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 36, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#2f6a98';
+        ctx.beginPath();
+        ctx.arc(5, 8, 32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
         // pet emoji
         ctx.font = '72px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
         ctx.textAlign = 'center';
@@ -772,12 +792,6 @@ outfitButtons.forEach((button) => button.addEventListener('click', () => {
         applyOutfitChoice(selectedOutfit);
     }
 }));
-
-window.addEventListener('keydown', (ev) => {
-    if (ev.code === 'KeyO') {
-        openNextDoor();
-    }
-});
 
 avatarBtn.addEventListener('click', () => {
     avatarPanel.classList.toggle('hidden');
