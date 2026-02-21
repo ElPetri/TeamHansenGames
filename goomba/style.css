@@ -38,6 +38,11 @@ canvas {
     height: 100%;
 }
 
+/* Improve mobile touch behavior */
+canvas {
+    touch-action: none;
+}
+
 #ui-layer {
     position: absolute;
     inset: 0;
@@ -207,5 +212,10 @@ canvas {
     #status-panel {
         font-size: 11px;
         min-width: 180px;
+    }
+
+    #shop-btn {
+        padding: 12px 16px;
+        font-size: 14px;
     }
 }

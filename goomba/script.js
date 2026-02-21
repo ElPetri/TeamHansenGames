@@ -93,6 +93,8 @@ const game = {
     lives: 3,
     wave: 1,
     storyChapter: 0,
+    storyLevel: 1,
+    levelStartScore: 0,
     waveTimer: 0,
     waveDuration: 19,
     keys: Object.create(null),
@@ -118,6 +120,7 @@ const game = {
     yoshiTarget: null,
     bossAlive: false,
     bossCycle: 0,
+    awaitingBoss: false,
     shopOpen: false,
     upgrades: {
         fireRate: 0,
@@ -175,6 +178,7 @@ function resetRun(mode = game.mode, preserveProgress = false) {
         game.upgrades.damage = 0;
         game.upgrades.speed = 0;
         game.storyChapter = 0;
+        game.storyLevel = 1;
     }
 
     game.wave = 1;
@@ -192,6 +196,8 @@ function resetRun(mode = game.mode, preserveProgress = false) {
     game.bossAlive = false;
     game.bossCycle = 0;
     game.shopOpen = false;
+    game.levelStartScore = game.score;
+    game.awaitingBoss = false;
 
     mario.x = canvas.width * 0.5;
     mario.y = canvas.height * 0.83;
@@ -234,6 +240,14 @@ function getStoryChapterConfig() {
     return STORY_CHAPTERS[Math.min(game.storyChapter, STORY_CHAPTERS.length - 1)];
 }
 
+function getLevelTarget() {
+    const chapter = getStoryChapterConfig();
+    const base = chapter.targetScore || 200;
+    const factors = [1.0, 1.5, 2.2, 3.2];
+    const f = factors[Math.max(0, Math.min(3, game.storyLevel - 1))];
+    return Math.round(base * f);
+}
+
 function configureResultScreen({ allowSave, showNext, subtitle, title }) {
     saveScoreBtn.classList.toggle('hidden', !allowSave);
     playerNameInput.classList.toggle('hidden', !allowSave);
@@ -265,9 +279,11 @@ function updateHud() {
 
     if (game.mode === 'story') {
         const chapter = getStoryChapterConfig();
-        modeStatusEl.textContent = `Mode: Story (${game.storyChapter + 1}/${STORY_CHAPTERS.length})`;
+        const levelTarget = getLevelTarget();
+        const absoluteTarget = game.levelStartScore + levelTarget;
+        modeStatusEl.textContent = `Mode: Story (C${game.storyChapter + 1} L${game.storyLevel})`;
         objectiveStatusEl.classList.remove('hidden');
-        objectiveStatusEl.textContent = `Objective: ${chapter.title} (${Math.min(game.score, chapter.targetScore)}/${chapter.targetScore})`;
+        objectiveStatusEl.textContent = `Objective: ${chapter.title} — Level ${game.storyLevel}: ${Math.min(game.score - game.levelStartScore, levelTarget)}/${levelTarget}`;
     } else {
         modeStatusEl.textContent = 'Mode: Arena';
         objectiveStatusEl.classList.add('hidden');
@@ -450,6 +466,43 @@ function damageEnemy(enemy, dmg) {
         spawnPowerup(enemy.x, -20);
     }
 
+    // If this was a boss and we're in story mode waiting for it, advance level/chapter
+    if (enemy.boss && game.mode === 'story' && game.awaitingBoss) {
+        game.awaitingBoss = false;
+        if (game.storyLevel < 4) {
+            game.storyLevel = Math.min(4, game.storyLevel + 1);
+            game.levelStartScore = game.score;
+            // clear current enemies and prepare next level
+            game.enemies.length = 0;
+            game.spawnTimer = 0;
+            game.wave = 1;
+            game.spawnGap = 1.2;
+            updateHud();
+        } else {
+            // Completed final level of chapter
+            finalScoreEl.textContent = String(game.score);
+            finalWaveEl.textContent = String(game.wave);
+
+            const isFinalChapter = game.storyChapter >= STORY_CHAPTERS.length - 1;
+            if (isFinalChapter) {
+                configureResultScreen({
+                    title: 'STORY COMPLETE',
+                    subtitle: 'Mario defeated the Goomba fleet!',
+                    allowSave: false,
+                    showNext: false
+                });
+            } else {
+                configureResultScreen({
+                    title: `CHAPTER ${game.storyChapter + 1} CLEAR`,
+                    subtitle: 'Prepare for the next chapter.',
+                    allowSave: false,
+                    showNext: true
+                });
+            }
+            setState('GAMEOVER');
+        }
+    }
+
     checkStoryProgress();
 
     return true;
@@ -458,30 +511,19 @@ function damageEnemy(enemy, dmg) {
 function checkStoryProgress() {
     if (game.mode !== 'story' || game.state !== 'PLAYING') return;
 
-    const chapter = getStoryChapterConfig();
-    if (game.score < chapter.targetScore) return;
+    const levelTarget = getLevelTarget();
+    const absoluteTarget = game.levelStartScore + levelTarget;
+    if (game.score < absoluteTarget) return;
 
-    finalScoreEl.textContent = String(game.score);
-    finalWaveEl.textContent = String(game.wave);
-
-    const isFinalChapter = game.storyChapter >= STORY_CHAPTERS.length - 1;
-    if (isFinalChapter) {
-        configureResultScreen({
-            title: 'STORY COMPLETE',
-            subtitle: 'Mario defeated the Goomba fleet!',
-            allowSave: false,
-            showNext: false
-        });
-    } else {
-        configureResultScreen({
-            title: `CHAPTER ${game.storyChapter + 1} CLEAR`,
-            subtitle: 'Prepare for the next chapter.',
-            allowSave: false,
-            showNext: true
-        });
+    // Reached level goal: spawn a boss for this level if not already
+    if (!game.bossAlive && !game.awaitingBoss) {
+        if (game.storyLevel < 4) {
+            spawnBoss('mini');
+        } else {
+            spawnBoss('major');
+        }
+        game.awaitingBoss = true;
     }
-
-    setState('GAMEOVER');
 }
 
 function yoshiLogic(dt) {
@@ -560,10 +602,10 @@ function spawnFireball() {
 function updateMario(dt) {
     let dx = 0;
     let dy = 0;
-    if (game.keys.KeyA) dx -= 1;
-    if (game.keys.KeyD) dx += 1;
-    if (game.keys.KeyW) dy -= 1;
-    if (game.keys.KeyS) dy += 1;
+    if (game.keys.KeyA || game.keys.ArrowLeft) dx -= 1;
+    if (game.keys.KeyD || game.keys.ArrowRight) dx += 1;
+    if (game.keys.KeyW || game.keys.ArrowUp) dy -= 1;
+    if (game.keys.KeyS || game.keys.ArrowDown) dy += 1;
 
     const len = Math.hypot(dx, dy) || 1;
     const speed = mario.speed * speedModifier() * (game.megaTimer > 0 ? 0.92 : 1);
@@ -731,6 +773,7 @@ function updateTimers(dt) {
 
 function updateSpawns(dt) {
     if (game.bossAlive) return;
+    if (game.awaitingBoss) return;
     game.spawnTimer -= dt;
     if (game.spawnTimer > 0) return;
 
@@ -970,6 +1013,8 @@ restartBtn.addEventListener('click', () => {
 nextStoryBtn.addEventListener('click', () => {
     if (game.mode !== 'story') return;
     game.storyChapter = Math.min(game.storyChapter + 1, STORY_CHAPTERS.length - 1);
+    game.storyLevel = 1;
+    game.levelStartScore = game.score;
     resetRun('story', true);
 });
 
@@ -1012,6 +1057,45 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
     game.keys[e.code] = false;
+});
+
+// Pointer / touch controls: direct position control when touching the canvas
+let activePointerId = null;
+function toCanvasCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * (canvas.width / rect.width);
+    const y = (clientY - rect.top) * (canvas.height / rect.height);
+    return { x, y };
+}
+
+canvas.addEventListener('pointerdown', (ev) => {
+    // only track first pointer
+    if (activePointerId !== null) return;
+    activePointerId = ev.pointerId;
+    canvas.setPointerCapture(activePointerId);
+    ev.preventDefault();
+    const pos = toCanvasCoords(ev.clientX, ev.clientY);
+    // allow touch control only if touching left 85% of screen (reserve right for UI)
+    if (ev.clientX < window.innerWidth * 0.9) {
+        mario.x = Math.max(mario.radius, Math.min(canvas.width - mario.radius, pos.x));
+        mario.y = Math.max(mario.radius, Math.min(canvas.height - mario.radius, pos.y));
+    }
+});
+
+canvas.addEventListener('pointermove', (ev) => {
+    if (activePointerId !== ev.pointerId) return;
+    ev.preventDefault();
+    const pos = toCanvasCoords(ev.clientX, ev.clientY);
+    if (ev.clientX < window.innerWidth * 0.9) {
+        mario.x = Math.max(mario.radius, Math.min(canvas.width - mario.radius, pos.x));
+        mario.y = Math.max(mario.radius, Math.min(canvas.height - mario.radius, pos.y));
+    }
+});
+
+canvas.addEventListener('pointerup', (ev) => {
+    if (activePointerId !== ev.pointerId) return;
+    try { canvas.releasePointerCapture(activePointerId); } catch (e) {}
+    activePointerId = null;
 });
 
 window.addEventListener('resize', () => {
