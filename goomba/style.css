@@ -82,6 +82,10 @@ canvas {
     color: var(--neon-gold);
 }
 
+#mode-status {
+    color: #95bbff;
+}
+
 #shop-btn {
     pointer-events: auto;
     position: absolute;
@@ -178,6 +182,13 @@ canvas {
     display: grid;
     gap: 8px;
     width: min(460px, 88vw);
+}
+
+.mode-select {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .hidden {

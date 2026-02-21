@@ -18,19 +18,25 @@ const yoshiTimerEl = document.getElementById('yoshi-timer');
 const freezeTimerEl = document.getElementById('freeze-timer');
 const megaTimerEl = document.getElementById('mega-timer');
 const capeTimerEl = document.getElementById('cape-timer');
+const modeStatusEl = document.getElementById('mode-status');
+const objectiveStatusEl = document.getElementById('objective-status');
 
 const startScreen = document.getElementById('start-screen');
 const shopScreen = document.getElementById('shop-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 
+const goTitleEl = document.getElementById('go-title');
+const goSubtitleEl = document.getElementById('go-subtitle');
 const finalScoreEl = document.getElementById('final-score');
 const finalWaveEl = document.getElementById('final-wave');
 const playerNameInput = document.getElementById('player-name');
 const nameErrorEl = document.getElementById('name-error');
 const saveScoreBtn = document.getElementById('save-score-btn');
+const nextStoryBtn = document.getElementById('next-story-btn');
 const globalLeaderboardEl = document.getElementById('global-leaderboard');
 
-const startBtn = document.getElementById('start-btn');
+const arenaBtn = document.getElementById('arena-btn');
+const storyBtn = document.getElementById('story-btn');
 const shopBtn = document.getElementById('shop-btn');
 const resumeBtn = document.getElementById('resume-btn');
 const restartBtn = document.getElementById('restart-btn');
@@ -72,12 +78,21 @@ const Sound = {
     }
 };
 
+const STORY_CHAPTERS = [
+    { title: 'Chapter 1: Orbit Breach', targetScore: 250 },
+    { title: 'Chapter 2: Lunar Ambush', targetScore: 700 },
+    { title: 'Chapter 3: Nebula Clash', targetScore: 1400 },
+    { title: 'Chapter 4: Bowser Armada', targetScore: 2300 }
+];
+
 const game = {
     state: 'START',
+    mode: 'arena',
     score: 0,
     coins: 0,
     lives: 3,
     wave: 1,
+    storyChapter: 0,
     waveTimer: 0,
     waveDuration: 19,
     keys: Object.create(null),
@@ -149,14 +164,23 @@ function createStars() {
     }));
 }
 
-function resetRun() {
-    game.score = 0;
-    game.coins = 0;
-    game.lives = 3;
+function resetRun(mode = game.mode, preserveProgress = false) {
+    game.mode = mode;
+
+    if (!preserveProgress) {
+        game.score = 0;
+        game.coins = 0;
+        game.lives = 3;
+        game.upgrades.fireRate = 0;
+        game.upgrades.damage = 0;
+        game.upgrades.speed = 0;
+        game.storyChapter = 0;
+    }
+
     game.wave = 1;
     game.waveTimer = 0;
     game.spawnTimer = 0;
-    game.spawnGap = 1.15;
+    game.spawnGap = game.mode === 'story' ? 1.2 : 1.15;
     game.fireTimer = 0;
     game.starPowerTimer = 0;
     game.yoshiTimer = 0;
@@ -168,9 +192,6 @@ function resetRun() {
     game.bossAlive = false;
     game.bossCycle = 0;
     game.shopOpen = false;
-    game.upgrades.fireRate = 0;
-    game.upgrades.damage = 0;
-    game.upgrades.speed = 0;
 
     mario.x = canvas.width * 0.5;
     mario.y = canvas.height * 0.83;
@@ -186,6 +207,7 @@ function resetRun() {
     game.explosions.length = 0;
 
     setState('PLAYING');
+    configureResultScreen({ allowSave: false, showNext: false, subtitle: '' });
     updateHud();
 }
 
@@ -202,10 +224,24 @@ function renderGlobalLeaderboard() {
     window.LeaderboardAPI.renderTabbedLeaderboard({
         container: globalLeaderboardEl,
         game: 'goomba',
-        mode: 'standard',
-        modes: [{ value: 'standard', label: 'Standard' }],
+        mode: 'arena',
+        modes: [{ value: 'arena', label: 'Arena' }],
         playerName
     });
+}
+
+function getStoryChapterConfig() {
+    return STORY_CHAPTERS[Math.min(game.storyChapter, STORY_CHAPTERS.length - 1)];
+}
+
+function configureResultScreen({ allowSave, showNext, subtitle, title }) {
+    saveScoreBtn.classList.toggle('hidden', !allowSave);
+    playerNameInput.classList.toggle('hidden', !allowSave);
+    nameErrorEl.classList.toggle('hidden', !allowSave);
+    nextStoryBtn.classList.toggle('hidden', !showNext);
+    goSubtitleEl.classList.toggle('hidden', !subtitle);
+    goSubtitleEl.textContent = subtitle || '';
+    if (title) goTitleEl.textContent = title;
 }
 
 function speedModifier() {
@@ -226,6 +262,16 @@ function updateHud() {
     livesEl.textContent = String(game.lives);
     waveEl.textContent = String(game.wave);
     weaponLevelEl.textContent = String(1 + game.upgrades.damage);
+
+    if (game.mode === 'story') {
+        const chapter = getStoryChapterConfig();
+        modeStatusEl.textContent = `Mode: Story (${game.storyChapter + 1}/${STORY_CHAPTERS.length})`;
+        objectiveStatusEl.classList.remove('hidden');
+        objectiveStatusEl.textContent = `Objective: ${chapter.title} (${Math.min(game.score, chapter.targetScore)}/${chapter.targetScore})`;
+    } else {
+        modeStatusEl.textContent = 'Mode: Arena';
+        objectiveStatusEl.classList.add('hidden');
+    }
 
     starStatus.classList.toggle('hidden', game.starPowerTimer <= 0);
     yoshiStatus.classList.toggle('hidden', game.yoshiTimer <= 0);
@@ -404,7 +450,38 @@ function damageEnemy(enemy, dmg) {
         spawnPowerup(enemy.x, -20);
     }
 
+    checkStoryProgress();
+
     return true;
+}
+
+function checkStoryProgress() {
+    if (game.mode !== 'story' || game.state !== 'PLAYING') return;
+
+    const chapter = getStoryChapterConfig();
+    if (game.score < chapter.targetScore) return;
+
+    finalScoreEl.textContent = String(game.score);
+    finalWaveEl.textContent = String(game.wave);
+
+    const isFinalChapter = game.storyChapter >= STORY_CHAPTERS.length - 1;
+    if (isFinalChapter) {
+        configureResultScreen({
+            title: 'STORY COMPLETE',
+            subtitle: 'Mario defeated the Goomba fleet!',
+            allowSave: false,
+            showNext: false
+        });
+    } else {
+        configureResultScreen({
+            title: `CHAPTER ${game.storyChapter + 1} CLEAR`,
+            subtitle: 'Prepare for the next chapter.',
+            allowSave: false,
+            showNext: true
+        });
+    }
+
+    setState('GAMEOVER');
 }
 
 function yoshiLogic(dt) {
@@ -617,7 +694,16 @@ function endRun() {
     game.state = 'GAMEOVER';
     finalScoreEl.textContent = String(game.score);
     finalWaveEl.textContent = String(game.wave);
-    if (window.LeaderboardAPI && playerNameInput) {
+
+    const isArena = game.mode === 'arena';
+    configureResultScreen({
+        title: 'MISSION FAILED',
+        subtitle: isArena ? '' : 'Story run failed. Try again from Chapter 1.',
+        allowSave: isArena,
+        showNext: false
+    });
+
+    if (isArena && window.LeaderboardAPI && playerNameInput) {
         const savedName = window.LeaderboardAPI.getSavedName();
         if (savedName && !playerNameInput.value) playerNameInput.value = savedName;
     }
@@ -867,23 +953,35 @@ function frame(time) {
     requestAnimationFrame(frame);
 }
 
-startBtn.addEventListener('click', () => {
+arenaBtn.addEventListener('click', () => {
     audioCtx.resume();
-    resetRun();
+    resetRun('arena');
+});
+
+storyBtn.addEventListener('click', () => {
+    audioCtx.resume();
+    resetRun('story');
 });
 
 restartBtn.addEventListener('click', () => {
-    resetRun();
+    resetRun(game.mode, false);
+});
+
+nextStoryBtn.addEventListener('click', () => {
+    if (game.mode !== 'story') return;
+    game.storyChapter = Math.min(game.storyChapter + 1, STORY_CHAPTERS.length - 1);
+    resetRun('story', true);
 });
 
 if (saveScoreBtn) {
     saveScoreBtn.addEventListener('click', () => {
+        if (game.mode !== 'arena') return;
         if (!window.LeaderboardAPI || !playerNameInput) return;
         const fallbackName = window.LeaderboardAPI.getSavedName() || 'Player';
         const name = playerNameInput.value || fallbackName;
         window.LeaderboardAPI.validateAndSubmit({
             game: 'goomba',
-            mode: 'standard',
+            mode: 'arena',
             name,
             score: game.score,
             inputElement: playerNameInput,

@@ -4,7 +4,7 @@ const ALLOWED_GAMES = {
     balloon: new Set(['classic', 'chaos']),
     snake: new Set(['classic', 'capture']),
     math: new Set(['standard']),
-    goomba: new Set(['standard'])
+    goomba: new Set(['arena', 'story', 'standard'])
 };
 
 const SCORE_LIMITS = {
