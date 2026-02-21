@@ -296,7 +296,8 @@
             { label: 'Pop Balloon (Chaos)', game: 'balloon', mode: 'chaos' },
             { label: 'Snake (Classic)', game: 'snake', mode: 'classic' },
             { label: 'Snake (Capture)', game: 'snake', mode: 'capture' },
-            { label: 'Math Blaster', game: 'math', mode: 'standard' }
+            { label: 'Math Blaster', game: 'math', mode: 'standard' },
+            { label: 'Goomba Invaders', game: 'goomba', mode: 'standard' }
         ];
 
         container.innerHTML = '<p class="leaderboard-loading">Loading scores…</p>';

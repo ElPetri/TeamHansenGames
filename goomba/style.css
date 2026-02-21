@@ -1,0 +1,200 @@
+:root {
+    --neon-blue: #00f3ff;
+    --neon-pink: #ff4fd8;
+    --neon-green: #86ff75;
+    --neon-gold: #ffd54a;
+    --bg-dark: #04050c;
+    --glass: rgba(7, 12, 28, 0.82);
+    --font-heading: 'Orbitron', sans-serif;
+    --font-pixel: 'Press Start 2P', cursive;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 20% 20%, #1a224a 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #0f1438 0%, transparent 45%),
+        #03040a;
+    color: var(--neon-blue);
+    font-family: var(--font-heading);
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+#hud {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    padding: 10px 16px;
+    border: 1px solid var(--neon-blue);
+    border-radius: 14px;
+    background: var(--glass);
+    box-shadow: 0 0 18px rgba(0, 243, 255, 0.35);
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+#status-panel {
+    position: absolute;
+    left: 14px;
+    bottom: 16px;
+    min-width: 220px;
+    padding: 10px;
+    border: 1px solid #5068ff;
+    background: var(--glass);
+    box-shadow: 0 0 14px rgba(80, 104, 255, 0.35);
+    font-size: 12px;
+}
+
+.status-row {
+    margin-top: 6px;
+    color: var(--neon-green);
+}
+
+#weapon-status {
+    color: var(--neon-gold);
+}
+
+#shop-btn {
+    pointer-events: auto;
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    border: 1px solid var(--neon-pink);
+    color: var(--neon-pink);
+    background: var(--glass);
+    border-radius: 10px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+#shop-btn:hover {
+    background: var(--neon-pink);
+    color: #09040f;
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(3, 5, 16, 0.93);
+    text-align: center;
+    padding: 18px;
+    overflow-y: auto;
+}
+
+.screen h1,
+.screen h2 {
+    margin: 0;
+    font-family: var(--font-pixel);
+    color: var(--neon-gold);
+    text-shadow: 0 0 18px rgba(255, 213, 74, 0.45);
+    line-height: 1.35;
+}
+
+.screen p {
+    margin: 0;
+    max-width: 760px;
+}
+
+#global-leaderboard {
+    width: min(640px, 94vw);
+    margin-top: 10px;
+}
+
+#player-name {
+    width: min(320px, 86vw);
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--neon-blue);
+    background: rgba(5, 12, 25, 0.86);
+    color: #e8f5ff;
+    font-family: var(--font-heading);
+}
+
+.screen ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    text-align: left;
+    max-width: 760px;
+}
+
+.screen button,
+.menu-link {
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    background: rgba(4, 11, 25, 0.8);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.screen button:hover,
+.menu-link:hover {
+    background: var(--neon-blue);
+    color: #06101f;
+}
+
+.shop-grid {
+    display: grid;
+    gap: 8px;
+    width: min(460px, 88vw);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    #hud {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: min(96vw, 560px);
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    #status-panel {
+        font-size: 11px;
+        min-width: 180px;
+    }
+}

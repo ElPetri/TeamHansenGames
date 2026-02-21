@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goomba Invaders</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/leaderboard.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui-layer">
+            <div id="hud">
+                <div>Score: <span id="score">0</span></div>
+                <div>Coins: <span id="coins">0</span></div>
+                <div>Lives: <span id="lives">3</span></div>
+                <div>Wave: <span id="wave">1</span></div>
+            </div>
+
+            <div id="status-panel">
+                <div id="weapon-status">Weapon: Fireballs Lv<span id="weapon-level">1</span></div>
+                <div id="star-status" class="status-row hidden">⭐ Star Power: <span id="star-timer">0.0s</span></div>
+                <div id="yoshi-status" class="status-row hidden">🦖 Yoshi: <span id="yoshi-timer">0.0s</span></div>
+                <div id="freeze-status" class="status-row hidden">❄️ Freeze: <span id="freeze-timer">0.0s</span></div>
+                <div id="mega-status" class="status-row hidden">🍄 Mega: <span id="mega-timer">0.0s</span></div>
+                <div id="cape-status" class="status-row hidden">🪶 Cape: <span id="cape-timer">0.0s</span></div>
+            </div>
+
+            <button id="shop-btn" type="button">Shop (B)</button>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <h1>GOOMBA INVADERS</h1>
+            <p>Move Mario with W A S D. Fireballs auto-shoot upward.</p>
+            <p>Enemies spawn from the top and can move anywhere.</p>
+            <p>Catch powerups dropping from space and survive the invasion.</p>
+            <ul>
+                <li>⭐ Star Power: invincibility</li>
+                <li>🦖 Yoshi: 30s helper, tongue-chomp + Bob-omb blasts</li>
+                <li>❄️ Ice Flower: freezes enemies</li>
+                <li>🍄 Mega Mushroom: larger Mario + contact damage</li>
+                <li>🪶 Cape: short invulnerable dash</li>
+            </ul>
+            <button id="start-btn" type="button">Launch Mission</button>
+            <div id="global-leaderboard" class="leaderboard-shell"></div>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+
+        <div id="shop-screen" class="screen hidden">
+            <h2>Power Shop</h2>
+            <p>Spend coins to upgrade Mario during the run.</p>
+            <div class="shop-grid">
+                <button id="buy-fire-rate" type="button">Faster Fire (60)</button>
+                <button id="buy-damage" type="button">Fireball Damage (80)</button>
+                <button id="buy-speed" type="button">Move Speed (70)</button>
+                <button id="buy-life" type="button">+1 Life (120)</button>
+            </div>
+            <button id="resume-btn" type="button">Resume</button>
+        </div>
+
+        <div id="game-over-screen" class="screen hidden">
+            <h2>MISSION FAILED</h2>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <p>Wave Reached: <span id="final-wave">1</span></p>
+            <input type="text" id="player-name" placeholder="Enter Name" maxlength="10">
+            <span id="name-error" class="name-error hidden"></span>
+            <button id="save-score-btn" type="button">Save Score</button>
+            <button id="restart-btn" type="button">Play Again</button>
+            <a href="../index.html" class="menu-link">Back to Games</a>
+        </div>
+    </div>
+
+    <script src="../shared/leaderboard.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
