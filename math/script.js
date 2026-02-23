@@ -558,16 +558,13 @@ function saveBestScore(value) {
 }
 
 function onPress(el, handler) {
-    let lastPressTs = 0;
-
     el.addEventListener('pointerup', (event) => {
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
-        lastPressTs = Date.now();
+        if (event.pointerType === 'mouse') return;
+        event.preventDefault();
         handler(event);
     });
 
     el.addEventListener('click', (event) => {
-        if (Date.now() - lastPressTs < 350) return;
         handler(event);
     });
 }
