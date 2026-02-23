@@ -289,7 +289,7 @@ function triggerStarMoment() {
 
 function applyBackgroundThemeByScore() {
     if (!starfieldEl) return;
-    if (runMaxScore < 500) {
+    if (runMaxScore < 200) {
         if (currentTheme !== 0) {
             currentTheme = 0;
             starfieldEl.classList.remove('theme-0', 'theme-1', 'theme-2', 'theme-3');
@@ -298,7 +298,7 @@ function applyBackgroundThemeByScore() {
         return;
     }
 
-    const passedBands = Math.floor(runMaxScore / 500);
+    const passedBands = Math.floor(runMaxScore / 200);
     const nextTheme = ((passedBands - 1) % 3) + 1;
     if (nextTheme === currentTheme) return;
     currentTheme = nextTheme;
