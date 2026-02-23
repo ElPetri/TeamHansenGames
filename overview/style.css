@@ -11,18 +11,35 @@
   --warning: #ffaa00;
 }
 
+   :root {
+     --neon-blue: #00f0ff;
+     --neon-green: #00ff88;
+     --neon-purple: #bd00ff;
+   }
 * {
   box-sizing: border-box;
 }
 
 
 body {
+  h1 {
+    margin: 0.3rem 0 0.6rem;
+    font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+    color: var(--neon-blue);
+    text-shadow: 0 0 30px var(--accent-glow);
+  }
   margin: 0;
   min-height: 100vh;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg-dark);
   color: var(--text);
   line-height: 1.6;
+  h2 {
+    margin: 0 0 0.55rem;
+    font-size: 1.2rem;
+    color: var(--neon-purple);
+    text-shadow: 0 0 8px var(--neon-purple);
+  }
   background-image:
     radial-gradient(ellipse at top, #15152a 0%, transparent 50%),
     radial-gradient(ellipse at bottom, #0a1520 0%, transparent 50%);
@@ -37,20 +54,20 @@ body {
 
 
 .hero,
-.panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.1rem 1.2rem;
-  box-shadow: 0 10px 40px rgba(0, 240, 255, 0.08);
-}
-
-
-.kicker {
-  margin: 0;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.9rem;
+  .hero-badge {
+    display: inline-block;
+    margin-top: 0.45rem;
+    margin-bottom: 0.05rem;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--neon-green);
+    background: rgba(0, 255, 136, 0.14);
+    color: var(--neon-green);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 8px var(--neon-green);
+  }
   text-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -58,6 +75,14 @@ body {
 .hero-badge {
   display: inline-block;
   margin-top: 0.45rem;
+  .prompt-example summary {
+    display: inline-block;
+    color: var(--neon-green);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 700;
+    text-shadow: 0 0 8px var(--neon-green);
+  }
   margin-bottom: 0.05rem;
   padding: 0.18rem 0.6rem;
   border-radius: 999px;
@@ -68,16 +93,17 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
   text-shadow: 0 0 8px var(--accent-glow);
-}
-
-
-h1 {
-  margin: 0.3rem 0 0.6rem;
-  font-size: clamp(1.7rem, 3.5vw, 2.2rem);
-  color: var(--accent);
-  text-shadow: 0 0 30px var(--accent-glow);
-}
-
+  .prompt-block {
+    margin: 0.45rem 0 0;
+    padding: 0.7rem 0.8rem;
+    border: 1.5px solid var(--neon-purple);
+    border-radius: 10px;
+    background: var(--bg-dark);
+    color: var(--neon-blue);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    box-shadow: 0 0 12px var(--neon-purple);
+  }
 
 h2 {
   margin: 0 0 0.55rem;
@@ -86,12 +112,26 @@ h2 {
   text-shadow: 0 0 8px var(--accent-glow);
 }
 
+  .home-link {
+    display: inline-block;
+    margin-top: 0.8rem;
+    color: var(--neon-green);
+    text-decoration: none;
+    font-weight: 700;
+    text-shadow: 0 0 8px var(--neon-green);
+  }
 
 p {
   margin: 0;
   color: var(--text);
 }
 
+  .tools-map {
+    margin-top: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.55rem;
+  }
 
 .steps,
 .help-list {
@@ -101,10 +141,33 @@ p {
 }
 
 
+  .tool-card {
+    margin: 0;
+    border: 1.5px solid var(--neon-blue);
+    background: var(--bg-dark);
+    border-radius: 12px;
+    padding: 0.65rem;
+    color: var(--neon-blue);
+    box-shadow: 0 0 12px var(--neon-blue);
+  }
+  .tool-card.green {
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+    box-shadow: 0 0 12px var(--neon-green);
+  }
+  .tool-card.purple {
+    border-color: var(--neon-purple);
+    color: var(--neon-purple);
+    box-shadow: 0 0 12px var(--neon-purple);
+  }
 .steps li,
 .help-list li {
   margin-bottom: 0.35rem;
 }
+  .ai-card {
+    border-color: var(--neon-green);
+    background: linear-gradient(160deg, var(--neon-green), var(--bg-dark));
+  }
 
 .prompt-example {
   margin-top: 0.65rem;
