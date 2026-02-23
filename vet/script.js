@@ -50,6 +50,9 @@ const particles = [];
 const toastQueue = [];
 let activeToast = null;
 let treatHintShownForCustomer = false;
+let pendingResultTimer = null;
+
+const RESULT_POPUP_DELAY_MS = 900;
 
 const AVATAR_KEY = 'vet_avatar_v1';
 const avatar = {
@@ -145,7 +148,7 @@ function createDoors() {
             w: 120,
             h: 140,
             open: false,
-            unlocked: i===0
+            unlocked: true
         });
     }
 }
@@ -255,14 +258,33 @@ function drawClinic() {
         ctx.fillText(petEmoji, 0, 0);
 
         if (p.outfit) {
-            ctx.font = '28px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
             const outfitEmojiMap = {
                 bow: '🎀',
                 glasses: '🕶️',
                 hat: '🎩',
                 cape: '🦸'
             };
-            ctx.fillText(outfitEmojiMap[p.outfit] || '🎀', 22, -24);
+            const outfitPlacement = {
+                bow: { x: 22, y: -24, size: 28 },
+                glasses: { x: 0, y: 2, size: 26 },
+                hat: { x: 0, y: -34, size: 30 },
+                cape: { x: 22, y: 8, size: 28 }
+            };
+            const outfitPlacementByPet = {
+                dog: {
+                    glasses: { x: 0, y: 3, size: 26 }
+                },
+                cat: {
+                    glasses: { x: 0, y: 0, size: 25 }
+                },
+                bunny: {
+                    glasses: { x: 0, y: 5, size: 25 }
+                }
+            };
+            const petPlacement = outfitPlacementByPet[p.type] || {};
+            const placement = petPlacement[p.outfit] || outfitPlacement[p.outfit] || outfitPlacement.bow;
+            ctx.font = `${placement.size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+            ctx.fillText(outfitEmojiMap[p.outfit] || '🎀', placement.x, placement.y);
         }
 
         if (p.fedFood) {
@@ -313,6 +335,41 @@ function drawAvatar(x, y) {
     } else {
         ctx.fillRect(-12, -36, 24, 8);
     }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-5, -23, 3.5, 0, Math.PI * 2);
+    ctx.arc(5, -23, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#1a2f44';
+    ctx.beginPath();
+    ctx.arc(-5, -23, 1.7, 0, Math.PI * 2);
+    ctx.arc(5, -23, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#1a2f44';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, -25.5);
+    ctx.lineTo(-9.5, -23.8);
+    ctx.moveTo(-5, -26.2);
+    ctx.lineTo(-5, -24.1);
+    ctx.moveTo(-2, -25.5);
+    ctx.lineTo(-0.5, -23.8);
+    ctx.moveTo(2, -25.5);
+    ctx.lineTo(0.5, -23.8);
+    ctx.moveTo(5, -26.2);
+    ctx.lineTo(5, -24.1);
+    ctx.moveTo(8, -25.5);
+    ctx.lineTo(9.5, -23.8);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#c45b73';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -17, 4.8, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(6, 7, 5, 5);
@@ -528,8 +585,18 @@ canvas.addEventListener('pointermove', (ev) => {
 
 canvas.addEventListener('pointerup', () => { isPetting = false; });
 
+function clearPendingResultTimer() {
+    if (!pendingResultTimer) return;
+    clearTimeout(pendingResultTimer);
+    pendingResultTimer = null;
+}
+
 function finishCare() {
     if (!currentCustomer) return;
+    if (gameState === 'RESULT_PENDING') return;
+    clearPendingResultTimer();
+
+    const finishedCustomer = currentCustomer;
     // determine coins and reputation
     const earned = 10 + Math.floor(Math.random()*6);
     coins += earned;
@@ -537,18 +604,29 @@ function finishCare() {
     reputation = Math.min(100, reputation + 2);
     // show result
     document.getElementById('result-coins').textContent = String(earned);
-    document.getElementById('result-happy').textContent = String(3 + Math.min(2, Math.floor(currentCustomer.pet.cleanliness/1)));
-    // clear
-    currentCustomer = null;
+    document.getElementById('result-happy').textContent = String(3 + Math.min(2, Math.floor(finishedCustomer.pet.cleanliness/1)));
+    // keep customer visible briefly so outfit/food can be seen before popup
+    gameState = 'RESULT_PENDING';
+    isPetting = false;
+    ingredientsEl.classList.add('hidden');
+    foodOptionsEl.classList.add('hidden');
+    outfitOptionsEl.classList.add('hidden');
+    resetIngredientSelection();
+    resetFoodSelection();
+    resetOutfitSelection();
     for (const d of doors) d.open = false;
     // update HUD
     petsTreatedEl.textContent = String(petsTreated);
     coinsEl.textContent = String(coins);
     repEl.textContent = String(reputation);
-    // show result screen
-    clinicScreen.classList.add('hidden');
-    resultScreen.classList.remove('hidden');
-    gameState = 'RESULT';
+
+    pendingResultTimer = setTimeout(() => {
+        pendingResultTimer = null;
+        currentCustomer = null;
+        clinicScreen.classList.add('hidden');
+        resultScreen.classList.remove('hidden');
+        gameState = 'RESULT';
+    }, RESULT_POPUP_DELAY_MS);
 }
 
 function showToast(message, kind = 'info') {
@@ -834,6 +912,9 @@ startBtn.addEventListener('click', () => {
 });
 
 backToMenu.addEventListener('click', () => {
+    clearPendingResultTimer();
+    currentCustomer = null;
+    for (const d of doors) d.open = false;
     clinicScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
     document.getElementById('hud').classList.add('hidden');

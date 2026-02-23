@@ -121,6 +121,7 @@ const game = {
     bossAlive: false,
     bossCycle: 0,
     awaitingBoss: false,
+    pendingStoryResolution: null,
     shopOpen: false,
     upgrades: {
         fireRate: 0,
@@ -198,6 +199,7 @@ function resetRun(mode = game.mode, preserveProgress = false) {
     game.shopOpen = false;
     game.levelStartScore = game.score;
     game.awaitingBoss = false;
+    game.pendingStoryResolution = null;
 
     mario.x = canvas.width * 0.5;
     mario.y = canvas.height * 0.83;
@@ -227,11 +229,15 @@ function setState(nextState) {
 function renderGlobalLeaderboard() {
     if (!window.LeaderboardAPI || !globalLeaderboardEl) return;
     const playerName = (playerNameInput && playerNameInput.value) || window.LeaderboardAPI.getSavedName() || '';
+    const activeMode = game.mode === 'story' ? 'story' : 'arena';
     window.LeaderboardAPI.renderTabbedLeaderboard({
         container: globalLeaderboardEl,
         game: 'goomba',
-        mode: 'arena',
-        modes: [{ value: 'arena', label: 'Arena' }],
+        mode: activeMode,
+        modes: [
+            { value: 'arena', label: 'Arena' },
+            { value: 'story', label: 'Story' }
+        ],
         playerName
     });
 }
@@ -470,36 +476,10 @@ function damageEnemy(enemy, dmg) {
     if (enemy.boss && game.mode === 'story' && game.awaitingBoss) {
         game.awaitingBoss = false;
         if (game.storyLevel < 4) {
-            game.storyLevel = Math.min(4, game.storyLevel + 1);
-            game.levelStartScore = game.score;
-            // clear current enemies and prepare next level
-            game.enemies.length = 0;
-            game.spawnTimer = 0;
-            game.wave = 1;
-            game.spawnGap = 1.2;
-            updateHud();
+            game.pendingStoryResolution = { type: 'advance-level' };
         } else {
-            // Completed final level of chapter
-            finalScoreEl.textContent = String(game.score);
-            finalWaveEl.textContent = String(game.wave);
-
             const isFinalChapter = game.storyChapter >= STORY_CHAPTERS.length - 1;
-            if (isFinalChapter) {
-                configureResultScreen({
-                    title: 'STORY COMPLETE',
-                    subtitle: 'Mario defeated the Goomba fleet!',
-                    allowSave: false,
-                    showNext: false
-                });
-            } else {
-                configureResultScreen({
-                    title: `CHAPTER ${game.storyChapter + 1} CLEAR`,
-                    subtitle: 'Prepare for the next chapter.',
-                    allowSave: false,
-                    showNext: true
-                });
-            }
-            setState('GAMEOVER');
+            game.pendingStoryResolution = { type: 'chapter-complete', isFinalChapter };
         }
     }
 
@@ -523,6 +503,46 @@ function checkStoryProgress() {
             spawnBoss('major');
         }
         game.awaitingBoss = true;
+    }
+}
+
+function processPendingStoryResolution() {
+    const pending = game.pendingStoryResolution;
+    if (!pending) return;
+    game.pendingStoryResolution = null;
+
+    if (pending.type === 'advance-level') {
+        game.storyLevel = Math.min(4, game.storyLevel + 1);
+        game.levelStartScore = game.score;
+        game.enemies.length = 0;
+        game.spawnTimer = 0;
+        game.wave = 1;
+        game.spawnGap = 1.2;
+        updateHud();
+        return;
+    }
+
+    if (pending.type === 'chapter-complete') {
+        finalScoreEl.textContent = String(game.score);
+        finalWaveEl.textContent = String(game.wave);
+
+        if (pending.isFinalChapter) {
+            configureResultScreen({
+                title: 'STORY COMPLETE',
+                subtitle: 'Mario defeated the Goomba fleet!',
+                allowSave: false,
+                showNext: false
+            });
+        } else {
+            configureResultScreen({
+                title: `CHAPTER ${game.storyChapter + 1} CLEAR`,
+                subtitle: 'Prepare for the next chapter.',
+                allowSave: false,
+                showNext: true
+            });
+        }
+
+        setState('GAMEOVER');
     }
 }
 
@@ -563,6 +583,7 @@ function yoshiLogic(dt) {
         emitExplosion(bombX, bombY, '#ffbb55', 26);
         for (let i = game.enemies.length - 1; i >= 0; i -= 1) {
             const enemy = game.enemies[i];
+            if (!enemy) continue;
             const dx = enemy.x - bombX;
             const dy = enemy.y - bombY;
             if ((dx * dx) + (dy * dy) < radius * radius) {
@@ -642,6 +663,7 @@ function updateProjectiles(dt) {
 
         for (let j = game.enemies.length - 1; j >= 0; j -= 1) {
             const enemy = game.enemies[j];
+            if (!enemy) continue;
             const dx = enemy.x - bullet.x;
             const dy = enemy.y - bullet.y;
             const rr = enemy.radius + bullet.radius;
@@ -662,6 +684,7 @@ function updateEnemies(dt) {
 
     for (let i = game.enemies.length - 1; i >= 0; i -= 1) {
         const enemy = game.enemies[i];
+        if (!enemy) continue;
         enemy.age += dt;
 
         if (enemy.boss) {
@@ -741,11 +764,11 @@ function endRun() {
     configureResultScreen({
         title: 'MISSION FAILED',
         subtitle: isArena ? '' : 'Story run failed. Try again from Chapter 1.',
-        allowSave: isArena,
+        allowSave: true,
         showNext: false
     });
 
-    if (isArena && window.LeaderboardAPI && playerNameInput) {
+    if (window.LeaderboardAPI && playerNameInput) {
         const savedName = window.LeaderboardAPI.getSavedName();
         if (savedName && !playerNameInput.value) playerNameInput.value = savedName;
     }
@@ -972,6 +995,7 @@ function frame(time) {
         updatePowerups(dt);
         updateParticles(dt);
         yoshiLogic(dt);
+        processPendingStoryResolution();
     }
 
     drawBackground(dt);
@@ -1020,13 +1044,13 @@ nextStoryBtn.addEventListener('click', () => {
 
 if (saveScoreBtn) {
     saveScoreBtn.addEventListener('click', () => {
-        if (game.mode !== 'arena') return;
         if (!window.LeaderboardAPI || !playerNameInput) return;
         const fallbackName = window.LeaderboardAPI.getSavedName() || 'Player';
         const name = playerNameInput.value || fallbackName;
+        const submitMode = game.mode === 'story' ? 'story' : 'arena';
         window.LeaderboardAPI.validateAndSubmit({
             game: 'goomba',
-            mode: 'arena',
+            mode: submitMode,
             name,
             score: game.score,
             inputElement: playerNameInput,

@@ -289,40 +289,45 @@
     }
 
     async function renderHubDailyWidget(container) {
+
         if (!container) return;
 
-        const combos = [
-            { label: 'Pop Balloon (Classic)', game: 'balloon', mode: 'classic' },
-            { label: 'Pop Balloon (Chaos)', game: 'balloon', mode: 'chaos' },
-            { label: 'Snake (Classic)', game: 'snake', mode: 'classic' },
-            { label: 'Snake (Capture)', game: 'snake', mode: 'capture' },
-            { label: 'Math Blaster', game: 'math', mode: 'standard' },
-            { label: 'Goomba Invaders (Arena)', game: 'goomba', mode: 'arena' },
-            { label: 'Vet Clinic', game: 'vet', mode: 'sandbox' }
+        // group modes so we display one card per game
+        const games = [
+            { label: 'Pop Balloon', game: 'balloon', modes: ['classic', 'chaos'] },
+            { label: 'Snake', game: 'snake', modes: ['classic', 'capture'] },
+            { label: 'Math Blaster', game: 'math', modes: ['standard'] },
+            { label: 'Goomba Invaders', game: 'goomba', modes: ['arena'] },
+            { label: 'Vet Clinic', game: 'vet', modes: ['sandbox'] }
         ];
 
         container.innerHTML = '<p class="leaderboard-loading">Loading scores…</p>';
 
         try {
-            const results = await Promise.all(combos.map(async combo => {
-                const data = await fetchLeaderboard(combo.game, combo.mode, 'daily', '');
-                return { combo, top: data.leaderboard || [] };
+            const results = await Promise.all(games.map(async g => {
+                let all = [];
+                for (const m of g.modes) {
+                    const data = await fetchLeaderboard(g.game, m, 'daily', '');
+                    all = all.concat(data.leaderboard || []);
+                }
+                all.sort((a, b) => (b.score || 0) - (a.score || 0));
+                return { game: g, top: all.slice(0, 3) };
             }));
 
             container.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'hub-score-grid';
 
-            results.forEach(({ combo, top }) => {
+            results.forEach(({ game, top }) => {
                 const card = document.createElement('div');
                 card.className = 'hub-score-card';
-                const rows = top.slice(0, 3).map((entry, i) => {
+                const rows = top.map((entry, i) => {
                     const cls = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? 'bronze' : ''));
                     return `<li class="${cls}"><span>#${entry.rank} ${entry.name}</span><strong>${entry.score}</strong></li>`;
                 }).join('');
 
                 card.innerHTML = `
-                    <h4>${combo.label}</h4>
+                    <h4>${game.label}</h4>
                     <ol class="leaderboard-list compact">
                         ${rows || '<li><span>No scores yet</span><strong>—</strong></li>'}
                     </ol>

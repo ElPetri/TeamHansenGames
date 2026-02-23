@@ -20,12 +20,27 @@
         </div>
 
         <div id="event-banner" class="event-banner hidden" aria-live="polite"></div>
+        <div id="caption-bar" class="caption-bar" aria-live="polite">Let’s blast some math!</div>
 
         <div id="problem-layer"></div>
 
         <div id="input-panel">
             <input id="answer-input" type="text" placeholder="Type answer" autocomplete="off" />
             <button id="submit-btn" type="button">Fire</button>
+        </div>
+
+        <button id="shop-btn" type="button">🛒 Shop (Space)</button>
+
+        <div id="shop-panel" class="shop-panel hidden" aria-live="polite">
+            <div class="shop-header">
+                <h3>Arcade Shop</h3>
+                <button id="shop-close-btn" class="shop-close-btn" type="button">✕</button>
+            </div>
+            <p class="shop-tip">Spend score points on power boosts.</p>
+            <button id="buy-freeze" class="shop-item" type="button">Freeze Burst <span id="cost-freeze">120</span></button>
+            <button id="buy-life" class="shop-item" type="button">+1 Life <span id="cost-life">180</span></button>
+            <button id="buy-explosion" class="shop-item" type="button">Explosion FX Upgrade <span id="cost-explosion">250</span></button>
+            <button id="buy-weapon" class="shop-item" type="button">Rocket FX Upgrade <span id="cost-weapon">220</span></button>
         </div>
 
         <div id="start-screen" class="screen">
