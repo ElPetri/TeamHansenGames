@@ -227,7 +227,7 @@ p {
 
 .ai-card {
   border-color: var(--neon-green);
-  background: linear-gradient(160deg, var(--neon-green), var(--bg-dark));
+  background: var(--bg-dark);
 }
 
 .ai-card h3 {
