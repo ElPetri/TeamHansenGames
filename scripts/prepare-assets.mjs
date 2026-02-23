@@ -17,7 +17,8 @@ const includePaths = [
   'password',
   'snake',
   'snow',
-  'suggestions'
+  'suggestions',
+  'overview'
 ];
 
 async function main() {
