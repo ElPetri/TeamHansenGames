@@ -197,6 +197,39 @@ p {
   box-shadow: 0 0 12px var(--neon-blue);
 }
 
+/* Unique glow effects for each tool */
+.glow-blue {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 16px var(--neon-blue), 0 0 32px rgba(0,240,255,0.12);
+}
+.glow-green {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 16px var(--neon-green), 0 0 32px rgba(0,255,136,0.12);
+}
+.glow-purple {
+  border-color: var(--neon-purple);
+  color: var(--neon-purple);
+  box-shadow: 0 0 16px var(--neon-purple), 0 0 32px rgba(189,0,255,0.12);
+}
+.glow-yellow {
+  border-color: var(--warning);
+  color: var(--warning);
+  box-shadow: 0 0 16px var(--warning), 0 0 32px rgba(255,170,0,0.12);
+}
+.glow-orange {
+  border-color: #ff5e00;
+  color: #ffae5e;
+  box-shadow: 0 0 16px #ff5e00, 0 0 32px rgba(255,94,0,0.12);
+}
+.glow-pink {
+  border-color: #ff5ef7;
+  color: #ff5ef7;
+  box-shadow: 0 0 16px #ff5ef7, 0 0 32px rgba(255,94,247,0.12);
+}
+}
+
 .tool-card.green {
   border-color: var(--neon-green);
   color: var(--neon-green);

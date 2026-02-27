@@ -28,62 +28,67 @@
 
         <section class="panel">
             <h2>The 5-Step Process</h2>
-            <ol class="steps">
-                <li>Build pages and scripts in VS Code.</li>
-                <li>Use Copilot and other AI models to write code, fix bugs, and explain errors.</li>
-                <li>Save your changes in GitHub.</li>
-                <li>Deploy with Cloudflare Pages and Worker.</li>
-                <li>Point the domain to production and share your project.</li>
-            </ol>
-            <details class="prompt-example">
-                <summary>Click here for Example Prompt</summary>
-                <p class="prompt-intro">Copy and paste this into AI to get started:</p>
-                <blockquote class="prompt-block">
-                    Help me build my first website from scratch in simple steps. I'm a beginner. Create a small static site with index.html, style.css, and script.js for a personal project called "My First Website". Include a header, short intro, one image section, and a contact button. Use a Cozy Space Journal theme: dark navy background, soft purple cards, mint accent buttons, rounded corners, and a subtle star pattern in the background. Keep the design clean and mobile-friendly. Then explain exactly where to save each file, how to open it locally in VS Code, and how to publish it with GitHub and Cloudflare Pages. Please give copy/paste-ready code and explain each step in plain language.
-                </blockquote>
-            </details>
+                <div class="prereq">
+                    <strong>Before You Start:</strong> You’ll need a place to store and work on your website files. I use Windows Subsystem for Linux (WSL) with Debian, but any Linux distro works.
+                </div>
+                <ol class="steps">
+                    <li>Set up your project folder in your Linux environment to keep your website files organized.</li>
+                    <li>Open your project folder in a code editor (like VS Code) and start working.</li>
+                    <li>Create your HTML, CSS, and JavaScript files. Don’t worry if you’re new—take it one file at a time.</li>
+                    <li>Open your HTML files in a browser to see your progress. Make changes and refresh to test.</li>
+                    <li>Set up Git in your project folder to track changes. This helps you save your work and go back if needed.</li>
+                    <li>Push your project to GitHub to back it up and share it with others.</li>
+                    <li>Use a static hosting service to put your site online for everyone to see.</li>
+                </ol>
+                <details class="prompt-example">
+                    <summary>Click here for Example Prompt</summary>
+                    <p class="prompt-intro">Copy and paste this into AI to get started:</p>
+                    <blockquote class="prompt-block">
+    Help me plan to build my first website from scratch in simple steps. I'm a beginner. Create a small static site with index.html, style.css, and script.js for a personal project called "My First Website". Include a header, short intro, one image section, and a contact button. Use a Cozy Space Journal theme: dark navy background, soft purple cards, mint accent buttons, rounded corners, and a subtle star pattern in the background. Keep the design clean and mobile-friendly. Then explain exactly where to save each file, how to install WSL and setup a Linux distro like Debian, how to open it locally in VS Code, and how to publish it with GitHub and then deploy using Cloudflare Pages. The final plan should give copy/paste-ready code and explain each step in plain language. What ideas, suggestions, questions, and planning considerations do you have for me to accomplish these goals?
+                    </blockquote>
+                </details>
+                <div class="ai-support-note">
+                    <em>If you get stuck at any point, don’t hesitate to ask an AI assistant for help. That’s how I built this site!</em>
+                </div>
             <div class="flow-visual" aria-label="Five-step beginner workflow">
-                <div class="flow-item"><span>1</span> VS Code</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-item"><span>2</span> AI Help</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-item"><span>3</span> GitHub</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-item"><span>4</span> Cloudflare</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-item"><span>5</span> teamhansen.us</div>
+                 <!-- Workflow icons removed as requested -->
             </div>
         </section>
 
         <section class="panel">
             <h2>Tools Map</h2>
-            <div class="tools-map" aria-label="Tool responsibilities">
-                <article class="tool-card green">
-                    <div class="tool-icon">💻</div>
-                    <h3>VS Code</h3>
-                    <p>Where the project is built.</p>
-                </article>
-                <article class="tool-card ai-card">
-                    <div class="tool-icon">🤖</div>
-                    <h3>Copilot + AI</h3>
-                    <p>Helps with coding, debugging, and writing.</p>
-                </article>
-                <article class="tool-card purple">
-                    <div class="tool-icon">🐙</div>
-                    <h3>GitHub</h3>
-                    <p>Saves versions and tracks progress.</p>
-                </article>
-                <article class="tool-card">
-                    <div class="tool-icon">☁️</div>
-                    <h3>Cloudflare</h3>
-                    <p>Deploys pages and worker APIs.</p>
-                </article>
-                <article class="tool-card green">
-                    <div class="tool-icon">🌐</div>
-                    <h3>teamhansen.us</h3>
-                    <p>Your live public website.</p>
-                </article>
-            </div>
+                <div class="tools-map" aria-label="Tool responsibilities">
+                    <article class="tool-card glow-blue">
+                        <div class="tool-icon">🐧</div>
+                        <h3>WSL with Debian</h3>
+                        <p>Stores and manages your website files locally.</p>
+                    </article>
+                    <article class="tool-card glow-green">
+                        <div class="tool-icon">💻</div>
+                        <h3>VS Code</h3>
+                        <p>Where the project is built.</p>
+                    </article>
+                    <article class="tool-card glow-purple">
+                        <div class="tool-icon">🤖</div>
+                        <h3>Copilot + AI</h3>
+                        <p>Helps with coding, debugging, and writing.</p>
+                    </article>
+                    <article class="tool-card glow-yellow">
+                        <div class="tool-icon">🐙</div>
+                        <h3>GitHub</h3>
+                        <p>Saves versions and tracks progress.</p>
+                    </article>
+                    <article class="tool-card glow-orange">
+                        <div class="tool-icon">☁️</div>
+                        <h3>Cloudflare</h3>
+                        <p>Deploys pages and worker APIs.</p>
+                    </article>
+                    <article class="tool-card glow-pink">
+                        <div class="tool-icon">🌐</div>
+                        <h3>teamhansen.us</h3>
+                        <p>Your live public website.</p>
+                    </article>
+                </div>
         </section>
 
         <section class="panel">
