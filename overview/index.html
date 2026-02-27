@@ -3,34 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How We Built This | Team Hansen Games</title>
+    <title>Neon Command Center | Team Hansen Games</title>
     <link rel="stylesheet" href="style.css">
-        <script>
-            document.documentElement.classList.add('js');
-        </script>
-        <script src="starfield.js" defer></script>
+    <script>
+        document.documentElement.classList.add('js');
+    </script>
+    <script src="starfield.js" defer></script>
 </head>
 <body>
+    <div id="orb-layer" aria-hidden="true"></div>
     <main class="page">
+        <div class="hud" aria-live="polite">
+            <div class="power-meter" role="status" aria-label="Station power progress">
+                <span class="meter-label">Station Power</span>
+                <div class="meter-track">
+                    <div class="meter-fill" id="meter-fill"></div>
+                </div>
+                <span class="meter-value" id="meter-value">0/6</span>
+            </div>
+            <div class="hud-actions">
+                <button class="hud-btn" id="mute-toggle" type="button" aria-pressed="false">🔊 Sound On</button>
+                <button class="hud-btn" id="reset-station" type="button">Reset Run</button>
+            </div>
+        </div>
+
         <header class="hero">
             <p class="kicker">Team Hansen • Beginner Friendly</p>
             <p class="hero-badge">AI-powered workflow</p>
-            <h1>How We Built This</h1>
+            <h1 id="hero-title" data-text="Neon Command Center">Neon Command Center</h1>
             <p>
-                This project was built to be simple for beginners.
-                I relied on AI for every step, especially VS Code Copilot, with GitHub and Cloudflare making publishing easy.
+                This project was built to be simple for beginners, and now it is presented as an interactive mission.
+                Collect all six energy orbs to bring the station online and unlock the full walkthrough.
             </p>
             <a class="home-link" href="../index.html">← Back to Home</a>
         </header>
 
-        <section class="panel">
+        <section class="panel" data-power-node="1">
             <h2>Start Here</h2>
             <p>
                 If you are new, start small and copy this exact process. You do not need advanced tools or a big team.
             </p>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-power-node="2">
             <h2>The 5-Step Process</h2>
                 <div class="prereq">
                     <strong>Before You Start:</strong> You’ll need a place to store and work on your website files. I use Windows Subsystem for Linux (WSL) with Debian, but any Linux distro works.
@@ -57,35 +72,42 @@
             <!-- Workflow icons removed as requested -->
         </section>
 
-        <section class="panel">
+        <section class="panel" data-power-node="3">
             <h2>Tools Map</h2>
                 <div class="tools-map" aria-label="Tool responsibilities">
-                    <article class="tool-card glow-blue">
+                    <svg class="tool-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M14 16 L50 16 L50 50" />
+                        <path d="M50 16 L86 16" />
+                        <path d="M14 50 L50 50 L86 50" />
+                        <path d="M14 84 L50 84 L50 50" />
+                        <path d="M50 84 L86 84 L86 50" />
+                    </svg>
+                    <article class="tool-card glow-blue" data-node="wsl">
                         <div class="tool-icon">🐧</div>
                         <h3>WSL with Debian</h3>
                         <p>Stores and manages your website files locally.</p>
                     </article>
-                    <article class="tool-card glow-green">
+                    <article class="tool-card glow-green" data-node="vscode">
                         <div class="tool-icon">💻</div>
                         <h3>VS Code</h3>
                         <p>Where the project is built.</p>
                     </article>
-                    <article class="tool-card glow-purple">
+                    <article class="tool-card glow-purple" data-node="copilot">
                         <div class="tool-icon">🤖</div>
                         <h3>Copilot + AI</h3>
                         <p>Helps with coding, debugging, and writing.</p>
                     </article>
-                    <article class="tool-card glow-yellow">
+                    <article class="tool-card glow-yellow" data-node="github">
                         <div class="tool-icon">🐙</div>
                         <h3>GitHub</h3>
                         <p>Saves versions and tracks progress.</p>
                     </article>
-                    <article class="tool-card glow-orange">
+                    <article class="tool-card glow-orange" data-node="cloudflare">
                         <div class="tool-icon">☁️</div>
                         <h3>Cloudflare</h3>
                         <p>Deploys pages and worker APIs.</p>
                     </article>
-                    <article class="tool-card glow-pink">
+                    <article class="tool-card glow-pink" data-node="live-site">
                         <div class="tool-icon">🌐</div>
                         <h3>teamhansen.us</h3>
                         <p>Your live public website.</p>
@@ -93,7 +115,7 @@
                 </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-power-node="4">
             <h2>How AI Helped at Every Step</h2>
             <ul class="help-list">
                 <li>Planned what to build first.</li>
@@ -106,7 +128,7 @@
             </p>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-power-node="5">
             <h2>Try It Yourself</h2>
             <p>
                 Start with one page and one feature. Use AI as your pair programmer and ship small updates often.
@@ -115,20 +137,234 @@
                 In VS Code, I always started in Planning mode using Opus 4.6 to develop a solid game plan. Once happy with the plan, I switched to Agent mode and used 5.3 Codex for coding and debugging. This workflow helped minimize Premium AI Requests and made the process easier for beginners.
             </p>
         </section>
-    <script>
-// Fade-in on scroll for .panel sections
-function revealPanels() {
-  const panels = document.querySelectorAll('.panel');
-  const trigger = window.innerHeight * 0.92;
-  panels.forEach(panel => {
-    const rect = panel.getBoundingClientRect();
-    if (rect.top < trigger) {
-      panel.classList.add('visible');
+                <section class="panel" data-power-node="6">
+                        <h2>Station Status</h2>
+                        <p id="station-message" class="station-message">Collect all six orbs to fully power the command center.</p>
+                </section>
+        <script>
+const POWER_KEY = 'overview_station_online_v1';
+const ORB_COLORS = ['#00f0ff', '#00ff88', '#bd00ff', '#ffaa00', '#ff5e00', '#ff5ef7'];
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const panels = Array.from(document.querySelectorAll('.panel'));
+const headings = panels.map(panel => panel.querySelector('h2')).filter(Boolean);
+const meterFill = document.getElementById('meter-fill');
+const meterValue = document.getElementById('meter-value');
+const stationMessage = document.getElementById('station-message');
+const muteToggle = document.getElementById('mute-toggle');
+const resetButton = document.getElementById('reset-station');
+const orbLayer = document.getElementById('orb-layer');
+const heroTitle = document.getElementById('hero-title');
+
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let isMuted = false;
+let unlockedCount = 0;
+let stationOnline = localStorage.getItem(POWER_KEY) === 'online' || prefersReducedMotion;
+let orbElements = [];
+let konamiBuffer = [];
+let titleClicks = [];
+
+function playTone(frequency, duration = 0.1, type = 'sine', gainValue = 0.03) {
+    if (isMuted) return;
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
     }
-  });
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, now);
+    gain.gain.setValueAtTime(gainValue, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start(now);
+    osc.stop(now + duration);
 }
+
+function setPowerUI(value) {
+    const pct = Math.min(100, (value / 6) * 100);
+    meterFill.style.width = pct + '%';
+    meterValue.textContent = value + '/6';
+}
+
+function typeHeading(heading) {
+    if (heading.dataset.typed === 'true' || prefersReducedMotion) return;
+    const fullText = heading.dataset.fullText || heading.textContent;
+    heading.dataset.fullText = fullText;
+    heading.dataset.typed = 'true';
+    heading.textContent = '';
+    let index = 0;
+    const timer = setInterval(() => {
+        heading.textContent = fullText.slice(0, index + 1);
+        index += 1;
+        if (index >= fullText.length) {
+            clearInterval(timer);
+            heading.classList.add('typed');
+        }
+    }, 38);
+}
+
+function revealPanels() {
+    const trigger = window.innerHeight * 0.9;
+    panels.forEach((panel) => {
+        const rect = panel.getBoundingClientRect();
+        if (rect.top < trigger) {
+            panel.classList.add('visible');
+            const heading = panel.querySelector('h2');
+            if (heading) typeHeading(heading);
+        }
+    });
+}
+
+function setPanelPower() {
+    panels.forEach((panel, idx) => {
+        panel.classList.toggle('powered', stationOnline || idx < unlockedCount);
+    });
+}
+
+function showOnlineMessage() {
+    stationMessage.textContent = 'STATION ONLINE — all systems are active. Explore the full workflow.';
+    stationMessage.classList.add('online');
+}
+
+function stationBoot() {
+    stationOnline = true;
+    unlockedCount = 6;
+    setPowerUI(6);
+    setPanelPower();
+    showOnlineMessage();
+    document.body.classList.add('station-online');
+    localStorage.setItem(POWER_KEY, 'online');
+    playTone(440, 0.1, 'triangle', 0.03);
+    setTimeout(() => playTone(554, 0.11, 'triangle', 0.028), 90);
+    setTimeout(() => playTone(659, 0.12, 'triangle', 0.026), 180);
+    window.dispatchEvent(new CustomEvent('overview-station-online'));
+}
+
+function createOrb(index) {
+    const orb = document.createElement('button');
+    orb.type = 'button';
+    orb.className = 'energy-orb';
+    orb.style.setProperty('--orb-color', ORB_COLORS[index]);
+    orb.dataset.index = String(index);
+    orb.style.left = `${12 + (index * 13)}%`;
+    orb.style.top = `${18 + ((index % 3) * 21)}%`;
+    orb.ariaLabel = `Capture energy orb ${index + 1}`;
+
+    let angle = Math.random() * Math.PI * 2;
+    const baseX = 12 + (index * 13);
+    const baseY = 20 + ((index % 3) * 22);
+
+    function drift() {
+        if (stationOnline || prefersReducedMotion) return;
+        angle += 0.018;
+        const x = baseX + Math.cos(angle + index) * 2.4;
+        const y = baseY + Math.sin(angle * 1.25 + index) * 2.6;
+        orb.style.left = `${x}%`;
+        orb.style.top = `${y}%`;
+        requestAnimationFrame(drift);
+    }
+
+    orb.addEventListener('pointerenter', () => playTone(420, 0.05, 'sine', 0.02));
+    orb.addEventListener('click', () => {
+        if (stationOnline || orb.classList.contains('captured')) return;
+        orb.classList.add('captured');
+        unlockedCount = Math.min(6, unlockedCount + 1);
+        setPowerUI(unlockedCount);
+        setPanelPower();
+        playTone(480 + index * 35, 0.08, 'square', 0.028);
+        window.dispatchEvent(new CustomEvent('overview-orb-captured', { detail: { index } }));
+        setTimeout(() => orb.remove(), 220);
+        if (unlockedCount >= 6) {
+            stationBoot();
+        }
+    });
+
+    orbLayer.appendChild(orb);
+    orbElements.push(orb);
+    if (!prefersReducedMotion) {
+        requestAnimationFrame(drift);
+    }
+}
+
+function spawnOrbs() {
+    orbLayer.innerHTML = '';
+    orbElements = [];
+    if (stationOnline || prefersReducedMotion) return;
+    for (let i = 0; i < 6; i += 1) {
+        createOrb(i);
+    }
+}
+
+function resetStation() {
+    stationOnline = false;
+    unlockedCount = 0;
+    localStorage.removeItem(POWER_KEY);
+    document.body.classList.remove('station-online', 'neon-overload');
+    stationMessage.textContent = 'Collect all six orbs to fully power the command center.';
+    stationMessage.classList.remove('online');
+    setPowerUI(0);
+    setPanelPower();
+    spawnOrbs();
+}
+
+function handleKonami(event) {
+    const code = event.key.toLowerCase();
+    konamiBuffer.push(code);
+    konamiBuffer = konamiBuffer.slice(-10);
+    const sequence = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+    if (sequence.every((value, idx) => value === konamiBuffer[idx])) {
+        document.body.classList.add('neon-overload');
+        window.dispatchEvent(new CustomEvent('overview-neon-overload'));
+        playTone(770, 0.09, 'sawtooth', 0.03);
+        setTimeout(() => playTone(930, 0.12, 'sawtooth', 0.03), 110);
+        setTimeout(() => document.body.classList.remove('neon-overload'), 5000);
+    }
+}
+
+function handleTitleEasterEgg() {
+    const now = Date.now();
+    titleClicks.push(now);
+    titleClicks = titleClicks.filter((stamp) => now - stamp < 1200);
+    if (titleClicks.length >= 5) {
+        titleClicks = [];
+        heroTitle.classList.add('title-chaos');
+        stationMessage.textContent = 'Debug mode discovered. You found the hidden signal.';
+        playTone(620, 0.08, 'triangle', 0.03);
+        setTimeout(() => heroTitle.classList.remove('title-chaos'), 900);
+    }
+}
+
+muteToggle.addEventListener('click', () => {
+    isMuted = !isMuted;
+    muteToggle.textContent = isMuted ? '🔇 Sound Off' : '🔊 Sound On';
+    muteToggle.setAttribute('aria-pressed', String(!isMuted));
+});
+
+resetButton.addEventListener('click', resetStation);
 window.addEventListener('scroll', revealPanels);
 window.addEventListener('resize', revealPanels);
+window.addEventListener('keydown', handleKonami);
+heroTitle.addEventListener('click', handleTitleEasterEgg);
+
+document.querySelectorAll('.tool-card').forEach((card) => {
+    card.addEventListener('pointerenter', () => playTone(380, 0.05, 'sine', 0.016));
+    card.addEventListener('click', () => {
+        card.classList.add('pulse');
+        playTone(510, 0.08, 'square', 0.02);
+        setTimeout(() => card.classList.remove('pulse'), 450);
+    });
+});
+
+if (stationOnline) {
+    stationBoot();
+} else {
+    setPowerUI(0);
+    setPanelPower();
+    spawnOrbs();
+}
+
 window.addEventListener('DOMContentLoaded', revealPanels);
 </script>
     </main>
