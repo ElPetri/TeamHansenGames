@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>How We Built This | Team Hansen Games</title>
     <link rel="stylesheet" href="style.css">
+        <script>
+            document.documentElement.classList.add('js');
+        </script>
+        <script src="starfield.js" defer></script>
 </head>
 <body>
     <main class="page">
@@ -50,9 +54,7 @@
                 <div class="ai-support-note">
                     <em>If you get stuck at any point, don’t hesitate to ask an AI assistant for help. That’s how I built this site!</em>
                 </div>
-            <div class="flow-visual" aria-label="Five-step beginner workflow">
-                 <!-- Workflow icons removed as requested -->
-            </div>
+            <!-- Workflow icons removed as requested -->
         </section>
 
         <section class="panel">
@@ -113,6 +115,22 @@
                 In VS Code, I always started in Planning mode using Opus 4.6 to develop a solid game plan. Once happy with the plan, I switched to Agent mode and used 5.3 Codex for coding and debugging. This workflow helped minimize Premium AI Requests and made the process easier for beginners.
             </p>
         </section>
+    <script>
+// Fade-in on scroll for .panel sections
+function revealPanels() {
+  const panels = document.querySelectorAll('.panel');
+  const trigger = window.innerHeight * 0.92;
+  panels.forEach(panel => {
+    const rect = panel.getBoundingClientRect();
+    if (rect.top < trigger) {
+      panel.classList.add('visible');
+    }
+  });
+}
+window.addEventListener('scroll', revealPanels);
+window.addEventListener('resize', revealPanels);
+window.addEventListener('DOMContentLoaded', revealPanels);
+</script>
     </main>
 </body>
 </html>
