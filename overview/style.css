@@ -195,7 +195,35 @@ p {
   padding: 0.65rem;
   color: var(--neon-blue);
   box-shadow: 0 0 12px var(--neon-blue);
-}
+    transition: transform 0.18s cubic-bezier(.4,2,.6,1), box-shadow 0.18s cubic-bezier(.4,2,.6,1);
+    cursor: default;
+  }
+
+  .tool-card:hover {
+    transform: scale(1.06) translateY(-4px);
+    z-index: 2;
+    cursor: pointer;
+  }
+
+  /* Intensify glow on hover for each unique glow class */
+  .tool-card.glow-blue:hover {
+    box-shadow: 0 0 32px 8px var(--neon-blue), 0 0 48px 12px rgba(0,240,255,0.22);
+  }
+  .tool-card.glow-green:hover {
+    box-shadow: 0 0 32px 8px var(--neon-green), 0 0 48px 12px rgba(0,255,136,0.22);
+  }
+  .tool-card.glow-purple:hover {
+    box-shadow: 0 0 32px 8px var(--neon-purple), 0 0 48px 12px rgba(189,0,255,0.22);
+  }
+  .tool-card.glow-yellow:hover {
+    box-shadow: 0 0 32px 8px var(--warning), 0 0 48px 12px rgba(255,170,0,0.22);
+  }
+  .tool-card.glow-orange:hover {
+    box-shadow: 0 0 32px 8px #ff5e00, 0 0 48px 12px rgba(255,94,0,0.22);
+  }
+  .tool-card.glow-pink:hover {
+    box-shadow: 0 0 32px 8px #ff5ef7, 0 0 48px 12px rgba(255,94,247,0.22);
+  }
 
 /* Unique glow effects for each tool */
 .glow-blue {
