@@ -185,6 +185,7 @@ let fieldNpc = null;
 let helpingCases = [];
 let nextHelpingCaseId = 1;
 let helpingFollower = null;
+let helpingDeliveryBasket = null;
 
 const pressedKeys = new Set();
 const joystickState = { active: false, dx: 0, dy: 0 };
@@ -215,6 +216,10 @@ const helpingPlayer = {
 
 const HELPING_OWNER_NAMES = ['Ava', 'Mason', 'Nora', 'Leo', 'Ruby', 'Finn', 'Chloe', 'Miles'];
 const HELPING_OWNER_ACTIVITIES = ['phone', 'book'];
+const HELPING_OWNER_GENDERS = ['girl', 'boy'];
+const HELPING_OWNER_SKINS = ['#f5cfa0', '#e3b187', '#c98f66', '#8e5d3c'];
+const HELPING_OWNER_HAIR = ['#2f221a', '#5a4330', '#7b5a3d', '#20150f'];
+const HELPING_OWNER_OUTFITS = ['#4aa3ff', '#ff8fb8', '#63c989', '#ffb347', '#9f8cff'];
 
 const particles = [];
 const babyBursts = [];
@@ -485,11 +490,51 @@ function buildHelpingRequiredTasks(pregnant, ailment) {
     return required;
 }
 
+function createHelpingOwnerLook() {
+    return {
+        gender: HELPING_OWNER_GENDERS[Math.floor(Math.random() * HELPING_OWNER_GENDERS.length)],
+        skin: HELPING_OWNER_SKINS[Math.floor(Math.random() * HELPING_OWNER_SKINS.length)],
+        hair: HELPING_OWNER_HAIR[Math.floor(Math.random() * HELPING_OWNER_HAIR.length)],
+        outfit: HELPING_OWNER_OUTFITS[Math.floor(Math.random() * HELPING_OWNER_OUTFITS.length)]
+    };
+}
+
+function getHelpingDeliveryBasket() {
+    if (!helpingDeliveryBasket || !currentCustomer || currentCustomer.source !== 'helping') return null;
+    if (helpingDeliveryBasket.caseId !== currentCustomer.helpingCaseId) return null;
+    return helpingDeliveryBasket;
+}
+
+function getHelpingOwnerCaseById(caseId) {
+    return helpingCases.find((item) => item.id === caseId) || null;
+}
+
+function getHelpingRemainingTasksWithoutHandoff() {
+    if (!currentCustomer || currentCustomer.source !== 'helping') return [];
+    return currentCustomer.requiredTasks.filter((task) => task !== 'returnBaby');
+}
+
+function finishHelpingBabyHandoff() {
+    const deliveryBasket = getHelpingDeliveryBasket();
+    if (!deliveryBasket || !deliveryBasket.carrying || !currentCustomer || currentCustomer.source !== 'helping') return false;
+    addBabyToNursery(currentCustomer);
+    currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'returnBaby');
+    helpingDeliveryBasket = null;
+    Sound.success();
+    emitPetParticles(helpingPlayer.x + 16, helpingPlayer.y - 28, currentCustomer.pet.type, 8);
+    showToast(`Baby returned to ${currentCustomer.owner}!`);
+    setHelpingStatus(`${currentCustomer.owner} has the baby now. Wrapping up the visit.`);
+    updateHelpingUi();
+    maybeFinishCare();
+    return true;
+}
+
 function createHelpingCase(index) {
     const seat = getHelpingSeat(index);
     const ailmentRoll = Math.random();
     const ailment = ailmentRoll < 0.35 ? 'scratched' : (ailmentRoll < 0.48 ? 'fever' : (ailmentRoll < 0.58 ? 'ear' : null));
     const pregnant = !ailment && Math.random() < 0.28;
+    const ownerLook = createHelpingOwnerLook();
     const pet = createHelpingPetData({
         ailment,
         pregnant,
@@ -503,6 +548,10 @@ function createHelpingCase(index) {
         activity: HELPING_OWNER_ACTIVITIES[Math.floor(Math.random() * HELPING_OWNER_ACTIVITIES.length)],
         seatX: seat.x,
         seatY: seat.y,
+        ownerGender: ownerLook.gender,
+        ownerSkin: ownerLook.skin,
+        ownerHair: ownerLook.hair,
+        ownerOutfit: ownerLook.outfit,
         status: 'waiting',
         pet
     };
@@ -531,6 +580,19 @@ function hideHelpingChoicePanels() {
 function renderHelpingPickupList() {
     if (!helpingPickupListEl) return;
     helpingPickupListEl.innerHTML = '';
+    const deliveryBasket = getHelpingDeliveryBasket();
+    if (deliveryBasket && !deliveryBasket.carrying) {
+        const deliveryNote = document.createElement('span');
+        deliveryNote.textContent = `A delivery basket is waiting here for ${deliveryBasket.owner}. Tap the basket on the floor to carry it back.`;
+        helpingPickupListEl.appendChild(deliveryNote);
+        return;
+    }
+    if (deliveryBasket && deliveryBasket.carrying) {
+        const carryingNote = document.createElement('span');
+        carryingNote.textContent = `You are carrying the baby basket. Walk it back to ${deliveryBasket.owner} in The Waiting Room.`;
+        helpingPickupListEl.appendChild(carryingNote);
+        return;
+    }
     const visiblePets = nurseryBabies.slice(-6).reverse();
     if (!visiblePets.length) {
         const empty = document.createElement('span');
@@ -549,15 +611,26 @@ function renderHelpingPickupList() {
 
 function updateHelpingUi() {
     const layout = getHelpingLayout();
+    const deliveryBasket = getHelpingDeliveryBasket();
     const nearPickup = distanceBetween(helpingPlayer.x, helpingPlayer.y, layout.pickupSpot.x + layout.pickupSpot.w / 2, layout.pickupSpot.y + layout.pickupSpot.h / 2) < 118;
-    const shouldShowPickup = gameState === 'HELPING' && nearPickup && !currentCustomer;
+    const shouldShowPickup = gameState === 'HELPING' && nearPickup && (!currentCustomer || Boolean(deliveryBasket));
     const wasHidden = helpingPickupEl.classList.contains('hidden');
     helpingPickupEl.classList.toggle('hidden', !shouldShowPickup);
     if (shouldShowPickup) {
-        const pickupState = helpingFollower && helpingFollower.kind === 'nursery' ? 'busy' : 'idle';
-        helpingPickupCopyEl.textContent = helpingFollower && helpingFollower.kind === 'nursery'
-            ? 'Your nursery pet is already with you. Take them to the pregnancy room or patient room.'
-            : 'Choose one of your collected nursery pets to bring into Helping Mode.';
+        let pickupState = helpingFollower && helpingFollower.kind === 'nursery' ? 'busy' : 'idle';
+        if (deliveryBasket && !deliveryBasket.carrying) {
+            pickupState = 'delivery-ready';
+            helpingPickupCopyEl.textContent = getHelpingRemainingTasksWithoutHandoff().length
+                ? 'The delivery basket is ready, but finish the remaining care tasks before carrying the baby back.'
+                : `The delivery basket is ready. Tap the basket on the floor to carry it back to ${deliveryBasket.owner}.`;
+        } else if (deliveryBasket && deliveryBasket.carrying) {
+            pickupState = 'delivery-carrying';
+            helpingPickupCopyEl.textContent = `You already picked up the basket. Bring it back to ${deliveryBasket.owner} in The Waiting Room.`;
+        } else {
+            helpingPickupCopyEl.textContent = helpingFollower && helpingFollower.kind === 'nursery'
+                ? 'Your nursery pet is already with you. Take them to the pregnancy room or patient room.'
+                : 'Choose one of your collected nursery pets to bring into Helping Mode.';
+        }
         if (wasHidden || helpingPickupEl.dataset.state !== pickupState || !helpingPickupListEl.childElementCount) {
             renderHelpingPickupList();
             helpingPickupEl.dataset.state = pickupState;
@@ -594,6 +667,7 @@ function startHelpingMode() {
     clearCurrentCustomer();
     populateHelpingCases();
     helpingFollower = null;
+    helpingDeliveryBasket = null;
     resetHelpingPlayer();
     hideHelpingChoicePanels();
     helpingTreatmentEl.classList.add('hidden');
@@ -897,6 +971,7 @@ function getHelpingTaskLabel(task) {
     if (task === 'bandage') return 'Bandage';
     if (task === 'treat') return 'Treat';
     if (task === 'deliver') return 'Use Delivery Kit';
+    if (task === 'returnBaby') return 'Return Baby';
     if (task === 'pet') return 'Pet';
     if (task === 'feed') return 'Feed';
     if (task === 'dress') return 'Dress';
@@ -911,11 +986,18 @@ function updateHelpingTreatmentUi() {
         helpingTreatmentHintEl.textContent = 'For scratches, use Bandage once. Then finish the remaining care tasks.';
         return;
     }
+    const deliveryBasket = getHelpingDeliveryBasket();
     const remainingTasks = currentCustomer.requiredTasks.map((task) => getHelpingTaskLabel(task));
     helpingTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Patient`;
-    helpingTreatmentCopyEl.textContent = currentCustomer.pregnant
-        ? `This pet may need delivery care for ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
-        : (currentCustomer.pet.ailment ? `Current issue: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No major illness found. Finish the comfort tasks.');
+    if (deliveryBasket) {
+        helpingTreatmentCopyEl.textContent = deliveryBasket.carrying
+            ? `You are carrying ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'the baby'} back to ${currentCustomer.owner}.`
+            : `Delivery is complete. Visit Nursery Pickup, grab the basket, and return ${currentCustomer.babyCount > 1 ? 'the babies' : 'the baby'} to ${currentCustomer.owner}.`;
+    } else {
+        helpingTreatmentCopyEl.textContent = currentCustomer.pregnant
+            ? `This pet may need delivery care for ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
+            : (currentCustomer.pet.ailment ? `Current issue: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No major illness found. Finish the comfort tasks.');
+    }
     helpingTreatmentHintEl.textContent = remainingTasks.length
         ? `Remaining care: ${remainingTasks.join(', ')}.`
         : 'All care tasks are complete.';
@@ -946,7 +1028,7 @@ function pickupHelpingNurseryPet(pickupIndex) {
 }
 
 function selectHelpingCase(helpingCase) {
-    if (!helpingCase || helpingFollower) {
+    if (!helpingCase || helpingFollower || (currentCustomer && currentCustomer.source === 'helping')) {
         showToast('Finish with the pet already following you first.', 'error');
         return;
     }
@@ -967,6 +1049,20 @@ function helpingFollowerInRoom(room) {
 
 function beginHelpingTreatmentFromFollower() {
     if (!helpingFollower) return;
+    if (currentCustomer && currentCustomer.source === 'helping') {
+        if (currentCustomer.helpingCaseId !== (helpingFollower.caseId || null)) {
+            showToast('Finish the current Helping case before starting another one.', 'error');
+            return;
+        }
+        hideHelpingChoicePanels();
+        updateHelpingTreatmentUi();
+        helpingTreatmentEl.classList.remove('hidden');
+        setHelpingStatus(currentCustomer.requiredTasks.includes('returnBaby') && !getHelpingRemainingTasksWithoutHandoff().length
+            ? 'The patient is ready. Pick up the baby basket and return it to the owner.'
+            : 'Treatment resumed. Finish every remaining care task.');
+        gameState = 'HELPING_TREAT';
+        return;
+    }
     const pet = helpingFollower.pet;
     const requiredTasks = buildHelpingRequiredTasks(pet.pregnant, pet.ailment);
     currentCustomer = {
@@ -995,6 +1091,7 @@ function beginHelpingTreatmentFromFollower() {
 function completeHelpingTreatment(finishedCustomer, totalEarned) {
     helpingTreatmentEl.classList.add('hidden');
     hideHelpingChoicePanels();
+    helpingDeliveryBasket = null;
     if (finishedCustomer.pet) {
         finishedCustomer.pet.pregnant = false;
         finishedCustomer.pet.ailment = null;
@@ -1199,6 +1296,7 @@ function goToStartScreen() {
     activeTool = null;
     fieldPlayer.ridingPetId = null;
     helpingFollower = null;
+    helpingDeliveryBasket = null;
     setVisibleScreen('START');
 }
 
@@ -1507,13 +1605,94 @@ function drawHelpingPet(pet, x, y, label = '') {
     ctx.restore();
 }
 
+function drawHelpingBabyBasket(x, y, petType, babyCount, carried = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = carried ? 'rgba(224,170,110,0.98)' : 'rgba(232,186,129,0.96)';
+    ctx.beginPath();
+    ctx.roundRect(-20, -12, 40, 24, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(142,95,44,0.72)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, -12, 13, Math.PI, 0);
+    ctx.stroke();
+    ctx.font = '22px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(PET_EMOJIS[petType] || '🐾', 0, 1);
+    if (babyCount > 1) {
+        ctx.fillStyle = '#1f4d70';
+        ctx.font = 'bold 11px "Trebuchet MS", sans-serif';
+        ctx.fillText(`x${babyCount}`, 15, -16);
+    }
+    ctx.restore();
+}
+
+function drawHelpingGoalCue(x, y, label, color = 'rgba(74,163,255,0.9)') {
+    const pulse = (Math.sin(sceneTime * 4.8) + 1) * 0.5;
+    ctx.save();
+    ctx.font = 'bold 13px "Trebuchet MS", sans-serif';
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color.replace('0.9', '0.12');
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, 28 + pulse * 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 42 + pulse * 10, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.35;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const bubbleWidth = Math.max(110, ctx.measureText(label).width + 26);
+    const bubbleX = x - bubbleWidth / 2;
+    const bubbleY = y - 74;
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(bubbleX, bubbleY, bubbleWidth, 30, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 8, bubbleY + 30);
+    ctx.lineTo(x, bubbleY + 40);
+    ctx.lineTo(x + 8, bubbleY + 30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#275a81';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, bubbleY + 15);
+    ctx.restore();
+}
+
 function drawHelpingOwner(helpingCase) {
-    drawAvatar(helpingCase.seatX, helpingCase.seatY, { label: helpingCase.owner });
+    const deliveryBasket = getHelpingDeliveryBasket();
+    const isHandoffTarget = Boolean(deliveryBasket && deliveryBasket.carrying && deliveryBasket.caseId === helpingCase.id);
+    const isNearbyHandoffTarget = isHandoffTarget && distanceBetween(helpingPlayer.x, helpingPlayer.y, helpingCase.seatX, helpingCase.seatY) <= 150;
+    const bounceOffset = isNearbyHandoffTarget ? Math.sin(sceneTime * 7) * 4 : 0;
+    drawAvatar(helpingCase.seatX, helpingCase.seatY + bounceOffset, {
+        label: helpingCase.owner,
+        gender: helpingCase.ownerGender,
+        skin: helpingCase.ownerSkin,
+        hair: helpingCase.ownerHair,
+        outfit: helpingCase.ownerOutfit
+    });
     ctx.save();
     ctx.font = '24px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(helpingCase.activity === 'phone' ? '📱' : '📘', helpingCase.seatX + 22, helpingCase.seatY + 4);
+    ctx.fillText(helpingCase.activity === 'phone' ? '📱' : '📘', helpingCase.seatX + 22, helpingCase.seatY + 4 + bounceOffset);
+    if (isNearbyHandoffTarget) {
+        ctx.font = '18px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.fillText('✨', helpingCase.seatX - 24, helpingCase.seatY - 34 + Math.sin(sceneTime * 9) * 3);
+        ctx.fillText('💖', helpingCase.seatX + 28, helpingCase.seatY - 28 + Math.cos(sceneTime * 8) * 3);
+    }
     ctx.restore();
     if (helpingCase.status === 'waiting') {
         drawHelpingPet(helpingCase.pet, helpingCase.seatX + 34, helpingCase.seatY + 18, 'Waiting');
@@ -1571,16 +1750,35 @@ function drawHelpingMode() {
     ctx.fillText('🧺', layout.pickupSpot.x + layout.pickupSpot.w / 2, layout.pickupSpot.y + layout.pickupSpot.h / 2);
     ctx.restore();
 
+    const deliveryBasket = getHelpingDeliveryBasket();
+    if (deliveryBasket && !deliveryBasket.carrying) {
+        const pickupX = layout.pickupSpot.x + layout.pickupSpot.w / 2;
+        const pickupY = layout.pickupSpot.y + layout.pickupSpot.h / 2 + 20;
+        drawHelpingGoalCue(pickupX, pickupY, getHelpingRemainingTasksWithoutHandoff().length ? 'Finish care first' : 'Tap basket');
+        drawHelpingBabyBasket(pickupX, pickupY, deliveryBasket.petType, deliveryBasket.babyCount);
+    }
+
     helpingCases.forEach((helpingCase) => drawHelpingOwner(helpingCase));
+
+    if (deliveryBasket && deliveryBasket.carrying) {
+        const ownerCase = getHelpingOwnerCaseById(deliveryBasket.caseId);
+        if (ownerCase) {
+            drawHelpingGoalCue(ownerCase.seatX, ownerCase.seatY - 10, `Bring baby to ${ownerCase.owner}`, 'rgba(255,124,196,0.9)');
+        }
+    }
 
     if (helpingFollower && gameState === 'HELPING') {
         drawHelpingPet(helpingFollower.pet, helpingFollower.pet.x, helpingFollower.pet.y, helpingFollower.kind === 'nursery' ? 'Your pet' : 'Following');
     }
 
-    if (currentCustomer && currentCustomer.source === 'helping') {
+    if (currentCustomer && currentCustomer.source === 'helping' && gameState === 'HELPING_TREAT') {
         const patientCenterX = layout.patientSpot.x + layout.patientSpot.w / 2;
         const patientCenterY = layout.patientSpot.y + layout.patientSpot.h / 2 + 54;
         drawHelpingPet(currentCustomer.pet, patientCenterX, patientCenterY, currentCustomer.pet.name);
+    }
+
+    if (deliveryBasket && deliveryBasket.carrying) {
+        drawHelpingBabyBasket(helpingPlayer.x + 18, helpingPlayer.y - 36, deliveryBasket.petType, deliveryBasket.babyCount, true);
     }
 
     drawAvatar(helpingPlayer.x, helpingPlayer.y);
@@ -1604,6 +1802,17 @@ function updateHelpingMode(dt) {
         if (distance > 8) {
             helpingFollower.pet.x += follow.x * Math.min(distance, 140) * dt;
             helpingFollower.pet.y += follow.y * Math.min(distance, 140) * dt;
+        }
+    }
+
+    const deliveryBasket = getHelpingDeliveryBasket();
+    if (deliveryBasket && deliveryBasket.carrying) {
+        const ownerCase = getHelpingOwnerCaseById(deliveryBasket.caseId);
+        if (ownerCase && distanceBetween(helpingPlayer.x, helpingPlayer.y, ownerCase.seatX, ownerCase.seatY) <= 126) {
+            setHelpingStatus(`You found ${ownerCase.owner}. Tap the owner, or walk the last step forward, to hand over the baby.`);
+        }
+        if (ownerCase && distanceBetween(helpingPlayer.x, helpingPlayer.y, ownerCase.seatX, ownerCase.seatY) <= 96) {
+            finishHelpingBabyHandoff();
         }
     }
 }
@@ -2024,7 +2233,6 @@ function applyDeliveryKit() {
     coins += currentCustomer.deliveryBonusCoins;
     reputation = Math.min(100, reputation + currentCustomer.deliveryBonusRep);
     updateHud();
-    addBabyToNursery(currentCustomer);
     babyBursts.push({
         x: width * 0.5 + 48,
         y: height * 0.75 - 26,
@@ -2035,10 +2243,31 @@ function applyDeliveryKit() {
     });
     emitPetParticles(width * 0.5 + 36, height * 0.75 - 12, currentCustomer.pet.type, 10);
     Sound.success();
-    showToast(`Baby delivered${currentCustomer.babyCount > 1 ? `! ${currentCustomer.babyCount} babies joined the nursery. 🍼` : '! +5 coins and +1 reputation. 🍼'}`);
+    if (currentCustomer.source === 'helping' && currentCustomer.helpingKind === 'case' && currentCustomer.helpingCaseId) {
+        const layout = getHelpingLayout();
+        currentCustomer.requiredTasks.push('returnBaby');
+        helpingDeliveryBasket = {
+            caseId: currentCustomer.helpingCaseId,
+            owner: currentCustomer.owner,
+            petType: currentCustomer.pet.type,
+            petColor: currentCustomer.pet.color,
+            babyCount: currentCustomer.babyCount,
+            carrying: false
+        };
+        currentCustomer.pet.x = layout.patientSpot.x + layout.patientSpot.w / 2 - 28;
+        currentCustomer.pet.y = layout.patientSpot.y + layout.patientSpot.h / 2 + 54;
+        helpingTreatmentEl.classList.add('hidden');
+        gameState = 'HELPING';
+        showToast(`Baby delivered! Bring ${currentCustomer.babyCount > 1 ? 'the basket of babies' : 'the baby basket'} back to ${currentCustomer.owner}. 🍼`);
+        setHelpingStatus(`Delivery went well. Visit Nursery Pickup, grab the basket, and return it to ${currentCustomer.owner}.`);
+        updateHelpingUi();
+    } else {
+        addBabyToNursery(currentCustomer);
+        showToast(`Baby delivered${currentCustomer.babyCount > 1 ? `! ${currentCustomer.babyCount} babies joined the nursery. 🍼` : '! +5 coins and +1 reputation. 🍼'}`);
+        maybeFinishCare();
+    }
     updateAdventureTreatmentUi();
     updateHelpingTreatmentUi();
-    maybeFinishCare();
 
     ingredientsEl.classList.add('hidden');
     adventureMedicineEl.classList.add('hidden');
@@ -2402,6 +2631,39 @@ function handleAdventurePointerDown(x, y) {
 function handleHelpingPointerDown(x, y) {
     if (gameState !== 'HELPING') return;
     const layout = getHelpingLayout();
+    const deliveryBasket = getHelpingDeliveryBasket();
+
+    if (deliveryBasket && !deliveryBasket.carrying && pointInRect(x, y, layout.pickupSpot)) {
+        const spotCenterX = layout.pickupSpot.x + layout.pickupSpot.w / 2;
+        const spotCenterY = layout.pickupSpot.y + layout.pickupSpot.h / 2;
+        if (distanceBetween(helpingPlayer.x, helpingPlayer.y, spotCenterX, spotCenterY) > 126) {
+            showToast('Walk closer to the nursery basket first.');
+            return;
+        }
+        if (getHelpingRemainingTasksWithoutHandoff().length) {
+            showToast('Finish the remaining patient-room care before carrying the baby back.');
+            return;
+        }
+        deliveryBasket.carrying = true;
+        helpingPickupEl.classList.add('hidden');
+        renderHelpingPickupList();
+        setHelpingStatus(`You picked up the baby basket. Bring it back to ${deliveryBasket.owner} in The Waiting Room.`);
+        showToast('Baby basket picked up.');
+        updateHelpingTreatmentUi();
+        return;
+    }
+
+    if (deliveryBasket && deliveryBasket.carrying) {
+        const ownerCase = getHelpingOwnerCaseById(deliveryBasket.caseId);
+        if (ownerCase && distanceBetween(x, y, ownerCase.seatX, ownerCase.seatY) <= 56) {
+            if (distanceBetween(helpingPlayer.x, helpingPlayer.y, ownerCase.seatX, ownerCase.seatY) > 126) {
+                showToast('Walk closer to the owner before handing over the baby.');
+                return;
+            }
+            finishHelpingBabyHandoff();
+            return;
+        }
+    }
 
     if (helpingFollower && pointInRect(x, y, layout.patientSpot)) {
         const spotCenterX = layout.patientSpot.x + layout.patientSpot.w / 2;
