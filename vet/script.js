@@ -81,6 +81,7 @@ const helpingTreatmentEl = document.getElementById('helping-treatment');
 const helpingTreatmentTitleEl = document.getElementById('helping-treatment-title');
 const helpingTreatmentCopyEl = document.getElementById('helping-treatment-copy');
 const helpingTreatmentHintEl = document.getElementById('helping-treatment-hint');
+const helpingTreatmentCloseBtn = document.getElementById('helping-treatment-close');
 const helpingToolExamineBtn = document.getElementById('helping-tool-examine');
 const helpingToolWashBtn = document.getElementById('helping-tool-wash');
 const helpingToolBandageBtn = document.getElementById('helping-tool-bandage');
@@ -1043,6 +1044,31 @@ function getHelpingTaskLabel(task) {
     return task;
 }
 
+function getHelpingProgressNotes() {
+    if (!currentCustomer || currentCustomer.source !== 'helping') return [];
+    const notes = [];
+    if (currentCustomer.requiredTasks.includes('wash')) {
+        const washSteps = Math.min(3, currentCustomer.progress.wash || 0);
+        notes.push(`Wash progress: ${washSteps}/3 scrubs.`);
+    }
+    if (currentCustomer.requiredTasks.includes('pet')) {
+        const petPoints = Math.min(60, currentCustomer.progress.pet || 0);
+        const remainingPetTaps = Math.max(1, Math.ceil((60 - petPoints) / 24));
+        notes.push(`Pet progress: ${petPoints}/60 comfort. About ${remainingPetTaps} more pet ${remainingPetTaps === 1 ? 'tap' : 'taps'} should do it.`);
+    }
+    return notes;
+}
+
+function closeHelpingTreatmentPanel(statusMessage = 'Patient care paused. Tap the patient bed when you are ready to continue.') {
+    hideHelpingChoicePanels();
+    helpingTreatmentEl.classList.add('hidden');
+    isPetting = false;
+    if (currentCustomer && currentCustomer.source === 'helping') {
+        gameState = 'HELPING';
+        setHelpingStatus(statusMessage);
+    }
+}
+
 function updateHelpingTreatmentUi() {
     if (!helpingTreatmentEl) return;
     if (!currentCustomer || currentCustomer.source !== 'helping') {
@@ -1053,8 +1079,16 @@ function updateHelpingTreatmentUi() {
         return;
     }
     const deliveryBasket = getHelpingDeliveryBasket();
-    helpingTreatmentEl.classList.toggle('hidden', Boolean(deliveryBasket) || gameState !== 'HELPING_TREAT');
+    const remainingCareTasks = getHelpingRemainingTasksWithoutHandoff();
+    if (deliveryBasket && !remainingCareTasks.length) {
+        closeHelpingTreatmentPanel(deliveryBasket.carrying
+            ? `Bring the baby basket back to ${currentCustomer.owner}.`
+            : `The patient is ready. Pick up the baby basket and return it to ${currentCustomer.owner}.`);
+    } else {
+        helpingTreatmentEl.classList.toggle('hidden', gameState !== 'HELPING_TREAT');
+    }
     const remainingTasks = currentCustomer.requiredTasks.map((task) => getHelpingTaskLabel(task));
+    const progressNotes = getHelpingProgressNotes();
     helpingTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Patient`;
     if (deliveryBasket) {
         helpingTreatmentCopyEl.textContent = deliveryBasket.carrying
@@ -1065,9 +1099,13 @@ function updateHelpingTreatmentUi() {
             ? `This pet may need delivery care for ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
             : (currentCustomer.pet.ailment ? `Current issue: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No major illness found. Finish the comfort tasks.');
     }
-    helpingTreatmentHintEl.textContent = remainingTasks.length
-        ? `Remaining care: ${remainingTasks.join(', ')}.`
-        : 'All care tasks are complete.';
+    if (remainingTasks.length) {
+        helpingTreatmentHintEl.textContent = `Remaining care: ${remainingTasks.join(', ')}.${progressNotes.length ? ` ${progressNotes.join(' ')}` : ''}`;
+    } else {
+        helpingTreatmentHintEl.textContent = deliveryBasket
+            ? 'All room-care tasks are done. Pick up the baby basket and return it to the owner.'
+            : 'All care tasks are complete.';
+    }
 }
 
 function pickupHelpingNurseryPet(pickupIndex) {
@@ -1838,11 +1876,11 @@ function drawHelpingMode() {
         }
     }
 
-    if (helpingFollower && gameState === 'HELPING') {
+    if (helpingFollower && gameState === 'HELPING' && (!currentCustomer || currentCustomer.source !== 'helping')) {
         drawHelpingPet(helpingFollower.pet, helpingFollower.pet.x, helpingFollower.pet.y, helpingFollower.kind === 'nursery' ? 'Your pet' : 'Following');
     }
 
-    if (currentCustomer && currentCustomer.source === 'helping' && gameState === 'HELPING_TREAT') {
+    if (currentCustomer && currentCustomer.source === 'helping') {
         const patientCenterX = layout.patientSpot.x + layout.patientSpot.w / 2;
         const patientCenterY = layout.patientSpot.y + layout.patientSpot.h / 2 + 54;
         drawHelpingPet(currentCustomer.pet, patientCenterX, patientCenterY, currentCustomer.pet.name);
@@ -1856,7 +1894,7 @@ function drawHelpingMode() {
 }
 
 function updateHelpingMode(dt) {
-    if (gameState !== 'HELPING') return;
+    if (gameState !== 'HELPING' && !isHelpingDeliveryReturnActive()) return;
     const move = getHelpingMovementVector();
     const nextX = helpingPlayer.x + move.x * helpingPlayer.speed * dt;
     const nextY = helpingPlayer.y + move.y * helpingPlayer.speed * dt;
@@ -1865,7 +1903,7 @@ function updateHelpingMode(dt) {
         helpingPlayer.y = clamp(nextY, 28, height - 28);
     }
 
-    if (helpingFollower) {
+    if (helpingFollower && (!currentCustomer || currentCustomer.source !== 'helping')) {
         const targetX = helpingPlayer.x - 24;
         const targetY = helpingPlayer.y + 18;
         const follow = normalizeVector(targetX - helpingFollower.pet.x, targetY - helpingFollower.pet.y);
@@ -3054,6 +3092,7 @@ helpingToolTreatBtn.addEventListener('click', () => triggerHelpingTool('treat'))
 helpingToolPetBtn.addEventListener('click', () => triggerHelpingTool('pet'));
 helpingToolFeedBtn.addEventListener('click', () => triggerHelpingTool('feed'));
 helpingToolDressBtn.addEventListener('click', () => triggerHelpingTool('dress'));
+helpingTreatmentCloseBtn.addEventListener('click', () => closeHelpingTreatmentPanel());
 
 adventureIngButtons.forEach((button) => button.addEventListener('click', () => {
     selectedIngredient = button.dataset.ing;
