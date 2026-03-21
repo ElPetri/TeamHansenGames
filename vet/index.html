@@ -72,7 +72,7 @@
         <div id="mode-screen" class="screen hidden">
             <div class="mode-shell">
                 <h2>Choose a Mode</h2>
-                <p>Classic Mode is ready now. Adventure Mode and Helping Mode are listed for future updates.</p>
+                <p>Classic Mode, Adventure Mode, and Helping Mode are all ready to play.</p>
                 <div class="mode-grid">
                     <button id="mode-classic" class="mode-card" type="button">
                         <span class="mode-card-title">Classic Mode</span>
@@ -82,10 +82,9 @@
                         <span class="mode-card-title">Adventure Mode</span>
                         <span class="mode-card-copy">Sneak through tall grass, capture wild pets, and treat them out in the field.</span>
                     </button>
-                    <button class="mode-card mode-card-locked" type="button" disabled>
+                    <button id="mode-helping" class="mode-card" type="button">
                         <span class="mode-card-title">Helping Mode</span>
-                        <span class="mode-card-copy">Special care missions focused on kindness and recovery.</span>
-                        <span class="mode-card-tag">Coming Soon</span>
+                        <span class="mode-card-copy">Walk the clinic halls, help waiting owners, and care for pets in their own patient room.</span>
                     </button>
                 </div>
                 <button id="mode-back" type="button">Back</button>
@@ -210,6 +209,56 @@
 
             <div id="adventure-joystick" class="adventure-joystick">
                 <div id="adventure-joystick-knob" class="adventure-joystick-knob"></div>
+            </div>
+        </div>
+
+        <div id="helping-screen" class="screen hidden">
+            <div id="helping-topbar">
+                <button id="helping-back">Menu</button>
+            </div>
+
+            <div id="helping-status" class="adventure-status">Walk the hallways, meet waiting owners, and guide pets into the right room.</div>
+
+            <div id="helping-pickup" class="adventure-panel hidden">
+                <h3>Nursery Pickup</h3>
+                <p id="helping-pickup-copy">Choose one of your collected pets to bring through Helping Mode.</p>
+                <div id="helping-pickup-list" class="adventure-choice-row"></div>
+            </div>
+
+            <div id="helping-treatment" class="adventure-panel hidden">
+                <h3 id="helping-treatment-title">Patient Room</h3>
+                <p id="helping-treatment-copy">Bring a patient into the room to begin treatment.</p>
+                <p id="helping-treatment-hint" class="adventure-treatment-hint">For scratches, use Bandage once. Then finish the remaining care tasks.</p>
+                <div id="helping-tool-grid" class="adventure-tool-grid">
+                    <button id="helping-tool-examine" type="button">Examine</button>
+                    <button id="helping-tool-wash" type="button">Wash</button>
+                    <button id="helping-tool-bandage" type="button">Bandage</button>
+                    <button id="helping-tool-treat" type="button">Treat</button>
+                    <button id="helping-tool-pet" type="button">Pet</button>
+                    <button id="helping-tool-feed" type="button">Feed</button>
+                    <button id="helping-tool-dress" type="button">Dress</button>
+                </div>
+                <div id="helping-medicine" class="adventure-choice-row hidden">
+                    <button class="help-ing" data-ing="0" type="button">Antiseptic</button>
+                    <button class="help-ing" data-ing="1" type="button">Syrup</button>
+                    <button class="help-ing" data-ing="2" type="button">EarDrops</button>
+                    <button class="help-ing" data-ing="delivery" type="button">Delivery Kit 🍼</button>
+                </div>
+                <div id="helping-food" class="adventure-choice-row hidden">
+                    <button class="help-food" data-food="kibble" type="button">Kibble 🥣</button>
+                    <button class="help-food" data-food="fish" type="button">Fish 🐟</button>
+                    <button class="help-food" data-food="carrot" type="button">Carrot 🥕</button>
+                </div>
+                <div id="helping-outfits" class="adventure-choice-row hidden">
+                    <button class="help-outfit" data-outfit="bow" type="button">Bow 🎀</button>
+                    <button class="help-outfit" data-outfit="glasses" type="button">Glasses 🕶️</button>
+                    <button class="help-outfit" data-outfit="hat" type="button">Hat 🎩</button>
+                    <button class="help-outfit" data-outfit="cape" type="button">Cape 🦸</button>
+                </div>
+            </div>
+
+            <div id="helping-joystick" class="adventure-joystick">
+                <div id="helping-joystick-knob" class="adventure-joystick-knob"></div>
             </div>
         </div>
 

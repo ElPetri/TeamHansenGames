@@ -6,6 +6,7 @@ const startScreen = document.getElementById('start-screen');
 const modeScreen = document.getElementById('mode-screen');
 const clinicScreen = document.getElementById('clinic-screen');
 const adventureScreen = document.getElementById('adventure-screen');
+const helpingScreen = document.getElementById('helping-screen');
 const resultScreen = document.getElementById('result-screen');
 const nurseryScreen = document.getElementById('nursery-screen');
 
@@ -14,6 +15,7 @@ const nurseryBtn = document.getElementById('nursery-btn');
 const nurseryBackBtn = document.getElementById('nursery-back');
 const modeClassicBtn = document.getElementById('mode-classic');
 const modeAdventureBtn = document.getElementById('mode-adventure');
+const modeHelpingBtn = document.getElementById('mode-helping');
 const modeBackBtn = document.getElementById('mode-back');
 const backToMenu = document.getElementById('back-to-menu');
 const openShopBtn = document.getElementById('open-shop');
@@ -70,6 +72,30 @@ const adventureNpcConfirmBtn = document.getElementById('adventure-npc-confirm');
 const adventureNpcCancelBtn = document.getElementById('adventure-npc-cancel');
 const adventureJoystickEl = document.getElementById('adventure-joystick');
 const adventureJoystickKnobEl = document.getElementById('adventure-joystick-knob');
+const helpingBackBtn = document.getElementById('helping-back');
+const helpingStatusEl = document.getElementById('helping-status');
+const helpingPickupEl = document.getElementById('helping-pickup');
+const helpingPickupCopyEl = document.getElementById('helping-pickup-copy');
+const helpingPickupListEl = document.getElementById('helping-pickup-list');
+const helpingTreatmentEl = document.getElementById('helping-treatment');
+const helpingTreatmentTitleEl = document.getElementById('helping-treatment-title');
+const helpingTreatmentCopyEl = document.getElementById('helping-treatment-copy');
+const helpingTreatmentHintEl = document.getElementById('helping-treatment-hint');
+const helpingToolExamineBtn = document.getElementById('helping-tool-examine');
+const helpingToolWashBtn = document.getElementById('helping-tool-wash');
+const helpingToolBandageBtn = document.getElementById('helping-tool-bandage');
+const helpingToolTreatBtn = document.getElementById('helping-tool-treat');
+const helpingToolPetBtn = document.getElementById('helping-tool-pet');
+const helpingToolFeedBtn = document.getElementById('helping-tool-feed');
+const helpingToolDressBtn = document.getElementById('helping-tool-dress');
+const helpingMedicineEl = document.getElementById('helping-medicine');
+const helpingFoodEl = document.getElementById('helping-food');
+const helpingOutfitsEl = document.getElementById('helping-outfits');
+const helpingIngButtons = document.querySelectorAll('#helping-medicine .help-ing');
+const helpingFoodButtons = document.querySelectorAll('#helping-food .help-food');
+const helpingOutfitButtons = document.querySelectorAll('#helping-outfits .help-outfit');
+const helpingJoystickEl = document.getElementById('helping-joystick');
+const helpingJoystickKnobEl = document.getElementById('helping-joystick-knob');
 
 const toolWashBtn = document.getElementById('tool-wash');
 const toolExamineBtn = document.getElementById('tool-examine');
@@ -99,6 +125,7 @@ const SCREEN_MAP = {
     MODE_SELECT: modeScreen,
     CLINIC: clinicScreen,
     ADVENTURE: adventureScreen,
+    HELPING: helpingScreen,
     RESULT: resultScreen,
     NURSERY: nurseryScreen
 };
@@ -155,10 +182,15 @@ let parentRevealTimer = 0;
 let babyHelperUsed = false;
 let nextWildPetId = 1;
 let fieldNpc = null;
+let helpingCases = [];
+let nextHelpingCaseId = 1;
+let helpingFollower = null;
 
 const pressedKeys = new Set();
 const joystickState = { active: false, dx: 0, dy: 0 };
 const adventurePointerState = { joystickPointerId: null };
+const helpingJoystickState = { active: false, dx: 0, dy: 0 };
+const helpingPointerState = { joystickPointerId: null };
 const adventureInventory = {
     balls: 0,
     gogglesUnlocked: true,
@@ -173,6 +205,16 @@ const fieldPlayer = {
     hidden: false,
     ridingPetId: null
 };
+const helpingPlayer = {
+    x: 0,
+    y: 0,
+    width: 30,
+    height: 46,
+    speed: 178
+};
+
+const HELPING_OWNER_NAMES = ['Ava', 'Mason', 'Nora', 'Leo', 'Ruby', 'Finn', 'Chloe', 'Miles'];
+const HELPING_OWNER_ACTIVITIES = ['phone', 'book'];
 
 const particles = [];
 const babyBursts = [];
@@ -366,6 +408,200 @@ function updateAdventureUi() {
         parentDoorHelpBtn.classList.toggle('hidden', parentDoorHelps <= 0);
         parentDoorHelpBtn.textContent = `Parent Help (${parentDoorHelps})`;
     }
+}
+
+function pointInRect(x, y, rect) {
+    return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+}
+
+function getHelpingLayout() {
+    const waitingRoom = { x: width * 0.05, y: height * 0.18, w: width * 0.3, h: height * 0.34 };
+    const nurseryPickup = { x: width * 0.05, y: height * 0.64, w: width * 0.25, h: height * 0.2 };
+    const patientRoom = { x: width * 0.62, y: height * 0.15, w: width * 0.28, h: height * 0.3 };
+    const pregnancyRoom = { x: width * 0.62, y: height * 0.58, w: width * 0.28, h: height * 0.22 };
+    const hallVertical = { x: width * 0.4, y: height * 0.2, w: width * 0.12, h: height * 0.58 };
+    const hallTop = { x: width * 0.32, y: height * 0.29, w: width * 0.36, h: height * 0.09 };
+    const hallBottom = { x: width * 0.28, y: height * 0.67, w: width * 0.4, h: height * 0.09 };
+    return {
+        waitingRoom,
+        nurseryPickup,
+        patientRoom,
+        pregnancyRoom,
+        hallVertical,
+        hallTop,
+        hallBottom,
+        patientSpot: { x: patientRoom.x + patientRoom.w * 0.56, y: patientRoom.y + patientRoom.h * 0.64, w: 76, h: 44 },
+        pregnancySpot: { x: pregnancyRoom.x + pregnancyRoom.w * 0.56, y: pregnancyRoom.y + pregnancyRoom.h * 0.56, w: 88, h: 50 },
+        pickupSpot: { x: nurseryPickup.x + nurseryPickup.w * 0.52, y: nurseryPickup.y + nurseryPickup.h * 0.54, w: 92, h: 54 }
+    };
+}
+
+function getHelpingSeat(index) {
+    const waitingRoom = getHelpingLayout().waitingRoom;
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    return {
+        x: waitingRoom.x + 68 + col * ((waitingRoom.w - 136) / 2),
+        y: waitingRoom.y + 86 + row * 84
+    };
+}
+
+function createHelpingPetData(base = {}) {
+    const type = base.type || PET_TYPES[Math.floor(Math.random() * PET_TYPES.length)];
+    const petName = base.name || `${PET_LABELS[type]}-${Math.floor(Math.random() * 90 + 10)}`;
+    const petColor = base.color || ['#ffd6b6', '#cde8ff', '#ffe6f2', '#e8ffda'][Math.floor(Math.random() * 4)];
+    return {
+        type,
+        name: petName,
+        color: petColor,
+        cleanliness: 0,
+        happiness: 0,
+        ailment: base.ailment || null,
+        treated: false,
+        animSeed: Math.random() * Math.PI * 2,
+        fedFood: null,
+        outfit: null,
+        pregnant: Boolean(base.pregnant),
+        babyCount: Math.max(1, Number(base.babyCount) || 1),
+        helpingPregnancyTried: Boolean(base.helpingPregnancyTried),
+        x: base.x || 0,
+        y: base.y || 0
+    };
+}
+
+function buildHelpingRequiredTasks(pregnant, ailment) {
+    const required = [];
+    if (Math.random() < 0.65) required.push('wash');
+    if (pregnant) {
+        required.push('deliver');
+    } else if (ailment === 'scratched') {
+        required.push('bandage');
+    } else if (ailment) {
+        required.push('treat');
+    }
+    required.push('pet');
+    required.push('feed');
+    required.push('dress');
+    return required;
+}
+
+function createHelpingCase(index) {
+    const seat = getHelpingSeat(index);
+    const ailmentRoll = Math.random();
+    const ailment = ailmentRoll < 0.35 ? 'scratched' : (ailmentRoll < 0.48 ? 'fever' : (ailmentRoll < 0.58 ? 'ear' : null));
+    const pregnant = !ailment && Math.random() < 0.28;
+    const pet = createHelpingPetData({
+        ailment,
+        pregnant,
+        babyCount: pregnant ? 1 + Math.floor(Math.random() * 2) : 1,
+        x: seat.x + 28,
+        y: seat.y + 10
+    });
+    return {
+        id: nextHelpingCaseId += 1,
+        owner: HELPING_OWNER_NAMES[Math.floor(Math.random() * HELPING_OWNER_NAMES.length)],
+        activity: HELPING_OWNER_ACTIVITIES[Math.floor(Math.random() * HELPING_OWNER_ACTIVITIES.length)],
+        seatX: seat.x,
+        seatY: seat.y,
+        status: 'waiting',
+        pet
+    };
+}
+
+function populateHelpingCases() {
+    helpingCases = Array.from({ length: 5 }, (_, index) => createHelpingCase(index));
+}
+
+function resetHelpingPlayer() {
+    const waitingRoom = getHelpingLayout().waitingRoom;
+    helpingPlayer.x = waitingRoom.x + waitingRoom.w * 0.52;
+    helpingPlayer.y = waitingRoom.y + waitingRoom.h * 0.78;
+}
+
+function setHelpingStatus(message) {
+    if (helpingStatusEl) helpingStatusEl.textContent = message;
+}
+
+function hideHelpingChoicePanels() {
+    helpingMedicineEl.classList.add('hidden');
+    helpingFoodEl.classList.add('hidden');
+    helpingOutfitsEl.classList.add('hidden');
+}
+
+function renderHelpingPickupList() {
+    if (!helpingPickupListEl) return;
+    helpingPickupListEl.innerHTML = '';
+    const visiblePets = nurseryBabies.slice(-6).reverse();
+    if (!visiblePets.length) {
+        const empty = document.createElement('span');
+        empty.textContent = 'No nursery pets are ready yet.';
+        helpingPickupListEl.appendChild(empty);
+        return;
+    }
+    visiblePets.forEach((baby, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `${PET_EMOJIS[baby.type] || '🐾'} ${PET_LABELS[baby.type]}`;
+        button.addEventListener('click', () => pickupHelpingNurseryPet(index));
+        helpingPickupListEl.appendChild(button);
+    });
+}
+
+function updateHelpingUi() {
+    const layout = getHelpingLayout();
+    const nearPickup = distanceBetween(helpingPlayer.x, helpingPlayer.y, layout.pickupSpot.x + layout.pickupSpot.w / 2, layout.pickupSpot.y + layout.pickupSpot.h / 2) < 118;
+    const shouldShowPickup = gameState === 'HELPING' && nearPickup && !currentCustomer;
+    const wasHidden = helpingPickupEl.classList.contains('hidden');
+    helpingPickupEl.classList.toggle('hidden', !shouldShowPickup);
+    if (shouldShowPickup) {
+        const pickupState = helpingFollower && helpingFollower.kind === 'nursery' ? 'busy' : 'idle';
+        helpingPickupCopyEl.textContent = helpingFollower && helpingFollower.kind === 'nursery'
+            ? 'Your nursery pet is already with you. Take them to the pregnancy room or patient room.'
+            : 'Choose one of your collected nursery pets to bring into Helping Mode.';
+        if (wasHidden || helpingPickupEl.dataset.state !== pickupState || !helpingPickupListEl.childElementCount) {
+            renderHelpingPickupList();
+            helpingPickupEl.dataset.state = pickupState;
+        }
+    }
+}
+
+function getHelpingMovementVector() {
+    let moveX = 0;
+    let moveY = 0;
+    if (pressedKeys.has('arrowleft') || pressedKeys.has('a')) moveX -= 1;
+    if (pressedKeys.has('arrowright') || pressedKeys.has('d')) moveX += 1;
+    if (pressedKeys.has('arrowup') || pressedKeys.has('w')) moveY -= 1;
+    if (pressedKeys.has('arrowdown') || pressedKeys.has('s')) moveY += 1;
+    moveX += helpingJoystickState.dx;
+    moveY += helpingJoystickState.dy;
+    if (Math.abs(moveX) < 0.01 && Math.abs(moveY) < 0.01) return { x: 0, y: 0 };
+    return normalizeVector(moveX, moveY);
+}
+
+function canMoveThroughHelpingMap(x, y) {
+    const layout = getHelpingLayout();
+    const rooms = [layout.waitingRoom, layout.nurseryPickup, layout.patientRoom, layout.pregnancyRoom, layout.hallVertical, layout.hallTop, layout.hallBottom];
+    return rooms.some((room) => pointInRect(x, y, room));
+}
+
+function getActiveHelpingCase() {
+    if (!helpingFollower || helpingFollower.kind !== 'case') return null;
+    return helpingCases.find((item) => item.id === helpingFollower.caseId) || null;
+}
+
+function startHelpingMode() {
+    currentMode = 'helping';
+    clearCurrentCustomer();
+    populateHelpingCases();
+    helpingFollower = null;
+    resetHelpingPlayer();
+    hideHelpingChoicePanels();
+    helpingTreatmentEl.classList.add('hidden');
+    setHelpingStatus('Walk to a waiting pet, then guide it through the halls to the patient room or pregnancy room.');
+    updateHelpingUi();
+    setVisibleScreen('HELPING');
+    gameState = 'HELPING';
+    updateHud();
 }
 
 function hideAdventureChoicePanels() {
@@ -656,6 +892,165 @@ function updateAdventureTreatmentUi() {
     adventureBabyHelperBtn.classList.toggle('hidden', babyHelperUsed || !hasBabyHelperForPet(currentCustomer.pet.type));
 }
 
+function getHelpingTaskLabel(task) {
+    if (task === 'wash') return 'Wash';
+    if (task === 'bandage') return 'Bandage';
+    if (task === 'treat') return 'Treat';
+    if (task === 'deliver') return 'Use Delivery Kit';
+    if (task === 'pet') return 'Pet';
+    if (task === 'feed') return 'Feed';
+    if (task === 'dress') return 'Dress';
+    return task;
+}
+
+function updateHelpingTreatmentUi() {
+    if (!helpingTreatmentEl) return;
+    if (!currentCustomer || currentCustomer.source !== 'helping') {
+        helpingTreatmentTitleEl.textContent = 'Patient Room';
+        helpingTreatmentCopyEl.textContent = 'Bring a patient into the room to begin treatment.';
+        helpingTreatmentHintEl.textContent = 'For scratches, use Bandage once. Then finish the remaining care tasks.';
+        return;
+    }
+    const remainingTasks = currentCustomer.requiredTasks.map((task) => getHelpingTaskLabel(task));
+    helpingTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Patient`;
+    helpingTreatmentCopyEl.textContent = currentCustomer.pregnant
+        ? `This pet may need delivery care for ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
+        : (currentCustomer.pet.ailment ? `Current issue: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No major illness found. Finish the comfort tasks.');
+    helpingTreatmentHintEl.textContent = remainingTasks.length
+        ? `Remaining care: ${remainingTasks.join(', ')}.`
+        : 'All care tasks are complete.';
+}
+
+function pickupHelpingNurseryPet(pickupIndex) {
+    if (helpingFollower) {
+        showToast('Only one pet can follow you at a time.', 'error');
+        return;
+    }
+    const baby = nurseryBabies.slice(-6).reverse()[pickupIndex];
+    if (!baby) {
+        showToast('That nursery pet is no longer available.', 'error');
+        return;
+    }
+    helpingFollower = {
+        kind: 'nursery',
+        pet: createHelpingPetData({
+            type: baby.type,
+            color: baby.color,
+            name: `Nursery ${PET_LABELS[baby.type]}`,
+            x: helpingPlayer.x - 24,
+            y: helpingPlayer.y + 18
+        })
+    };
+    helpingPickupEl.classList.add('hidden');
+    setHelpingStatus('Your nursery pet is ready. Take it to the pregnancy room or patient room.');
+}
+
+function selectHelpingCase(helpingCase) {
+    if (!helpingCase || helpingFollower) {
+        showToast('Finish with the pet already following you first.', 'error');
+        return;
+    }
+    helpingCase.status = 'following';
+    helpingFollower = {
+        kind: 'case',
+        caseId: helpingCase.id,
+        owner: helpingCase.owner,
+        pet: helpingCase.pet
+    };
+    setHelpingStatus(`Guide ${helpingCase.pet.name} through the halls. Take it to the patient room or pregnancy room.`);
+}
+
+function helpingFollowerInRoom(room) {
+    if (!helpingFollower) return false;
+    return pointInRect(helpingFollower.pet.x, helpingFollower.pet.y, room);
+}
+
+function beginHelpingTreatmentFromFollower() {
+    if (!helpingFollower) return;
+    const pet = helpingFollower.pet;
+    const requiredTasks = buildHelpingRequiredTasks(pet.pregnant, pet.ailment);
+    currentCustomer = {
+        doorIndex: -1,
+        owner: helpingFollower.kind === 'case' ? helpingFollower.owner : 'Your Pet',
+        request: pet.pregnant ? 'Please help this pet with delivery care in the patient room.' : 'Please finish this pet\'s care gently in the patient room.',
+        pregnant: pet.pregnant,
+        delivered: false,
+        deliveryBonusCoins: 0,
+        deliveryBonusRep: 0,
+        babyCount: pet.babyCount,
+        source: 'helping',
+        helpingKind: helpingFollower.kind,
+        helpingCaseId: helpingFollower.caseId || null,
+        pet,
+        requiredTasks,
+        progress: { wash: 0, pet: 0 }
+    };
+    hideHelpingChoicePanels();
+    updateHelpingTreatmentUi();
+    helpingTreatmentEl.classList.remove('hidden');
+    setHelpingStatus('Treatment started. Use the patient room tools to finish every remaining task.');
+    gameState = 'HELPING_TREAT';
+}
+
+function completeHelpingTreatment(finishedCustomer, totalEarned) {
+    helpingTreatmentEl.classList.add('hidden');
+    hideHelpingChoicePanels();
+    if (finishedCustomer.pet) {
+        finishedCustomer.pet.pregnant = false;
+        finishedCustomer.pet.ailment = null;
+        finishedCustomer.pet.treated = false;
+        finishedCustomer.pet.cleanliness = 0;
+        finishedCustomer.pet.happiness = 0;
+        finishedCustomer.pet.fedFood = null;
+        finishedCustomer.pet.outfit = null;
+    }
+    if (finishedCustomer.helpingKind === 'case' && finishedCustomer.helpingCaseId) {
+        helpingCases = helpingCases.filter((item) => item.id !== finishedCustomer.helpingCaseId);
+        while (helpingCases.length < 5) {
+            helpingCases.push(createHelpingCase(helpingCases.length));
+        }
+    }
+    helpingFollower = null;
+    currentCustomer = null;
+    gameState = 'HELPING';
+    updateHelpingUi();
+    showToast(`Helping room care complete! +${totalEarned} coins.`);
+    setHelpingStatus('Return to the waiting room to guide another pet, or visit the nursery pickup area.');
+}
+
+function attemptHelpingPregnancy() {
+    if (!helpingFollower) return;
+    if (helpingFollower.pet.helpingPregnancyTried) {
+        showToast('This pet already tried the pregnancy room this visit.');
+        return;
+    }
+    helpingFollower.pet.helpingPregnancyTried = true;
+    if (Math.random() < 0.55) {
+        helpingFollower.pet.pregnant = true;
+        helpingFollower.pet.babyCount = 1 + Math.floor(Math.random() * 2);
+        helpingFollower.pet.ailment = null;
+        showToast(`${helpingFollower.pet.name} may be expecting now. Take the pet to the patient room later.`);
+        setHelpingStatus('Pregnancy room success. Guide the pet to the patient room when you are ready for care.');
+        return;
+    }
+    showToast('No baby signs yet. You can still help the pet in the patient room.');
+    setHelpingStatus('The pregnancy room was quiet this time. You can continue helping the pet elsewhere.');
+}
+
+function applyBandage() {
+    if (!currentCustomer || !currentCustomer.requiredTasks.includes('bandage')) {
+        showToast('This pet does not need a bandage right now.');
+        return;
+    }
+    currentCustomer.pet.treated = true;
+    currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'bandage');
+    Sound.success();
+    emitPetParticles(width * 0.5, height * 0.75, currentCustomer.pet.type, 6);
+    showToast('Bandage applied right away.');
+    updateHelpingTreatmentUi();
+    maybeFinishCare();
+}
+
 function closeAdventureNpcPrompt() {
     if (!adventureNpcPromptEl) return;
     adventureNpcPromptEl.classList.add('hidden');
@@ -737,7 +1132,7 @@ function createDoors() {
 function setVisibleScreen(screenKey) {
     Object.values(SCREEN_MAP).forEach((screen) => screen.classList.add('hidden'));
     SCREEN_MAP[screenKey].classList.remove('hidden');
-    hudEl.classList.toggle('hidden', screenKey !== 'CLINIC' && screenKey !== 'ADVENTURE');
+    hudEl.classList.toggle('hidden', screenKey !== 'CLINIC' && screenKey !== 'ADVENTURE' && screenKey !== 'HELPING');
 }
 
 function updateHud() {
@@ -745,6 +1140,7 @@ function updateHud() {
     coinsEl.textContent = String(coins);
     repEl.textContent = String(reputation);
     updateAdventureUi();
+    updateHelpingUi();
 }
 
 function resetIngredientSelection() {
@@ -767,6 +1163,7 @@ function hideChoicePanels() {
     foodOptionsEl.classList.add('hidden');
     outfitOptionsEl.classList.add('hidden');
     hideAdventureChoicePanels();
+    hideHelpingChoicePanels();
     resetIngredientSelection();
     resetFoodSelection();
     resetOutfitSelection();
@@ -785,6 +1182,7 @@ function clearCurrentCustomer() {
     babyHelperUsed = false;
     hideChoicePanels();
     if (adventureTreatmentEl) adventureTreatmentEl.classList.add('hidden');
+    if (helpingTreatmentEl) helpingTreatmentEl.classList.add('hidden');
     barClean.style.width = '0%';
     barHappy.style.width = '0%';
     doors.forEach((door) => {
@@ -800,6 +1198,7 @@ function goToStartScreen() {
     gameState = 'START';
     activeTool = null;
     fieldPlayer.ridingPetId = null;
+    helpingFollower = null;
     setVisibleScreen('START');
 }
 
@@ -1075,6 +1474,137 @@ function drawFieldNpc() {
         ctx.textBaseline = 'middle';
         ctx.fillText('Tap to talk', fieldNpc.x, fieldNpc.y - 64);
         ctx.restore();
+    }
+}
+
+function drawHelpingPet(pet, x, y, label = '') {
+    const anim = getPetAnimation(pet.type, sceneTime + (pet.animSeed || 0));
+    ctx.save();
+    ctx.translate(x + anim.offsetX * 0.4, y + anim.offsetY * 0.4);
+    ctx.rotate(anim.rotation * 0.7);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(47,106,152,0.36)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(PET_EMOJIS[pet.type] || '🐾', 0, 0);
+    if (pet.pregnant) {
+        ctx.font = '18px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.fillText('🍼', 22, -18);
+    }
+    if (label) {
+        ctx.fillStyle = '#1f4d70';
+        ctx.font = '11px Arial';
+        ctx.fillText(label, 0, 38);
+    }
+    ctx.restore();
+}
+
+function drawHelpingOwner(helpingCase) {
+    drawAvatar(helpingCase.seatX, helpingCase.seatY, { label: helpingCase.owner });
+    ctx.save();
+    ctx.font = '24px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(helpingCase.activity === 'phone' ? '📱' : '📘', helpingCase.seatX + 22, helpingCase.seatY + 4);
+    ctx.restore();
+    if (helpingCase.status === 'waiting') {
+        drawHelpingPet(helpingCase.pet, helpingCase.seatX + 34, helpingCase.seatY + 18, 'Waiting');
+    }
+}
+
+function drawHelpingRoom(rect, title, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.strokeStyle = 'rgba(55,108,146,0.35)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.fillStyle = '#245b84';
+    ctx.font = 'bold 18px "Trebuchet MS", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(title, rect.x + 14, rect.y + 12);
+    ctx.restore();
+}
+
+function drawHelpingMode() {
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#f3fbff');
+    bg.addColorStop(0.5, '#fef4ff');
+    bg.addColorStop(1, '#fff6dd');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const layout = getHelpingLayout();
+    [layout.hallVertical, layout.hallTop, layout.hallBottom].forEach((hall) => {
+        ctx.fillStyle = 'rgba(240,245,251,0.94)';
+        ctx.fillRect(hall.x, hall.y, hall.w, hall.h);
+        ctx.strokeStyle = 'rgba(126,159,190,0.24)';
+        ctx.strokeRect(hall.x, hall.y, hall.w, hall.h);
+    });
+
+    drawHelpingRoom(layout.waitingRoom, 'The Waiting Room', 'rgba(255,248,252,0.96)');
+    drawHelpingRoom(layout.patientRoom, 'Patient Room', 'rgba(244,252,255,0.96)');
+    drawHelpingRoom(layout.pregnancyRoom, 'Baby Room', 'rgba(255,247,232,0.96)');
+    drawHelpingRoom(layout.nurseryPickup, 'Nursery Pickup', 'rgba(244,255,242,0.96)');
+
+    ctx.fillStyle = 'rgba(74,163,255,0.18)';
+    ctx.fillRect(layout.patientSpot.x, layout.patientSpot.y, layout.patientSpot.w, layout.patientSpot.h);
+    ctx.fillRect(layout.pickupSpot.x, layout.pickupSpot.y, layout.pickupSpot.w, layout.pickupSpot.h);
+    ctx.fillStyle = 'rgba(255,124,196,0.16)';
+    ctx.fillRect(layout.pregnancySpot.x, layout.pregnancySpot.y, layout.pregnancySpot.w, layout.pregnancySpot.h);
+
+    ctx.save();
+    ctx.font = '24px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🩹', layout.patientSpot.x + layout.patientSpot.w / 2, layout.patientSpot.y + layout.patientSpot.h / 2);
+    ctx.fillText('🍼', layout.pregnancySpot.x + layout.pregnancySpot.w / 2, layout.pregnancySpot.y + layout.pregnancySpot.h / 2);
+    ctx.fillText('🧺', layout.pickupSpot.x + layout.pickupSpot.w / 2, layout.pickupSpot.y + layout.pickupSpot.h / 2);
+    ctx.restore();
+
+    helpingCases.forEach((helpingCase) => drawHelpingOwner(helpingCase));
+
+    if (helpingFollower && gameState === 'HELPING') {
+        drawHelpingPet(helpingFollower.pet, helpingFollower.pet.x, helpingFollower.pet.y, helpingFollower.kind === 'nursery' ? 'Your pet' : 'Following');
+    }
+
+    if (currentCustomer && currentCustomer.source === 'helping') {
+        const patientCenterX = layout.patientSpot.x + layout.patientSpot.w / 2;
+        const patientCenterY = layout.patientSpot.y + layout.patientSpot.h / 2 + 54;
+        drawHelpingPet(currentCustomer.pet, patientCenterX, patientCenterY, currentCustomer.pet.name);
+    }
+
+    drawAvatar(helpingPlayer.x, helpingPlayer.y);
+}
+
+function updateHelpingMode(dt) {
+    if (gameState !== 'HELPING') return;
+    const move = getHelpingMovementVector();
+    const nextX = helpingPlayer.x + move.x * helpingPlayer.speed * dt;
+    const nextY = helpingPlayer.y + move.y * helpingPlayer.speed * dt;
+    if (canMoveThroughHelpingMap(nextX, nextY)) {
+        helpingPlayer.x = clamp(nextX, 28, width - 28);
+        helpingPlayer.y = clamp(nextY, 28, height - 28);
+    }
+
+    if (helpingFollower) {
+        const targetX = helpingPlayer.x - 24;
+        const targetY = helpingPlayer.y + 18;
+        const follow = normalizeVector(targetX - helpingFollower.pet.x, targetY - helpingFollower.pet.y);
+        const distance = distanceBetween(helpingFollower.pet.x, helpingFollower.pet.y, targetX, targetY);
+        if (distance > 8) {
+            helpingFollower.pet.x += follow.x * Math.min(distance, 140) * dt;
+            helpingFollower.pet.y += follow.y * Math.min(distance, 140) * dt;
+        }
     }
 }
 
@@ -1404,6 +1934,12 @@ function finishCare() {
         return;
     }
 
+    if (finishedCustomer.source === 'helping') {
+        updateHud();
+        completeHelpingTreatment(finishedCustomer, totalEarned);
+        return;
+    }
+
     gameState = 'RESULT_PENDING';
     isPetting = false;
     hideChoicePanels();
@@ -1467,6 +2003,11 @@ function refreshIngredientOptions() {
         const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
         button.classList.toggle('hidden', !shouldShow);
     });
+    helpingIngButtons.forEach((button) => {
+        const isDeliveryButton = button.dataset.ing === 'delivery';
+        const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
+        button.classList.toggle('hidden', !shouldShow);
+    });
 }
 
 function applyDeliveryKit() {
@@ -1496,10 +2037,12 @@ function applyDeliveryKit() {
     Sound.success();
     showToast(`Baby delivered${currentCustomer.babyCount > 1 ? `! ${currentCustomer.babyCount} babies joined the nursery. 🍼` : '! +5 coins and +1 reputation. 🍼'}`);
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
     maybeFinishCare();
 
     ingredientsEl.classList.add('hidden');
     adventureMedicineEl.classList.add('hidden');
+    helpingMedicineEl.classList.add('hidden');
     resetIngredientSelection();
 }
 
@@ -1534,8 +2077,10 @@ function applyTreatmentByIngredient(ingredientCode) {
     maybeFinishCare();
     ingredientsEl.classList.add('hidden');
     adventureMedicineEl.classList.add('hidden');
+    helpingMedicineEl.classList.add('hidden');
     resetIngredientSelection();
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
 }
 
 function applyFeedByChoice(foodChoice) {
@@ -1555,8 +2100,10 @@ function applyFeedByChoice(foodChoice) {
 
     foodOptionsEl.classList.add('hidden');
     adventureFoodEl.classList.add('hidden');
+    helpingFoodEl.classList.add('hidden');
     resetFoodSelection();
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
 }
 
 function applyOutfitChoice(outfitChoice) {
@@ -1574,8 +2121,10 @@ function applyOutfitChoice(outfitChoice) {
 
     outfitOptionsEl.classList.add('hidden');
     adventureOutfitsEl.classList.add('hidden');
+    helpingOutfitsEl.classList.add('hidden');
     resetOutfitSelection();
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
 }
 
 function handleWash() {
@@ -1591,6 +2140,7 @@ function handleWash() {
         maybeFinishCare();
     }
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
 }
 
 function handlePetting(x, y, intensity = 20) {
@@ -1607,6 +2157,7 @@ function handlePetting(x, y, intensity = 20) {
         maybeFinishCare();
     }
     updateAdventureTreatmentUi();
+    updateHelpingTreatmentUi();
 }
 
 function setActiveTool(tool) {
@@ -1735,6 +2286,49 @@ function triggerAdventureTool(tool) {
     }
 }
 
+function triggerHelpingTool(tool) {
+    if (!currentCustomer || currentCustomer.source !== 'helping') return;
+    hideHelpingChoicePanels();
+    if (tool === 'examine') {
+        if (currentCustomer.pregnant) {
+            showToast(`This pet may be expecting ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`);
+        } else if (currentCustomer.pet.ailment) {
+            showToast(`Diagnosis: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}`);
+        } else {
+            showToast('No obvious illness found. Finish the comfort tasks.');
+        }
+        return;
+    }
+    if (tool === 'wash') {
+        handleWash();
+        return;
+    }
+    if (tool === 'bandage') {
+        applyBandage();
+        return;
+    }
+    if (tool === 'treat') {
+        if (!currentCustomer.requiredTasks.includes('treat') && !currentCustomer.requiredTasks.includes('deliver')) {
+            showToast('This pet does not need medicine right now.');
+            return;
+        }
+        refreshIngredientOptions();
+        helpingMedicineEl.classList.remove('hidden');
+        return;
+    }
+    if (tool === 'pet') {
+        handlePetting(width * 0.5, height * 0.75, 24);
+        return;
+    }
+    if (tool === 'feed') {
+        helpingFoodEl.classList.remove('hidden');
+        return;
+    }
+    if (tool === 'dress') {
+        helpingOutfitsEl.classList.remove('hidden');
+    }
+}
+
 function captureWildPet(pet) {
     if (adventureInventory.balls <= 0) {
         showToast('No balls left. Buy more in the field shop.', 'error');
@@ -1805,6 +2399,42 @@ function handleAdventurePointerDown(x, y) {
     captureWildPet(pet);
 }
 
+function handleHelpingPointerDown(x, y) {
+    if (gameState !== 'HELPING') return;
+    const layout = getHelpingLayout();
+
+    if (helpingFollower && pointInRect(x, y, layout.patientSpot)) {
+        const spotCenterX = layout.patientSpot.x + layout.patientSpot.w / 2;
+        const spotCenterY = layout.patientSpot.y + layout.patientSpot.h / 2;
+        if (distanceBetween(helpingPlayer.x, helpingPlayer.y, spotCenterX, spotCenterY) > 126 || !helpingFollowerInRoom(layout.patientRoom)) {
+            showToast('Bring the pet closer to the patient room bed first.');
+            return;
+        }
+        beginHelpingTreatmentFromFollower();
+        return;
+    }
+
+    if (helpingFollower && pointInRect(x, y, layout.pregnancySpot)) {
+        const spotCenterX = layout.pregnancySpot.x + layout.pregnancySpot.w / 2;
+        const spotCenterY = layout.pregnancySpot.y + layout.pregnancySpot.h / 2;
+        if (distanceBetween(helpingPlayer.x, helpingPlayer.y, spotCenterX, spotCenterY) > 126 || !helpingFollowerInRoom(layout.pregnancyRoom)) {
+            showToast('Guide the pet deeper into the baby room first.');
+            return;
+        }
+        attemptHelpingPregnancy();
+        return;
+    }
+
+    const waitingCase = helpingCases.find((item) => item.status === 'waiting' && distanceBetween(x, y, item.pet.x, item.pet.y) <= 44);
+    if (waitingCase) {
+        if (distanceBetween(helpingPlayer.x, helpingPlayer.y, waitingCase.pet.x, waitingCase.pet.y) > 126) {
+            showToast('Walk closer to that owner and pet first.');
+            return;
+        }
+        selectHelpingCase(waitingCase);
+    }
+}
+
 canvas.addEventListener('pointerdown', (event) => {
     ensureAudio();
     const rect = canvas.getBoundingClientRect();
@@ -1813,6 +2443,11 @@ canvas.addEventListener('pointerdown', (event) => {
 
     if (gameState === 'ADVENTURE') {
         handleAdventurePointerDown(x, y);
+        return;
+    }
+
+    if (gameState === 'HELPING') {
+        handleHelpingPointerDown(x, y);
         return;
     }
 
@@ -2021,11 +2656,20 @@ modeAdventureBtn.addEventListener('click', () => {
     startAdventureMode();
 });
 
+modeHelpingBtn.addEventListener('click', () => {
+    resize();
+    startHelpingMode();
+});
+
 backToMenu.addEventListener('click', () => {
     goToStartScreen();
 });
 
 adventureBackBtn.addEventListener('click', () => {
+    goToStartScreen();
+});
+
+helpingBackBtn.addEventListener('click', () => {
     goToStartScreen();
 });
 
@@ -2069,6 +2713,13 @@ adventureToolPetBtn.addEventListener('click', () => triggerAdventureTool('pet'))
 adventureToolFeedBtn.addEventListener('click', () => triggerAdventureTool('feed'));
 adventureToolDressBtn.addEventListener('click', () => triggerAdventureTool('dress'));
 adventureBabyHelperBtn.addEventListener('click', () => callBabyHelper());
+helpingToolExamineBtn.addEventListener('click', () => triggerHelpingTool('examine'));
+helpingToolWashBtn.addEventListener('click', () => triggerHelpingTool('wash'));
+helpingToolBandageBtn.addEventListener('click', () => triggerHelpingTool('bandage'));
+helpingToolTreatBtn.addEventListener('click', () => triggerHelpingTool('treat'));
+helpingToolPetBtn.addEventListener('click', () => triggerHelpingTool('pet'));
+helpingToolFeedBtn.addEventListener('click', () => triggerHelpingTool('feed'));
+helpingToolDressBtn.addEventListener('click', () => triggerHelpingTool('dress'));
 
 adventureIngButtons.forEach((button) => button.addEventListener('click', () => {
     selectedIngredient = button.dataset.ing;
@@ -2081,6 +2732,21 @@ adventureFoodButtons.forEach((button) => button.addEventListener('click', () => 
 }));
 
 adventureOutfitButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedOutfit = button.dataset.outfit;
+    applyOutfitChoice(selectedOutfit);
+}));
+
+helpingIngButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedIngredient = button.dataset.ing;
+    applyTreatmentByIngredient(selectedIngredient);
+}));
+
+helpingFoodButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedFood = button.dataset.food;
+    applyFeedByChoice(selectedFood);
+}));
+
+helpingOutfitButtons.forEach((button) => button.addEventListener('click', () => {
     selectedOutfit = button.dataset.outfit;
     applyOutfitChoice(selectedOutfit);
 }));
@@ -2154,6 +2820,50 @@ adventureJoystickEl.addEventListener('pointerup', (event) => resetJoystick(event
 adventureJoystickEl.addEventListener('pointerleave', (event) => resetJoystick(event));
 adventureJoystickEl.addEventListener('pointercancel', (event) => resetJoystick(event));
 
+function updateHelpingJoystickFromPoint(clientX, clientY) {
+    const rect = helpingJoystickEl.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const rawX = clientX - centerX;
+    const rawY = clientY - centerY;
+    const maxRadius = rect.width * 0.28;
+    const vector = normalizeVector(rawX, rawY);
+    const magnitude = Math.min(maxRadius, Math.hypot(rawX, rawY));
+    helpingJoystickState.dx = vector.x * (magnitude / maxRadius);
+    helpingJoystickState.dy = vector.y * (magnitude / maxRadius);
+    helpingJoystickKnobEl.style.transform = `translate(calc(-50% + ${vector.x * magnitude}px), calc(-50% + ${vector.y * magnitude}px))`;
+}
+
+function resetHelpingJoystick(event = null) {
+    if (event && helpingPointerState.joystickPointerId !== null && helpingJoystickEl.hasPointerCapture(event.pointerId)) {
+        helpingJoystickEl.releasePointerCapture(event.pointerId);
+    }
+    helpingPointerState.joystickPointerId = null;
+    helpingJoystickState.active = false;
+    helpingJoystickState.dx = 0;
+    helpingJoystickState.dy = 0;
+    helpingJoystickKnobEl.style.transform = 'translate(-50%, -50%)';
+}
+
+helpingJoystickEl.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    helpingJoystickState.active = true;
+    helpingPointerState.joystickPointerId = event.pointerId;
+    helpingJoystickEl.setPointerCapture(event.pointerId);
+    updateHelpingJoystickFromPoint(event.clientX, event.clientY);
+});
+
+helpingJoystickEl.addEventListener('pointermove', (event) => {
+    if (helpingPointerState.joystickPointerId !== event.pointerId) return;
+    if (!helpingJoystickState.active) return;
+    event.preventDefault();
+    updateHelpingJoystickFromPoint(event.clientX, event.clientY);
+});
+
+helpingJoystickEl.addEventListener('pointerup', (event) => resetHelpingJoystick(event));
+helpingJoystickEl.addEventListener('pointerleave', (event) => resetHelpingJoystick(event));
+helpingJoystickEl.addEventListener('pointercancel', (event) => resetHelpingJoystick(event));
+
 window.addEventListener('resize', () => {
     const previousWidth = width;
     const previousHeight = height;
@@ -2162,6 +2872,19 @@ window.addEventListener('resize', () => {
     scaleAdventureEntity(fieldPlayer, previousWidth, previousHeight, 28);
     wildPets.forEach((pet) => scaleAdventureEntity(pet, previousWidth, previousHeight, 44));
     scaleAdventureEntity(fieldNpc, previousWidth, previousHeight, 54);
+    scaleAdventureEntity(helpingPlayer, previousWidth, previousHeight, 28);
+    helpingCases.forEach((helpingCase, index) => {
+        const seat = getHelpingSeat(index);
+        helpingCase.seatX = seat.x;
+        helpingCase.seatY = seat.y;
+        if (helpingCase.status === 'waiting') {
+            helpingCase.pet.x = seat.x + 34;
+            helpingCase.pet.y = seat.y + 18;
+        }
+    });
+    if (helpingFollower) {
+        scaleAdventureEntity(helpingFollower.pet, previousWidth, previousHeight, 32);
+    }
     fieldPlayer.x = clamp(fieldPlayer.x || width * 0.5, 32, width - 32);
     fieldPlayer.y = clamp(fieldPlayer.y || height * 0.78, height * 0.2, height - 28);
 });
@@ -2175,10 +2898,15 @@ function frame(time) {
     if (gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
         updateAdventureField(dt);
     }
+    if (gameState === 'HELPING') {
+        updateHelpingMode(dt);
+    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
         drawAdventureField();
+    } else if (gameState === 'HELPING' || gameState === 'HELPING_TREAT') {
+        drawHelpingMode();
     } else {
         drawClinic();
     }
