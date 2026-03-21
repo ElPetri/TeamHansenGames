@@ -220,6 +220,10 @@ const HELPING_OWNER_GENDERS = ['girl', 'boy'];
 const HELPING_OWNER_SKINS = ['#f5cfa0', '#e3b187', '#c98f66', '#8e5d3c'];
 const HELPING_OWNER_HAIR = ['#2f221a', '#5a4330', '#7b5a3d', '#20150f'];
 const HELPING_OWNER_OUTFITS = ['#4aa3ff', '#ff8fb8', '#63c989', '#ffb347', '#9f8cff'];
+const HELPING_WAITING_CASE_COUNT = 5;
+const HELPING_WAITING_PET_OFFSET = { x: 34, y: 18 };
+const HELPING_WAITING_PET_TAP_RADIUS = 50;
+const HELPING_WAITING_OWNER_TAP_RADIUS = 58;
 
 const particles = [];
 const babyBursts = [];
@@ -441,14 +445,70 @@ function getHelpingLayout() {
     };
 }
 
-function getHelpingSeat(index) {
+function getHelpingSeat(index, caseCount = HELPING_WAITING_CASE_COUNT) {
     const waitingRoom = getHelpingLayout().waitingRoom;
-    const row = Math.floor(index / 3);
-    const col = index % 3;
+    const usableWidth = Math.max(0, waitingRoom.w - 68);
+    let columns = Math.min(3, Math.max(1, caseCount));
+    while (columns > 1) {
+        const minimumGap = columns === 3 ? 112 : 136;
+        if (usableWidth >= minimumGap * (columns - 1)) break;
+        columns -= 1;
+    }
+    const row = Math.floor(index / columns);
+    const rowStart = row * columns;
+    const itemsInRow = Math.min(columns, caseCount - rowStart);
+    const col = index - rowStart;
+    const rowTop = waitingRoom.y + 86;
+    const rowCount = Math.ceil(caseCount / columns);
+    const maxBottom = Math.min(height - 70, waitingRoom.y + waitingRoom.h + 110);
+    const availableRowHeight = Math.max(0, maxBottom - rowTop);
+    const baseRowGap = columns === 3 ? 84 : 92;
+    const rowGap = rowCount > 1
+        ? clamp(availableRowHeight / (rowCount - 1), 72, baseRowGap)
+        : 0;
+    const columnGap = itemsInRow > 1 ? usableWidth / (itemsInRow - 1) : 0;
+    const rowWidth = columnGap * Math.max(0, itemsInRow - 1);
+    const rowStartX = waitingRoom.x + waitingRoom.w / 2 - rowWidth / 2;
     return {
-        x: waitingRoom.x + 68 + col * ((waitingRoom.w - 136) / 2),
-        y: waitingRoom.y + 86 + row * 84
+        x: rowStartX + col * columnGap,
+        y: rowTop + row * rowGap
     };
+}
+
+function getHelpingWaitingCasePositions(seat) {
+    return {
+        ownerX: seat.x,
+        ownerY: seat.y,
+        petX: seat.x + HELPING_WAITING_PET_OFFSET.x,
+        petY: seat.y + HELPING_WAITING_PET_OFFSET.y
+    };
+}
+
+function getHelpingWaitingCaseDistances(helpingCase, x, y) {
+    const ownerDistance = distanceBetween(x, y, helpingCase.seatX, helpingCase.seatY);
+    const petDistance = distanceBetween(x, y, helpingCase.pet.x, helpingCase.pet.y);
+    return {
+        ownerDistance,
+        petDistance,
+        nearestDistance: Math.min(ownerDistance, petDistance)
+    };
+}
+
+function getClosestHelpingWaitingCase(x, y) {
+    let closestCase = null;
+    let closestDistance = Infinity;
+    helpingCases.forEach((helpingCase) => {
+        if (helpingCase.status !== 'waiting') return;
+        const distances = getHelpingWaitingCaseDistances(helpingCase, x, y);
+        const isNearOwner = distances.ownerDistance <= HELPING_WAITING_OWNER_TAP_RADIUS;
+        const isNearPet = distances.petDistance <= HELPING_WAITING_PET_TAP_RADIUS;
+        if (!isNearOwner && !isNearPet) return;
+        if (distances.nearestDistance < closestDistance) {
+            closestCase = helpingCase;
+            closestDistance = distances.nearestDistance;
+        }
+    });
+    return closestCase;
 }
 
 function createHelpingPetData(base = {}) {
@@ -505,6 +565,10 @@ function getHelpingDeliveryBasket() {
     return helpingDeliveryBasket;
 }
 
+function isHelpingDeliveryReturnActive() {
+    return Boolean(getHelpingDeliveryBasket());
+}
+
 function getHelpingOwnerCaseById(caseId) {
     return helpingCases.find((item) => item.id === caseId) || null;
 }
@@ -531,6 +595,7 @@ function finishHelpingBabyHandoff() {
 
 function createHelpingCase(index) {
     const seat = getHelpingSeat(index);
+    const positions = getHelpingWaitingCasePositions(seat);
     const ailmentRoll = Math.random();
     const ailment = ailmentRoll < 0.35 ? 'scratched' : (ailmentRoll < 0.48 ? 'fever' : (ailmentRoll < 0.58 ? 'ear' : null));
     const pregnant = !ailment && Math.random() < 0.28;
@@ -539,8 +604,8 @@ function createHelpingCase(index) {
         ailment,
         pregnant,
         babyCount: pregnant ? 1 + Math.floor(Math.random() * 2) : 1,
-        x: seat.x + 28,
-        y: seat.y + 10
+        x: positions.petX,
+        y: positions.petY
     });
     return {
         id: nextHelpingCaseId += 1,
@@ -558,7 +623,7 @@ function createHelpingCase(index) {
 }
 
 function populateHelpingCases() {
-    helpingCases = Array.from({ length: 5 }, (_, index) => createHelpingCase(index));
+    helpingCases = Array.from({ length: HELPING_WAITING_CASE_COUNT }, (_, index) => createHelpingCase(index));
 }
 
 function resetHelpingPlayer() {
@@ -981,12 +1046,14 @@ function getHelpingTaskLabel(task) {
 function updateHelpingTreatmentUi() {
     if (!helpingTreatmentEl) return;
     if (!currentCustomer || currentCustomer.source !== 'helping') {
+        helpingTreatmentEl.classList.add('hidden');
         helpingTreatmentTitleEl.textContent = 'Patient Room';
         helpingTreatmentCopyEl.textContent = 'Bring a patient into the room to begin treatment.';
         helpingTreatmentHintEl.textContent = 'For scratches, use Bandage once. Then finish the remaining care tasks.';
         return;
     }
     const deliveryBasket = getHelpingDeliveryBasket();
+    helpingTreatmentEl.classList.toggle('hidden', Boolean(deliveryBasket) || gameState !== 'HELPING_TREAT');
     const remainingTasks = currentCustomer.requiredTasks.map((task) => getHelpingTaskLabel(task));
     helpingTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Patient`;
     if (deliveryBasket) {
@@ -1484,7 +1551,11 @@ function drawClinic() {
 
     drawCurrentCustomer();
     drawBabyBursts();
-    drawAvatar(95, height - 110);
+    if (gameState === 'START') {
+        drawAvatar(width * 0.5, height * 0.7, { label: 'You' });
+    } else {
+        drawAvatar(95, height - 110);
+    }
 }
 
 function drawGrassPatch(patch, hidden = false) {
@@ -1695,7 +1766,7 @@ function drawHelpingOwner(helpingCase) {
     }
     ctx.restore();
     if (helpingCase.status === 'waiting') {
-        drawHelpingPet(helpingCase.pet, helpingCase.seatX + 34, helpingCase.seatY + 18, 'Waiting');
+        drawHelpingPet(helpingCase.pet, helpingCase.pet.x, helpingCase.pet.y, 'Waiting');
     }
 }
 
@@ -2629,7 +2700,7 @@ function handleAdventurePointerDown(x, y) {
 }
 
 function handleHelpingPointerDown(x, y) {
-    if (gameState !== 'HELPING') return;
+    if (gameState !== 'HELPING' && !isHelpingDeliveryReturnActive()) return;
     const layout = getHelpingLayout();
     const deliveryBasket = getHelpingDeliveryBasket();
 
@@ -2687,9 +2758,10 @@ function handleHelpingPointerDown(x, y) {
         return;
     }
 
-    const waitingCase = helpingCases.find((item) => item.status === 'waiting' && distanceBetween(x, y, item.pet.x, item.pet.y) <= 44);
+    const waitingCase = getClosestHelpingWaitingCase(x, y);
     if (waitingCase) {
-        if (distanceBetween(helpingPlayer.x, helpingPlayer.y, waitingCase.pet.x, waitingCase.pet.y) > 126) {
+        const playerDistances = getHelpingWaitingCaseDistances(waitingCase, helpingPlayer.x, helpingPlayer.y);
+        if (playerDistances.nearestDistance > 126) {
             showToast('Walk closer to that owner and pet first.');
             return;
         }
@@ -2708,7 +2780,7 @@ canvas.addEventListener('pointerdown', (event) => {
         return;
     }
 
-    if (gameState === 'HELPING') {
+    if (gameState === 'HELPING' || isHelpingDeliveryReturnActive()) {
         handleHelpingPointerDown(x, y);
         return;
     }
@@ -3136,12 +3208,13 @@ window.addEventListener('resize', () => {
     scaleAdventureEntity(fieldNpc, previousWidth, previousHeight, 54);
     scaleAdventureEntity(helpingPlayer, previousWidth, previousHeight, 28);
     helpingCases.forEach((helpingCase, index) => {
-        const seat = getHelpingSeat(index);
+        const seat = getHelpingSeat(index, helpingCases.length || HELPING_WAITING_CASE_COUNT);
+        const positions = getHelpingWaitingCasePositions(seat);
         helpingCase.seatX = seat.x;
         helpingCase.seatY = seat.y;
         if (helpingCase.status === 'waiting') {
-            helpingCase.pet.x = seat.x + 34;
-            helpingCase.pet.y = seat.y + 18;
+            helpingCase.pet.x = positions.petX;
+            helpingCase.pet.y = positions.petY;
         }
     });
     if (helpingFollower) {
@@ -3160,7 +3233,7 @@ function frame(time) {
     if (gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
         updateAdventureField(dt);
     }
-    if (gameState === 'HELPING') {
+    if (gameState === 'HELPING' || isHelpingDeliveryReturnActive()) {
         updateHelpingMode(dt);
     }
 
