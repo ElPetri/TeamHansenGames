@@ -72,6 +72,16 @@ const PET_PARTICLES = {
 const FOOD_EMOJIS = { kibble: '🥣', fish: '🐟', carrot: '🥕' };
 const OUTFIT_EMOJIS = { bow: '🎀', glasses: '🕶️', hat: '🎩', cape: '🦸' };
 const AILMENTS = ['scratched', 'fever', 'ear'];
+const AILMENT_REQUEST_TEXT = {
+    scratched: 'a scratch',
+    fever: 'a fever',
+    ear: 'an ear infection'
+};
+const AILMENT_DIAGNOSIS_TEXT = {
+    scratched: 'Scratch',
+    fever: 'Fever',
+    ear: 'Ear infection'
+};
 
 let width = 800;
 let height = 600;
@@ -634,6 +644,14 @@ function maybeFinishCare() {
     finishCare();
 }
 
+function getAilmentRequestText(ailment) {
+    return AILMENT_REQUEST_TEXT[ailment] || ailment;
+}
+
+function getAilmentDiagnosisText(ailment) {
+    return AILMENT_DIAGNOSIS_TEXT[ailment] || ailment;
+}
+
 function buildRequest(requiredTasks, pregnant, ailment) {
     const visibleTasks = requiredTasks.filter((task) => task !== 'deliver' && task !== 'treat');
     const careText = visibleTasks.length ? `Please ${visibleTasks.join(', ')}` : 'Please help';
@@ -641,7 +659,7 @@ function buildRequest(requiredTasks, pregnant, ailment) {
         return `${careText} — baby on the way! Use the Delivery Kit.`;
     }
     if (ailment) {
-        return `${careText} — my pet has ${ailment}.`;
+        return `${careText} — my pet has ${getAilmentRequestText(ailment)}.`;
     }
     return `${careText}.`;
 }
@@ -1009,7 +1027,7 @@ canvas.addEventListener('pointerdown', (event) => {
             alert('This pet is expecting. Use the Delivery Kit to help with delivery.');
             Sound.click();
         } else if (currentCustomer.pet.ailment) {
-            alert(`Diagnosis: ${currentCustomer.pet.ailment}`);
+            alert(`Diagnosis: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}`);
             Sound.click();
         } else {
             alert('No obvious issues found');

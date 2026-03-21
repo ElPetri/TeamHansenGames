@@ -72,7 +72,25 @@
         }
     }
 
+    function canUseLeaderboardApi() {
+        return typeof window !== 'undefined' && window.location && window.location.protocol !== 'file:';
+    }
+
+    function getLeaderboardUnavailableMessage() {
+        return 'Online leaderboard unavailable in local file preview.';
+    }
+
+    function buildApiUrl() {
+        if (!canUseLeaderboardApi()) {
+            throw new Error(getLeaderboardUnavailableMessage());
+        }
+        return new URL(API_PATH, window.location.origin);
+    }
+
     async function submitScore(game, mode, name, score) {
+        if (!canUseLeaderboardApi()) {
+            throw new Error(getLeaderboardUnavailableMessage());
+        }
         const response = await fetch(API_PATH, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -86,7 +104,7 @@
     }
 
     async function fetchLeaderboard(game, mode, period, playerName) {
-        const url = new URL(API_PATH, window.location.origin);
+        const url = buildApiUrl();
         url.searchParams.set('game', game);
         url.searchParams.set('mode', mode);
         url.searchParams.set('period', period);
