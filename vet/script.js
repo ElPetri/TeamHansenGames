@@ -1059,6 +1059,11 @@ function getHelpingProgressNotes() {
     return notes;
 }
 
+function isDeliveryKitUnlocked(customer = currentCustomer) {
+    if (!customer || !customer.pregnant || customer.delivered) return false;
+    return !customer.requiredTasks.some((task) => task !== 'deliver' && task !== 'returnBaby');
+}
+
 function closeHelpingTreatmentPanel(statusMessage = 'Patient care paused. Tap the patient bed when you are ready to continue.') {
     hideHelpingChoicePanels();
     helpingTreatmentEl.classList.add('hidden');
@@ -1089,6 +1094,7 @@ function updateHelpingTreatmentUi() {
     }
     const remainingTasks = currentCustomer.requiredTasks.map((task) => getHelpingTaskLabel(task));
     const progressNotes = getHelpingProgressNotes();
+    const deliveryLocked = currentCustomer.pregnant && currentCustomer.requiredTasks.includes('deliver') && !isDeliveryKitUnlocked(currentCustomer);
     helpingTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Patient`;
     if (deliveryBasket) {
         helpingTreatmentCopyEl.textContent = deliveryBasket.carrying
@@ -1100,7 +1106,8 @@ function updateHelpingTreatmentUi() {
             : (currentCustomer.pet.ailment ? `Current issue: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No major illness found. Finish the comfort tasks.');
     }
     if (remainingTasks.length) {
-        helpingTreatmentHintEl.textContent = `Remaining care: ${remainingTasks.join(', ')}.${progressNotes.length ? ` ${progressNotes.join(' ')}` : ''}`;
+        const deliveryLockNote = deliveryLocked ? ' Delivery Kit unlocks after the other care tasks are done.' : '';
+        helpingTreatmentHintEl.textContent = `Remaining care: ${remainingTasks.join(', ')}.${progressNotes.length ? ` ${progressNotes.join(' ')}` : ''}${deliveryLockNote}`;
     } else {
         helpingTreatmentHintEl.textContent = deliveryBasket
             ? 'All room-care tasks are done. Pick up the baby basket and return it to the owner.'
@@ -2315,16 +2322,19 @@ function refreshIngredientOptions() {
         const isDeliveryButton = button.dataset.ing === 'delivery';
         const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
         button.classList.toggle('hidden', !shouldShow);
+        button.disabled = isDeliveryButton && shouldShow && !isDeliveryKitUnlocked(currentCustomer);
     });
     adventureIngButtons.forEach((button) => {
         const isDeliveryButton = button.dataset.ing === 'delivery';
         const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
         button.classList.toggle('hidden', !shouldShow);
+        button.disabled = isDeliveryButton && shouldShow && !isDeliveryKitUnlocked(currentCustomer);
     });
     helpingIngButtons.forEach((button) => {
         const isDeliveryButton = button.dataset.ing === 'delivery';
         const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
         button.classList.toggle('hidden', !shouldShow);
+        button.disabled = isDeliveryButton && shouldShow && !isDeliveryKitUnlocked(currentCustomer);
     });
 }
 
@@ -2332,6 +2342,17 @@ function applyDeliveryKit() {
     if (!currentCustomer || !currentCustomer.requiredTasks.includes('deliver') || currentCustomer.delivered) {
         ingredientsEl.classList.add('hidden');
         resetIngredientSelection();
+        return;
+    }
+
+    if (!isDeliveryKitUnlocked(currentCustomer)) {
+        showToast('Finish the other pet-care tasks before using the Delivery Kit.', 'error');
+        ingredientsEl.classList.add('hidden');
+        adventureMedicineEl.classList.add('hidden');
+        helpingMedicineEl.classList.add('hidden');
+        resetIngredientSelection();
+        updateAdventureTreatmentUi();
+        updateHelpingTreatmentUi();
         return;
     }
 
@@ -2652,6 +2673,9 @@ function triggerHelpingTool(tool) {
         }
         refreshIngredientOptions();
         helpingMedicineEl.classList.remove('hidden');
+        if (currentCustomer.pregnant && currentCustomer.requiredTasks.includes('deliver') && !isDeliveryKitUnlocked(currentCustomer)) {
+            setHelpingStatus('Finish wash, pet, feed, and dress before using the Delivery Kit.');
+        }
         return;
     }
     if (tool === 'pet') {
