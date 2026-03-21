@@ -5,6 +5,7 @@ const hudEl = document.getElementById('hud');
 const startScreen = document.getElementById('start-screen');
 const modeScreen = document.getElementById('mode-screen');
 const clinicScreen = document.getElementById('clinic-screen');
+const adventureScreen = document.getElementById('adventure-screen');
 const resultScreen = document.getElementById('result-screen');
 const nurseryScreen = document.getElementById('nursery-screen');
 
@@ -12,8 +13,11 @@ const startBtn = document.getElementById('start-btn');
 const nurseryBtn = document.getElementById('nursery-btn');
 const nurseryBackBtn = document.getElementById('nursery-back');
 const modeClassicBtn = document.getElementById('mode-classic');
+const modeAdventureBtn = document.getElementById('mode-adventure');
 const modeBackBtn = document.getElementById('mode-back');
 const backToMenu = document.getElementById('back-to-menu');
+const openShopBtn = document.getElementById('open-shop');
+const parentDoorHelpBtn = document.getElementById('parent-door-help');
 const resultContinue = document.getElementById('result-continue');
 const avatarBtn = document.getElementById('avatar-btn');
 const avatarPanel = document.getElementById('avatar-panel');
@@ -30,6 +34,35 @@ const nurseryEmptyEl = document.getElementById('nursery-empty');
 const resultTitleEl = document.getElementById('result-title');
 const resultCoinsEl = document.getElementById('result-coins');
 const resultHappyEl = document.getElementById('result-happy');
+const adventureBackBtn = document.getElementById('adventure-back');
+const adventureShopBtn = document.getElementById('adventure-shop-btn');
+const adventureShopEl = document.getElementById('adventure-shop');
+const adventureBuyBallBtn = document.getElementById('adventure-buy-ball');
+const adventureCloseShopBtn = document.getElementById('adventure-close-shop');
+const adventureInventoryEl = document.getElementById('adventure-inventory');
+const adventureBallCountEl = document.getElementById('adventure-ball-count');
+const adventureGogglesBtn = document.getElementById('adventure-goggles');
+const adventureActionCatchBtn = document.getElementById('adventure-action-catch');
+const adventureActionJumpBtn = document.getElementById('adventure-action-jump');
+const adventureStatusEl = document.getElementById('adventure-status');
+const adventureTreatmentEl = document.getElementById('adventure-treatment');
+const adventureTreatmentTitleEl = document.getElementById('adventure-treatment-title');
+const adventureTreatmentCopyEl = document.getElementById('adventure-treatment-copy');
+const adventureToolExamineBtn = document.getElementById('adventure-tool-examine');
+const adventureToolWashBtn = document.getElementById('adventure-tool-wash');
+const adventureToolTreatBtn = document.getElementById('adventure-tool-treat');
+const adventureToolPetBtn = document.getElementById('adventure-tool-pet');
+const adventureToolFeedBtn = document.getElementById('adventure-tool-feed');
+const adventureToolDressBtn = document.getElementById('adventure-tool-dress');
+const adventureBabyHelperBtn = document.getElementById('adventure-baby-helper');
+const adventureMedicineEl = document.getElementById('adventure-medicine');
+const adventureFoodEl = document.getElementById('adventure-food');
+const adventureOutfitsEl = document.getElementById('adventure-outfits');
+const adventureIngButtons = document.querySelectorAll('#adventure-medicine .adv-ing');
+const adventureFoodButtons = document.querySelectorAll('#adventure-food .adv-food');
+const adventureOutfitButtons = document.querySelectorAll('#adventure-outfits .adv-outfit');
+const adventureJoystickEl = document.getElementById('adventure-joystick');
+const adventureJoystickKnobEl = document.getElementById('adventure-joystick-knob');
 
 const toolWashBtn = document.getElementById('tool-wash');
 const toolExamineBtn = document.getElementById('tool-examine');
@@ -50,12 +83,15 @@ const barHappy = document.getElementById('bar-happy');
 const RESULT_POPUP_DELAY_MS = 900;
 const AVATAR_KEY = 'vet_avatar_v1';
 const NURSERY_KEY = 'vet_nursery_v1';
+const ADVENTURE_KEY = 'vet_adventure_v1';
 const NURSERY_LIMIT = 50;
+const ADVENTURE_BALL_COST = 15;
 
 const SCREEN_MAP = {
     START: startScreen,
     MODE_SELECT: modeScreen,
     CLINIC: clinicScreen,
+    ADVENTURE: adventureScreen,
     RESULT: resultScreen,
     NURSERY: nurseryScreen
 };
@@ -103,6 +139,31 @@ let lastPetY = 0;
 let sceneTime = 0;
 let treatHintShownForCustomer = false;
 let pendingResultTimer = null;
+let currentAdventureAction = 'catch';
+let fieldGrassPatches = [];
+let wildPets = [];
+let treatedPetTypes = [];
+let parentDoorHelps = 0;
+let parentRevealTimer = 0;
+let babyHelperUsed = false;
+let nextWildPetId = 1;
+
+const pressedKeys = new Set();
+const joystickState = { active: false, dx: 0, dy: 0 };
+const adventureInventory = {
+    balls: 0,
+    gogglesUnlocked: true,
+    gogglesActive: false
+};
+const fieldPlayer = {
+    x: 0,
+    y: 0,
+    width: 30,
+    height: 46,
+    speed: 188,
+    hidden: false,
+    ridingPetId: null
+};
 
 const particles = [];
 const babyBursts = [];
@@ -210,6 +271,34 @@ function saveNursery() {
     } catch (error) {}
 }
 
+function loadAdventure() {
+    try {
+        const raw = localStorage.getItem(ADVENTURE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        adventureInventory.balls = Math.max(0, Number(parsed.balls) || 0);
+        adventureInventory.gogglesUnlocked = parsed.gogglesUnlocked !== false;
+        adventureInventory.gogglesActive = Boolean(parsed.gogglesActive);
+        if (Array.isArray(parsed.treatedPetTypes)) {
+            treatedPetTypes = parsed.treatedPetTypes.filter((type) => PET_TYPES.includes(type));
+        }
+        parentDoorHelps = Math.max(0, Number(parsed.parentDoorHelps) || 0);
+    } catch (error) {}
+}
+
+function saveAdventure() {
+    try {
+        localStorage.setItem(ADVENTURE_KEY, JSON.stringify({
+            balls: adventureInventory.balls,
+            gogglesUnlocked: adventureInventory.gogglesUnlocked,
+            gogglesActive: adventureInventory.gogglesActive,
+            treatedPetTypes,
+            parentDoorHelps
+        }));
+    } catch (error) {}
+}
+
 function formatNurseryDate(isoDate) {
     const date = new Date(isoDate);
     if (Number.isNaN(date.getTime())) return 'Collected today';
@@ -236,19 +325,297 @@ function renderNursery() {
 }
 
 function addBabyToNursery(customer) {
-    const baby = {
-        type: customer.pet.type,
-        emoji: PET_EMOJIS[customer.pet.type] || '🐾',
-        color: customer.pet.color,
-        parentName: customer.pet.name,
-        date: new Date().toISOString()
-    };
-    nurseryBabies.push(baby);
+    const babyCount = Math.max(1, Number(customer.babyCount) || 1);
+    for (let index = 0; index < babyCount; index += 1) {
+        const baby = {
+            type: customer.pet.type,
+            emoji: PET_EMOJIS[customer.pet.type] || '🐾',
+            color: customer.pet.color,
+            parentName: customer.pet.name,
+            date: new Date().toISOString()
+        };
+        nurseryBabies.push(baby);
+    }
     if (nurseryBabies.length > NURSERY_LIMIT) {
         nurseryBabies = nurseryBabies.slice(nurseryBabies.length - NURSERY_LIMIT);
     }
     saveNursery();
     renderNursery();
+}
+
+function updateAdventureUi() {
+    if (adventureBallCountEl) adventureBallCountEl.textContent = String(adventureInventory.balls);
+    if (adventureGogglesBtn) {
+        adventureGogglesBtn.textContent = `Goggles: ${adventureInventory.gogglesActive ? 'On' : 'Off'}`;
+        adventureGogglesBtn.classList.toggle('active', adventureInventory.gogglesActive);
+    }
+    if (adventureActionCatchBtn && adventureActionJumpBtn) {
+        adventureActionCatchBtn.classList.toggle('active', currentAdventureAction === 'catch');
+        adventureActionJumpBtn.classList.toggle('active', currentAdventureAction === 'jump');
+    }
+    if (parentDoorHelpBtn) {
+        parentDoorHelpBtn.classList.toggle('hidden', parentDoorHelps <= 0);
+        parentDoorHelpBtn.textContent = `Parent Help (${parentDoorHelps})`;
+    }
+}
+
+function hideAdventureChoicePanels() {
+    adventureMedicineEl.classList.add('hidden');
+    adventureFoodEl.classList.add('hidden');
+    adventureOutfitsEl.classList.add('hidden');
+}
+
+function closeAdventureShop() {
+    adventureShopEl.classList.add('hidden');
+}
+
+function setAdventureStatus(message) {
+    if (adventureStatusEl) {
+        adventureStatusEl.textContent = message;
+    }
+}
+
+function setAdventureAction(action) {
+    currentAdventureAction = action;
+    updateAdventureUi();
+    setAdventureStatus(action === 'jump' ? 'Jump mode: tap a nearby pet to ride and hide behind it.' : 'Catch mode: buy balls, get close, and tap a pet to rescue it.');
+}
+
+function hasBabyHelperForPet(petType) {
+    return nurseryBabies.some((baby) => baby.type === petType);
+}
+
+function grantParentHelper(petType) {
+    if (!PET_TYPES.includes(petType)) return;
+    if (!treatedPetTypes.includes(petType)) {
+        treatedPetTypes.push(petType);
+        parentDoorHelps += 1;
+        saveAdventure();
+    }
+    updateAdventureUi();
+}
+
+function randomRange(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function distanceBetween(ax, ay, bx, by) {
+    return Math.hypot(ax - bx, ay - by);
+}
+
+function normalizeVector(x, y) {
+    const magnitude = Math.hypot(x, y) || 1;
+    return { x: x / magnitude, y: y / magnitude };
+}
+
+function createAdventureGrassPatches() {
+    fieldGrassPatches = [];
+    const patchCount = Math.max(8, Math.floor(width / 120));
+    for (let index = 0; index < patchCount; index += 1) {
+        fieldGrassPatches.push({
+            x: randomRange(70, width - 70),
+            y: randomRange(height * 0.22, height - 70),
+            w: randomRange(80, 150),
+            h: randomRange(50, 90)
+        });
+    }
+}
+
+function createWildPet() {
+    const type = PET_TYPES[Math.floor(Math.random() * PET_TYPES.length)];
+    const x = randomRange(70, width - 70);
+    const y = randomRange(height * 0.24, height - 70);
+    const direction = normalizeVector(randomRange(-1, 1), randomRange(-1, 1));
+    const pregnant = Math.random() < 0.35;
+    return {
+        id: nextWildPetId += 1,
+        type,
+        x,
+        y,
+        vx: direction.x,
+        vy: direction.y,
+        speed: randomRange(26, 42),
+        animSeed: Math.random() * Math.PI * 2,
+        turnTimer: randomRange(1.2, 3.4),
+        alertTimer: 0,
+        pregnant,
+        babyCount: pregnant ? 1 + Math.floor(Math.random() * 2) : 0,
+        ailment: pregnant ? null : (Math.random() < 0.65 ? AILMENTS[Math.floor(Math.random() * AILMENTS.length)] : null),
+        color: ['#ffd6b6', '#cde8ff', '#ffe6f2', '#e8ffda'][Math.floor(Math.random() * 4)]
+    };
+}
+
+function populateWildPets() {
+    wildPets = [];
+    const targetCount = 6;
+    while (wildPets.length < targetCount) {
+        wildPets.push(createWildPet());
+    }
+}
+
+function ensureWildPetPopulation() {
+    while (wildPets.length < 6) {
+        wildPets.push(createWildPet());
+    }
+}
+
+function resetFieldPlayer() {
+    fieldPlayer.x = width * 0.5;
+    fieldPlayer.y = height * 0.78;
+    fieldPlayer.hidden = false;
+    fieldPlayer.ridingPetId = null;
+}
+
+function startAdventureMode() {
+    currentMode = 'adventure';
+    clearCurrentCustomer();
+    resetFieldPlayer();
+    createAdventureGrassPatches();
+    populateWildPets();
+    babyHelperUsed = false;
+    hideAdventureChoicePanels();
+    closeAdventureShop();
+    setAdventureAction('catch');
+    updateAdventureUi();
+    setVisibleScreen('ADVENTURE');
+    gameState = 'ADVENTURE';
+    updateHud();
+}
+
+function getAdventureMovementVector() {
+    let moveX = 0;
+    let moveY = 0;
+    if (pressedKeys.has('arrowleft') || pressedKeys.has('a')) moveX -= 1;
+    if (pressedKeys.has('arrowright') || pressedKeys.has('d')) moveX += 1;
+    if (pressedKeys.has('arrowup') || pressedKeys.has('w')) moveY -= 1;
+    if (pressedKeys.has('arrowdown') || pressedKeys.has('s')) moveY += 1;
+    moveX += joystickState.dx;
+    moveY += joystickState.dy;
+    if (Math.abs(moveX) < 0.01 && Math.abs(moveY) < 0.01) return { x: 0, y: 0 };
+    return normalizeVector(moveX, moveY);
+}
+
+function playerInGrass() {
+    return fieldGrassPatches.some((patch) => (
+        fieldPlayer.x > patch.x - patch.w / 2
+        && fieldPlayer.x < patch.x + patch.w / 2
+        && fieldPlayer.y > patch.y - patch.h / 2
+        && fieldPlayer.y < patch.y + patch.h / 2
+    ));
+}
+
+function getMountedPet() {
+    return wildPets.find((pet) => pet.id === fieldPlayer.ridingPetId) || null;
+}
+
+function getClosestWildPet(x, y, maxDistance = 90) {
+    let closestPet = null;
+    let closestDistance = maxDistance;
+    wildPets.forEach((pet) => {
+        const distance = distanceBetween(x, y, pet.x, pet.y);
+        if (distance <= closestDistance) {
+            closestPet = pet;
+            closestDistance = distance;
+        }
+    });
+    return closestPet;
+}
+
+function beginAdventureTreatment(pet) {
+    const requiredTasks = buildRequiredTasks(pet.pregnant, pet.ailment);
+    currentCustomer = {
+        doorIndex: -1,
+        owner: 'Field Rescue',
+        request: pet.pregnant ? 'Care for this expecting pet right here in the field.' : 'Treat this rescued pet before sending it home.',
+        pregnant: pet.pregnant,
+        delivered: false,
+        deliveryBonusCoins: 0,
+        deliveryBonusRep: 0,
+        babyCount: pet.babyCount,
+        source: 'adventure',
+        pet: {
+            type: pet.type,
+            name: `${PET_LABELS[pet.type]}-${Math.floor(Math.random() * 90 + 10)}`,
+            color: pet.color,
+            cleanliness: 0,
+            happiness: 0,
+            ailment: pet.ailment,
+            treated: false,
+            animSeed: pet.animSeed,
+            fedFood: null,
+            outfit: null
+        },
+        requiredTasks,
+        progress: { wash: 0, pet: 0 }
+    };
+    barClean.style.width = '0%';
+    barHappy.style.width = '0%';
+    babyHelperUsed = false;
+    activeTool = null;
+    hideAdventureChoicePanels();
+    updateAdventureTreatmentUi();
+    adventureTreatmentEl.classList.remove('hidden');
+    setAdventureStatus('Treat the rescued pet before heading back into the grass.');
+    gameState = 'ADVENTURE_TREAT';
+}
+
+function completeAdventureTreatment(finishedCustomer, totalEarned) {
+    currentCustomer = null;
+    gameState = 'ADVENTURE';
+    adventureTreatmentEl.classList.add('hidden');
+    hideAdventureChoicePanels();
+    barClean.style.width = '0%';
+    barHappy.style.width = '0%';
+    grantParentHelper(finishedCustomer.pet.type);
+    ensureWildPetPopulation();
+    saveAdventure();
+    updateAdventureUi();
+    showToast(`Rescue complete! +${totalEarned} coins 🌿`);
+    setAdventureStatus('Sneak through tall grass and look for your next patient.');
+}
+
+function updateAdventureTreatmentUi() {
+    if (!currentCustomer) {
+        adventureTreatmentTitleEl.textContent = 'Treat Wild Pet';
+        adventureTreatmentCopyEl.textContent = 'Catch a pet to begin treatment.';
+        adventureBabyHelperBtn.classList.add('hidden');
+        return;
+    }
+    adventureTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Rescue`;
+    adventureTreatmentCopyEl.textContent = currentCustomer.pregnant
+        ? `This pet is expecting ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
+        : (currentCustomer.pet.ailment ? `Diagnosis: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No obvious illness. Finish the comfort tasks.');
+    adventureBabyHelperBtn.classList.toggle('hidden', babyHelperUsed || !hasBabyHelperForPet(currentCustomer.pet.type));
+}
+
+function callBabyHelper() {
+    if (!currentCustomer || babyHelperUsed || !hasBabyHelperForPet(currentCustomer.pet.type)) return;
+    const remainingTasks = currentCustomer.requiredTasks.filter((task) => task !== 'deliver');
+    if (!remainingTasks.length) return;
+    const task = remainingTasks[Math.floor(Math.random() * remainingTasks.length)];
+    babyHelperUsed = true;
+    if (task === 'wash') {
+        currentCustomer.progress.wash = 3;
+        currentCustomer.pet.cleanliness = 100;
+        barClean.style.width = '100%';
+    }
+    if (task === 'pet') {
+        currentCustomer.progress.pet = 60;
+        currentCustomer.pet.happiness = 100;
+        barHappy.style.width = '100%';
+    }
+    if (task === 'feed') currentCustomer.pet.fedFood = 'carrot';
+    if (task === 'dress') currentCustomer.pet.outfit = 'bow';
+    if (task === 'treat') currentCustomer.pet.treated = true;
+    currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((item) => item !== task);
+    emitPetParticles(width * 0.5, height * 0.75, currentCustomer.pet.type, 8);
+    showToast('Baby helper rushed in and handled a task! 🍼');
+    updateAdventureTreatmentUi();
+    maybeFinishCare();
 }
 
 function syncAvatarUi() {
@@ -278,13 +645,14 @@ function createDoors() {
 function setVisibleScreen(screenKey) {
     Object.values(SCREEN_MAP).forEach((screen) => screen.classList.add('hidden'));
     SCREEN_MAP[screenKey].classList.remove('hidden');
-    hudEl.classList.toggle('hidden', screenKey !== 'CLINIC');
+    hudEl.classList.toggle('hidden', screenKey !== 'CLINIC' && screenKey !== 'ADVENTURE');
 }
 
 function updateHud() {
     petsTreatedEl.textContent = String(petsTreated);
     coinsEl.textContent = String(coins);
     repEl.textContent = String(reputation);
+    updateAdventureUi();
 }
 
 function resetIngredientSelection() {
@@ -306,6 +674,7 @@ function hideChoicePanels() {
     ingredientsEl.classList.add('hidden');
     foodOptionsEl.classList.add('hidden');
     outfitOptionsEl.classList.add('hidden');
+    hideAdventureChoicePanels();
     resetIngredientSelection();
     resetFoodSelection();
     resetOutfitSelection();
@@ -321,7 +690,9 @@ function clearCurrentCustomer() {
     currentCustomer = null;
     isPetting = false;
     treatHintShownForCustomer = false;
+    babyHelperUsed = false;
     hideChoicePanels();
+    if (adventureTreatmentEl) adventureTreatmentEl.classList.add('hidden');
     barClean.style.width = '0%';
     barHappy.style.width = '0%';
     doors.forEach((door) => {
@@ -332,8 +703,10 @@ function clearCurrentCustomer() {
 function goToStartScreen() {
     clearPendingResultTimer();
     clearCurrentCustomer();
+    closeAdventureShop();
     gameState = 'START';
     activeTool = null;
+    fieldPlayer.ridingPetId = null;
     setVisibleScreen('START');
 }
 
@@ -522,6 +895,155 @@ function drawClinic() {
     drawCurrentCustomer();
     drawBabyBursts();
     drawAvatar(95, height - 110);
+}
+
+function drawGrassPatch(patch, hidden = false) {
+    ctx.save();
+    ctx.translate(patch.x, patch.y);
+    ctx.fillStyle = hidden ? 'rgba(52,131,70,0.92)' : 'rgba(104,191,96,0.78)';
+    ctx.beginPath();
+    ctx.roundRect(-patch.w / 2, -patch.h / 2, patch.w, patch.h, 26);
+    ctx.fill();
+    ctx.strokeStyle = hidden ? 'rgba(237,255,228,0.22)' : 'rgba(255,255,255,0.26)';
+    ctx.lineWidth = 2;
+    for (let blade = -patch.w / 2 + 10; blade < patch.w / 2; blade += 18) {
+        ctx.beginPath();
+        ctx.moveTo(blade, patch.h / 2 - 6);
+        ctx.lineTo(blade + 4, -patch.h / 2 + 10 + Math.sin(sceneTime + blade * 0.04) * 4);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawWildPet(pet) {
+    const anim = getPetAnimation(pet.type, sceneTime + pet.animSeed);
+    ctx.save();
+    ctx.translate(pet.x + anim.offsetX * 0.6, pet.y + anim.offsetY * 0.6);
+    ctx.rotate(anim.rotation);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = pet.alertTimer > 0 ? 'rgba(255,122,122,0.8)' : 'rgba(47,106,152,0.4)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.font = '54px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(PET_EMOJIS[pet.type] || '🐾', 0, 0);
+    if (pet.pregnant && adventureInventory.gogglesActive) {
+        ctx.font = '22px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.fillText('🍼', 24, -22 + Math.sin(sceneTime * 6 + pet.animSeed) * 3);
+    }
+    if (parentRevealTimer > 0) {
+        ctx.strokeStyle = 'rgba(255,214,109,0.75)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 38 + Math.sin(sceneTime * 10 + pet.animSeed) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawFieldPlayer() {
+    const mountedPet = getMountedPet();
+    if (mountedPet) {
+        drawWildPet(mountedPet);
+    }
+    if (fieldPlayer.hidden) return;
+    const drawX = mountedPet ? mountedPet.x : fieldPlayer.x;
+    const drawY = mountedPet ? mountedPet.y - 8 : fieldPlayer.y;
+    drawAvatar(drawX, drawY);
+}
+
+function drawAdventureField() {
+    const sky = ctx.createLinearGradient(0, 0, 0, height);
+    sky.addColorStop(0, '#b8efff');
+    sky.addColorStop(0.38, '#d8f7d2');
+    sky.addColorStop(1, '#8ed174');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(203,240,176,0.65)';
+    for (let stripe = 0; stripe < 9; stripe += 1) {
+        ctx.fillRect(0, height * 0.22 + stripe * 48, width, 20);
+    }
+
+    fieldGrassPatches.forEach((patch, index) => drawGrassPatch(patch, index % 2 === 0));
+    wildPets.forEach((pet) => drawWildPet(pet));
+    drawFieldPlayer();
+
+    if (fieldPlayer.hidden) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.font = 'bold 14px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Hidden in grass', fieldPlayer.x, fieldPlayer.y - 46);
+        ctx.restore();
+    }
+
+    if (gameState === 'ADVENTURE_TREAT') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,38,56,0.24)';
+        ctx.fillRect(0, 0, width, height);
+        drawCurrentCustomer();
+        ctx.restore();
+    }
+}
+
+function updateWildPet(pet, dt) {
+    pet.turnTimer -= dt;
+    pet.alertTimer = Math.max(0, pet.alertTimer - dt);
+    if (pet.turnTimer <= 0) {
+        const direction = normalizeVector(randomRange(-1, 1), randomRange(-1, 1));
+        pet.vx = direction.x;
+        pet.vy = direction.y;
+        pet.turnTimer = randomRange(1.4, 3.5);
+    }
+
+    const mountedPet = getMountedPet();
+    const playerTargetX = mountedPet ? mountedPet.x : fieldPlayer.x;
+    const playerTargetY = mountedPet ? mountedPet.y : fieldPlayer.y;
+    const playerDistance = distanceBetween(pet.x, pet.y, playerTargetX, playerTargetY);
+
+    let playerVisible = !fieldPlayer.hidden;
+    if (mountedPet && mountedPet.id !== pet.id) {
+        const rideForward = normalizeVector(mountedPet.vx || 0.1, mountedPet.vy || 0.1);
+        const toWatcher = { x: pet.x - mountedPet.x, y: pet.y - mountedPet.y };
+        const isBehindMountedPet = (toWatcher.x * rideForward.x) + (toWatcher.y * rideForward.y) < 0;
+        if (isBehindMountedPet) playerVisible = false;
+    }
+
+    if (playerVisible && playerDistance < 130) {
+        const flee = normalizeVector(pet.x - playerTargetX, pet.y - playerTargetY);
+        pet.vx = flee.x;
+        pet.vy = flee.y;
+        pet.alertTimer = 1.25;
+    }
+
+    const moveSpeed = pet.speed + (pet.alertTimer > 0 ? 46 : 0);
+    pet.x = clamp(pet.x + pet.vx * moveSpeed * dt, 42, width - 42);
+    pet.y = clamp(pet.y + pet.vy * moveSpeed * dt, height * 0.2, height - 44);
+}
+
+function updateAdventureField(dt) {
+    if (parentRevealTimer > 0) parentRevealTimer = Math.max(0, parentRevealTimer - dt);
+    if (gameState === 'ADVENTURE') {
+        const move = getAdventureMovementVector();
+        fieldPlayer.x = clamp(fieldPlayer.x + move.x * fieldPlayer.speed * dt, 32, width - 32);
+        fieldPlayer.y = clamp(fieldPlayer.y + move.y * fieldPlayer.speed * dt, height * 0.2, height - 28);
+        const mountedPet = getMountedPet();
+        if (mountedPet) {
+            mountedPet.x = fieldPlayer.x;
+            mountedPet.y = fieldPlayer.y;
+            mountedPet.vx = move.x || mountedPet.vx;
+            mountedPet.vy = move.y || mountedPet.vy;
+        }
+        fieldPlayer.hidden = !mountedPet && playerInGrass();
+        wildPets.forEach((pet) => updateWildPet(pet, dt));
+    }
 }
 
 function drawAvatar(x, y) {
@@ -736,6 +1258,12 @@ function finishCare() {
     resultCoinsEl.textContent = String(totalEarned);
     resultHappyEl.textContent = String(resultHearts);
 
+    if (finishedCustomer.source === 'adventure') {
+        updateHud();
+        completeAdventureTreatment(finishedCustomer, totalEarned);
+        return;
+    }
+
     gameState = 'RESULT_PENDING';
     isPetting = false;
     hideChoicePanels();
@@ -794,6 +1322,11 @@ function refreshIngredientOptions() {
         const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
         button.classList.toggle('hidden', !shouldShow);
     });
+    adventureIngButtons.forEach((button) => {
+        const isDeliveryButton = button.dataset.ing === 'delivery';
+        const shouldShow = currentCustomer.pregnant ? isDeliveryButton : !isDeliveryButton;
+        button.classList.toggle('hidden', !shouldShow);
+    });
 }
 
 function applyDeliveryKit() {
@@ -821,10 +1354,12 @@ function applyDeliveryKit() {
     });
     emitPetParticles(width * 0.5 + 36, height * 0.75 - 12, currentCustomer.pet.type, 10);
     Sound.success();
-    showToast('Baby delivered! +5 coins and +1 reputation. 🍼');
+    showToast(`Baby delivered${currentCustomer.babyCount > 1 ? `! ${currentCustomer.babyCount} babies joined the nursery. 🍼` : '! +5 coins and +1 reputation. 🍼'}`);
+    updateAdventureTreatmentUi();
     maybeFinishCare();
 
     ingredientsEl.classList.add('hidden');
+    adventureMedicineEl.classList.add('hidden');
     resetIngredientSelection();
 }
 
@@ -858,7 +1393,9 @@ function applyTreatmentByIngredient(ingredientCode) {
 
     maybeFinishCare();
     ingredientsEl.classList.add('hidden');
+    adventureMedicineEl.classList.add('hidden');
     resetIngredientSelection();
+    updateAdventureTreatmentUi();
 }
 
 function applyFeedByChoice(foodChoice) {
@@ -877,7 +1414,9 @@ function applyFeedByChoice(foodChoice) {
     maybeFinishCare();
 
     foodOptionsEl.classList.add('hidden');
+    adventureFoodEl.classList.add('hidden');
     resetFoodSelection();
+    updateAdventureTreatmentUi();
 }
 
 function applyOutfitChoice(outfitChoice) {
@@ -894,7 +1433,9 @@ function applyOutfitChoice(outfitChoice) {
     maybeFinishCare();
 
     outfitOptionsEl.classList.add('hidden');
+    adventureOutfitsEl.classList.add('hidden');
     resetOutfitSelection();
+    updateAdventureTreatmentUi();
 }
 
 function handleWash() {
@@ -909,6 +1450,7 @@ function handleWash() {
         Sound.click();
         maybeFinishCare();
     }
+    updateAdventureTreatmentUi();
 }
 
 function handlePetting(x, y, intensity = 20) {
@@ -924,6 +1466,7 @@ function handlePetting(x, y, intensity = 20) {
         currentCustomer.requiredTasks = currentCustomer.requiredTasks.filter((task) => task !== 'pet');
         maybeFinishCare();
     }
+    updateAdventureTreatmentUi();
 }
 
 function setActiveTool(tool) {
@@ -992,11 +1535,127 @@ function setActiveTool(tool) {
     }
 }
 
+function toggleAdventureShop(forceOpen = null) {
+    const shouldOpen = forceOpen === null ? adventureShopEl.classList.contains('hidden') : forceOpen;
+    adventureShopEl.classList.toggle('hidden', !shouldOpen);
+    if (shouldOpen) {
+        setAdventureStatus('Buy catch balls before you head deeper into the field.');
+    }
+}
+
+function buyAdventureBall() {
+    if (coins < ADVENTURE_BALL_COST) {
+        showToast('You need more coins to buy a catch ball.', 'error');
+        return;
+    }
+    coins -= ADVENTURE_BALL_COST;
+    adventureInventory.balls += 1;
+    saveAdventure();
+    updateHud();
+    showToast('Catch ball added to your adventure inventory.');
+}
+
+function triggerAdventureTool(tool) {
+    if (!currentCustomer) return;
+    hideAdventureChoicePanels();
+    if (tool === 'examine') {
+        if (currentCustomer.pregnant) {
+            showToast(`This pet is expecting ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`);
+        } else if (currentCustomer.pet.ailment) {
+            showToast(`Diagnosis: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}`);
+        } else {
+            showToast('No obvious illness found. Focus on comfort care.');
+        }
+        return;
+    }
+    if (tool === 'wash') {
+        handleWash();
+        return;
+    }
+    if (tool === 'treat') {
+        if (!currentCustomer.requiredTasks.includes('treat') && !currentCustomer.requiredTasks.includes('deliver')) {
+            showToast('This pet does not need medicine right now.');
+            return;
+        }
+        refreshIngredientOptions();
+        adventureMedicineEl.classList.remove('hidden');
+        return;
+    }
+    if (tool === 'pet') {
+        handlePetting(width * 0.5, height * 0.75, 24);
+        return;
+    }
+    if (tool === 'feed') {
+        adventureFoodEl.classList.remove('hidden');
+        return;
+    }
+    if (tool === 'dress') {
+        adventureOutfitsEl.classList.remove('hidden');
+    }
+}
+
+function captureWildPet(pet) {
+    if (adventureInventory.balls <= 0) {
+        showToast('No balls left. Buy more in the field shop.', 'error');
+        return;
+    }
+    adventureInventory.balls -= 1;
+    wildPets = wildPets.filter((candidate) => candidate.id !== pet.id);
+    emitPetParticles(pet.x, pet.y, pet.type, 10);
+    Sound.success();
+    saveAdventure();
+    updateAdventureUi();
+    beginAdventureTreatment(pet);
+}
+
+function toggleRidePet(pet) {
+    if (fieldPlayer.ridingPetId === pet.id) {
+        fieldPlayer.ridingPetId = null;
+        fieldPlayer.hidden = playerInGrass();
+        setAdventureStatus('You hopped off the pet. Use tall grass to stay hidden again.');
+        return;
+    }
+    fieldPlayer.ridingPetId = pet.id;
+    fieldPlayer.hidden = false;
+    setAdventureStatus('You hopped on a pet. Pets behind it cannot spot you.');
+}
+
+function useParentDoorHelp() {
+    if (parentDoorHelps <= 0 || currentCustomer || gameState !== 'CLINIC') return;
+    const availableDoor = doors.find((door) => !door.open) || doors[0];
+    if (!availableDoor) return;
+    parentDoorHelps = Math.max(0, parentDoorHelps - 1);
+    saveAdventure();
+    updateAdventureUi();
+    spawnCustomerForDoor(availableDoor);
+    showToast('A parent helper opened a clinic door for you!');
+}
+
+function handleAdventurePointerDown(x, y) {
+    if (gameState !== 'ADVENTURE') return;
+    const pet = getClosestWildPet(x, y, 72);
+    if (!pet) return;
+    if (distanceBetween(fieldPlayer.x, fieldPlayer.y, pet.x, pet.y) > 96) {
+        showToast('Move closer to the pet first.');
+        return;
+    }
+    if (currentAdventureAction === 'jump') {
+        toggleRidePet(pet);
+        return;
+    }
+    captureWildPet(pet);
+}
+
 canvas.addEventListener('pointerdown', (event) => {
     ensureAudio();
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+
+    if (gameState === 'ADVENTURE') {
+        handleAdventurePointerDown(x, y);
+        return;
+    }
 
     if (gameState !== 'CLINIC') return;
 
@@ -1095,6 +1754,17 @@ canvas.addEventListener('pointerup', () => {
     isPetting = false;
 });
 
+window.addEventListener('keydown', (event) => {
+    pressedKeys.add(event.key.toLowerCase());
+    if (event.key === 'Escape' && fieldPlayer.ridingPetId) {
+        fieldPlayer.ridingPetId = null;
+    }
+});
+
+window.addEventListener('keyup', (event) => {
+    pressedKeys.delete(event.key.toLowerCase());
+});
+
 toolWashBtn.addEventListener('click', () => setActiveTool('wash'));
 toolExamineBtn.addEventListener('click', () => setActiveTool('examine'));
 toolTreatBtn.addEventListener('click', () => setActiveTool('treat'));
@@ -1177,6 +1847,7 @@ modeBackBtn.addEventListener('click', () => {
 modeClassicBtn.addEventListener('click', () => {
     currentMode = 'classic';
     clearCurrentCustomer();
+    closeAdventureShop();
     setVisibleScreen('CLINIC');
     gameState = 'CLINIC';
     resize();
@@ -1184,18 +1855,121 @@ modeClassicBtn.addEventListener('click', () => {
     updateHud();
 });
 
+modeAdventureBtn.addEventListener('click', () => {
+    resize();
+    startAdventureMode();
+});
+
 backToMenu.addEventListener('click', () => {
     goToStartScreen();
 });
+
+adventureBackBtn.addEventListener('click', () => {
+    goToStartScreen();
+});
+
+openShopBtn.addEventListener('click', () => {
+    if (currentMode === 'adventure' || gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
+        toggleAdventureShop(true);
+    } else {
+        showToast('The field shop opens in Adventure Mode.');
+    }
+});
+
+adventureShopBtn.addEventListener('click', () => {
+    toggleAdventureShop(true);
+});
+
+adventureCloseShopBtn.addEventListener('click', () => {
+    toggleAdventureShop(false);
+});
+
+adventureBuyBallBtn.addEventListener('click', () => {
+    buyAdventureBall();
+});
+
+parentDoorHelpBtn.addEventListener('click', () => {
+    useParentDoorHelp();
+});
+
+adventureGogglesBtn.addEventListener('click', () => {
+    adventureInventory.gogglesActive = !adventureInventory.gogglesActive;
+    saveAdventure();
+    updateAdventureUi();
+    setAdventureStatus(adventureInventory.gogglesActive ? 'Goggles are on. Expecting pets now glow with a baby marker.' : 'Goggles are off.');
+});
+
+adventureActionCatchBtn.addEventListener('click', () => setAdventureAction('catch'));
+adventureActionJumpBtn.addEventListener('click', () => setAdventureAction('jump'));
+adventureToolExamineBtn.addEventListener('click', () => triggerAdventureTool('examine'));
+adventureToolWashBtn.addEventListener('click', () => triggerAdventureTool('wash'));
+adventureToolTreatBtn.addEventListener('click', () => triggerAdventureTool('treat'));
+adventureToolPetBtn.addEventListener('click', () => triggerAdventureTool('pet'));
+adventureToolFeedBtn.addEventListener('click', () => triggerAdventureTool('feed'));
+adventureToolDressBtn.addEventListener('click', () => triggerAdventureTool('dress'));
+adventureBabyHelperBtn.addEventListener('click', () => callBabyHelper());
+
+adventureIngButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedIngredient = button.dataset.ing;
+    applyTreatmentByIngredient(selectedIngredient);
+}));
+
+adventureFoodButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedFood = button.dataset.food;
+    applyFeedByChoice(selectedFood);
+}));
+
+adventureOutfitButtons.forEach((button) => button.addEventListener('click', () => {
+    selectedOutfit = button.dataset.outfit;
+    applyOutfitChoice(selectedOutfit);
+}));
 
 resultContinue.addEventListener('click', () => {
     setVisibleScreen('CLINIC');
     gameState = 'CLINIC';
 });
 
+function updateJoystickFromPoint(clientX, clientY) {
+    const rect = adventureJoystickEl.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const rawX = clientX - centerX;
+    const rawY = clientY - centerY;
+    const maxRadius = rect.width * 0.28;
+    const vector = normalizeVector(rawX, rawY);
+    const magnitude = Math.min(maxRadius, Math.hypot(rawX, rawY));
+    joystickState.dx = vector.x * (magnitude / maxRadius);
+    joystickState.dy = vector.y * (magnitude / maxRadius);
+    adventureJoystickKnobEl.style.transform = `translate(calc(-50% + ${vector.x * magnitude}px), calc(-50% + ${vector.y * magnitude}px))`;
+}
+
+function resetJoystick() {
+    joystickState.active = false;
+    joystickState.dx = 0;
+    joystickState.dy = 0;
+    adventureJoystickKnobEl.style.transform = 'translate(-50%, -50%)';
+}
+
+adventureJoystickEl.addEventListener('pointerdown', (event) => {
+    joystickState.active = true;
+    updateJoystickFromPoint(event.clientX, event.clientY);
+});
+
+adventureJoystickEl.addEventListener('pointermove', (event) => {
+    if (!joystickState.active) return;
+    updateJoystickFromPoint(event.clientX, event.clientY);
+});
+
+adventureJoystickEl.addEventListener('pointerup', resetJoystick);
+adventureJoystickEl.addEventListener('pointerleave', resetJoystick);
+adventureJoystickEl.addEventListener('pointercancel', resetJoystick);
+
 window.addEventListener('resize', () => {
     resize();
     createDoors();
+    createAdventureGrassPatches();
+    fieldPlayer.x = clamp(fieldPlayer.x || width * 0.5, 32, width - 32);
+    fieldPlayer.y = clamp(fieldPlayer.y || height * 0.78, height * 0.2, height - 28);
 });
 
 function frame(time) {
@@ -1204,9 +1978,16 @@ function frame(time) {
     lastTime = time;
     sceneTime += dt;
     updateParticles(dt);
+    if (gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
+        updateAdventureField(dt);
+    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawClinic();
+    if (gameState === 'ADVENTURE' || gameState === 'ADVENTURE_TREAT') {
+        drawAdventureField();
+    } else {
+        drawClinic();
+    }
     drawParticles();
     requestAnimationFrame(frame);
 }
@@ -1223,10 +2004,13 @@ if (window.LeaderboardAPI && globalLeaderboardEl) {
 
 loadAvatar();
 loadNursery();
+loadAdventure();
 syncAvatarUi();
 renderNursery();
 updateHud();
 resize();
 createDoors();
+resetFieldPlayer();
+createAdventureGrassPatches();
 setVisibleScreen('START');
 requestAnimationFrame(frame);

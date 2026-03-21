@@ -78,10 +78,9 @@
                         <span class="mode-card-title">Classic Mode</span>
                         <span class="mode-card-copy">Treat pets, help expecting pets deliver, and grow your nursery.</span>
                     </button>
-                    <button class="mode-card mode-card-locked" type="button" disabled>
+                    <button id="mode-adventure" class="mode-card" type="button">
                         <span class="mode-card-title">Adventure Mode</span>
-                        <span class="mode-card-copy">Story-based clinic visits and longer pet journeys.</span>
-                        <span class="mode-card-tag">Coming Soon</span>
+                        <span class="mode-card-copy">Sneak through tall grass, capture wild pets, and treat them out in the field.</span>
                     </button>
                     <button class="mode-card mode-card-locked" type="button" disabled>
                         <span class="mode-card-title">Helping Mode</span>
@@ -97,6 +96,7 @@
             <div id="clinic-topbar">
                 <button id="back-to-menu">Menu</button>
                 <button id="open-shop">Shop</button>
+                <button id="parent-door-help" class="hidden">Parent Help</button>
             </div>
             <div id="clinic-canvas-wrap"></div>
             <div id="vet-ui" class="vet-ui">
@@ -134,6 +134,64 @@
                     <div class="bar-row">Clean: <div class="bar"><div id="bar-clean" style="width:0%"></div></div></div>
                     <div class="bar-row">Happy: <div class="bar"><div id="bar-happy" style="width:0%"></div></div></div>
                 </div>
+            </div>
+        </div>
+
+        <div id="adventure-screen" class="screen hidden">
+            <div id="adventure-topbar">
+                <button id="adventure-back">Menu</button>
+                <button id="adventure-shop-btn">Shop</button>
+            </div>
+
+            <div id="adventure-inventory" class="adventure-panel">
+                <div class="adventure-chip">Balls: <span id="adventure-ball-count">0</span></div>
+                <button id="adventure-goggles" type="button" class="adventure-chip">Goggles: Off</button>
+                <button id="adventure-action-catch" type="button" class="adventure-chip active">Catch</button>
+                <button id="adventure-action-jump" type="button" class="adventure-chip">Jump</button>
+            </div>
+
+            <div id="adventure-status" class="adventure-status">Sneak through tall grass to stay hidden from wild pets.</div>
+
+            <div id="adventure-shop" class="adventure-panel hidden">
+                <h3>Field Shop</h3>
+                <p>Spend treatment coins on catch balls for Adventure Mode.</p>
+                <button id="adventure-buy-ball" type="button">Buy Catch Ball (15 coins)</button>
+                <button id="adventure-close-shop" type="button">Close Shop</button>
+            </div>
+
+            <div id="adventure-treatment" class="adventure-panel hidden">
+                <h3 id="adventure-treatment-title">Treat Wild Pet</h3>
+                <p id="adventure-treatment-copy">Catch a pet to begin treatment.</p>
+                <div id="adventure-tool-grid" class="adventure-tool-grid">
+                    <button id="adventure-tool-examine" type="button">Examine</button>
+                    <button id="adventure-tool-wash" type="button">Wash</button>
+                    <button id="adventure-tool-treat" type="button">Treat</button>
+                    <button id="adventure-tool-pet" type="button">Pet</button>
+                    <button id="adventure-tool-feed" type="button">Feed</button>
+                    <button id="adventure-tool-dress" type="button">Dress</button>
+                    <button id="adventure-baby-helper" type="button" class="hidden">Call Baby Helper</button>
+                </div>
+                <div id="adventure-medicine" class="adventure-choice-row hidden">
+                    <button class="adv-ing" data-ing="0" type="button">Antiseptic</button>
+                    <button class="adv-ing" data-ing="1" type="button">Syrup</button>
+                    <button class="adv-ing" data-ing="2" type="button">EarDrops</button>
+                    <button class="adv-ing" data-ing="delivery" type="button">Delivery Kit 🍼</button>
+                </div>
+                <div id="adventure-food" class="adventure-choice-row hidden">
+                    <button class="adv-food" data-food="kibble" type="button">Kibble 🥣</button>
+                    <button class="adv-food" data-food="fish" type="button">Fish 🐟</button>
+                    <button class="adv-food" data-food="carrot" type="button">Carrot 🥕</button>
+                </div>
+                <div id="adventure-outfits" class="adventure-choice-row hidden">
+                    <button class="adv-outfit" data-outfit="bow" type="button">Bow 🎀</button>
+                    <button class="adv-outfit" data-outfit="glasses" type="button">Glasses 🕶️</button>
+                    <button class="adv-outfit" data-outfit="hat" type="button">Hat 🎩</button>
+                    <button class="adv-outfit" data-outfit="cape" type="button">Cape 🦸</button>
+                </div>
+            </div>
+
+            <div id="adventure-joystick" class="adventure-joystick">
+                <div id="adventure-joystick-knob" class="adventure-joystick-knob"></div>
             </div>
         </div>
 
