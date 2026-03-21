@@ -23,8 +23,11 @@
             <h1>VET CLINIC</h1>
             <p>Care for pets — wash, examine, treat, pet, and dress them.</p>
             <p class="tip">Tip: Click a clinic door with your mouse, or tap it on mobile, to get a new customer.</p>
-            <button id="start-btn">Start</button>
-            <button id="avatar-btn">Customize Avatar</button>
+            <div class="start-actions">
+                <button id="start-btn">Start</button>
+                <button id="avatar-btn">Customize Avatar</button>
+                <button id="nursery-btn">Nursery 🍼</button>
+            </div>
             <div id="avatar-panel" class="avatar-panel hidden">
                 <h3>Avatar Customization</h3>
                 <div class="avatar-group">
@@ -64,6 +67,30 @@
             <a href="../index.html" class="menu-link">Back to Games</a>
         </div>
 
+        <div id="mode-screen" class="screen hidden">
+            <div class="mode-shell">
+                <h2>Choose a Mode</h2>
+                <p>Classic Mode is ready now. Adventure Mode and Helping Mode are listed for future updates.</p>
+                <div class="mode-grid">
+                    <button id="mode-classic" class="mode-card" type="button">
+                        <span class="mode-card-title">Classic Mode</span>
+                        <span class="mode-card-copy">Treat pets, help expecting pets deliver, and grow your nursery.</span>
+                    </button>
+                    <button class="mode-card mode-card-locked" type="button" disabled>
+                        <span class="mode-card-title">Adventure Mode</span>
+                        <span class="mode-card-copy">Story-based clinic visits and longer pet journeys.</span>
+                        <span class="mode-card-tag">Coming Soon</span>
+                    </button>
+                    <button class="mode-card mode-card-locked" type="button" disabled>
+                        <span class="mode-card-title">Helping Mode</span>
+                        <span class="mode-card-copy">Special care missions focused on kindness and recovery.</span>
+                        <span class="mode-card-tag">Coming Soon</span>
+                    </button>
+                </div>
+                <button id="mode-back" type="button">Back</button>
+            </div>
+        </div>
+
         <div id="clinic-screen" class="screen hidden">
             <div id="clinic-topbar">
                 <button id="back-to-menu">Menu</button>
@@ -85,6 +112,7 @@
                     <button class="ing" data-ing="0">Antiseptic</button>
                     <button class="ing" data-ing="1">Syrup</button>
                     <button class="ing" data-ing="2">EarDrops</button>
+                    <button class="ing" data-ing="delivery">Delivery Kit 🍼</button>
                 </div>
 
                 <div id="food-options" class="hidden">
@@ -114,6 +142,18 @@
                 <p>Coins earned: <span id="result-coins">10</span></p>
                 <button id="result-continue">Continue</button>
                 <a href="../index.html" class="menu-link">Back to Games</a>
+            </div>
+        </div>
+
+        <div id="nursery-screen" class="screen hidden">
+            <div class="nursery-shell">
+                <div class="nursery-header">
+                    <h2>Baby Nursery</h2>
+                    <p id="nursery-count">0 / 50 babies</p>
+                </div>
+                <div id="nursery-grid" class="nursery-grid"></div>
+                <p id="nursery-empty" class="nursery-empty">No babies yet. Help an expecting pet in Classic Mode to grow your nursery.</p>
+                <button id="nursery-back" type="button">Back</button>
             </div>
         </div>
     </div>

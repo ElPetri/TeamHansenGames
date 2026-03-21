@@ -1,6 +1,7 @@
 :root{--bg:#f4fbff;--panel:#ffffff;--accent:#4aa3ff;--muted:#6a7a8a;--pink:#ff7cc4;--mint:#68dfb1;--sun:#ffd66d;--sky:#8fd2ff}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:"Trebuchet MS","Comic Sans MS",Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#dff4ff 0%,#f9e8ff 55%,#fff5d9 100%)}
+.hidden{display:none !important}
 #game-container{position:relative;height:100vh;overflow:hidden}
 canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#dff3ff,#f7fbff)}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px}
@@ -10,11 +11,33 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 .screen .tip{font-size:14px;color:#335d7f}
 .screen button, .menu-link{margin-top:12px;padding:10px 14px;border-radius:999px;border:2px solid rgba(74,163,255,.45);background:linear-gradient(180deg,#fff 0%,#f4fbff 100%);color:#2f6a98;cursor:pointer;text-decoration:none;box-shadow:0 8px 20px rgba(111,142,255,.15)}
 .screen button:hover,.menu-link:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(111,142,255,.22)}
+.screen button:disabled{cursor:not-allowed;transform:none;box-shadow:none}
+.start-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 #clinic-topbar{position:absolute;top:12px;left:12px;display:flex;gap:8px}
 #clinic-screen{pointer-events:none}
 #clinic-topbar,#vet-ui{pointer-events:auto}
 #hud{position:absolute;top:12px;right:12px;padding:10px 14px;background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,255,255,0.88));border-radius:14px;border:2px solid rgba(143,210,255,.45);box-shadow:0 10px 24px rgba(74,163,255,0.14)}
 @media (max-width:640px){.screen h1{font-size:22px}.screen p{font-size:14px}}
+
+.mode-shell,.nursery-shell{width:min(92vw,900px);padding:24px 22px;border-radius:28px;border:3px solid rgba(143,210,255,.68);background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(242,250,255,.95));box-shadow:0 22px 54px rgba(33,87,128,.18)}
+.mode-shell h2,.nursery-shell h2{margin:0;color:#2b6b9a;font-size:30px;text-align:center}
+.mode-shell p{margin:10px auto 0;max-width:580px}
+.mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.mode-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:190px;padding:20px;border-radius:22px;border:2px solid rgba(74,163,255,.38);background:linear-gradient(180deg,#ffffff,#eff8ff);text-align:left;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.mode-card:hover:not(:disabled){transform:translateY(-4px);box-shadow:0 14px 28px rgba(74,163,255,.16);border-color:rgba(74,163,255,.7)}
+.mode-card-title{font-size:22px;font-weight:800;color:#23618d}
+.mode-card-copy{font-size:15px;line-height:1.45;color:#51687d}
+.mode-card-tag{margin-top:auto;padding:6px 10px;border-radius:999px;background:rgba(106,122,138,.12);color:#4e6377;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.mode-card-locked{opacity:.62;background:linear-gradient(180deg,#f6f8fb,#eef1f4);border-color:rgba(106,122,138,.24)}
+
+.nursery-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.nursery-header p{margin:0;color:#335d7f;font-weight:800}
+.nursery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;max-height:52vh;overflow:auto;padding-right:4px}
+.nursery-card{padding:14px 12px;border-radius:18px;border:2px solid rgba(143,210,255,.4);background:linear-gradient(180deg,#fff8fe,#f3fbff);box-shadow:0 10px 18px rgba(74,163,255,.1);text-align:center}
+.nursery-card-emoji{display:block;font-size:42px;line-height:1;margin-bottom:8px}
+.nursery-card-title{margin:0 0 4px;color:#214f74;font-size:16px;font-weight:800}
+.nursery-card-meta{margin:0;color:#5a7287;font-size:12px;line-height:1.45}
+.nursery-empty{margin:18px auto 8px;max-width:460px;color:#52718a}
 
 /* Vet UI styles */
 .vet-ui{position:absolute;left:12px;bottom:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
@@ -73,6 +96,9 @@ canvas{display:block;width:100%;height:100%;background:linear-gradient(180deg,#d
 .vet-toast.show{opacity:1}
 .vet-toast.info{background:rgba(36,91,140,.95)}
 .vet-toast.error{background:rgba(192,54,54,.95)}
+
+@media (max-width:860px){.mode-grid{grid-template-columns:1fr}.mode-card{min-height:auto}.nursery-header{flex-direction:column;align-items:center}}
+@media (max-width:640px){.start-actions{flex-direction:column;align-items:center}#tool-bar{flex-wrap:wrap}.bar{width:min(240px,70vw)}}
 
 @keyframes floatTitle {
 	0%,100% { transform: translateY(0); }
