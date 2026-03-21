@@ -162,6 +162,7 @@
             <div id="adventure-treatment" class="adventure-panel hidden">
                 <h3 id="adventure-treatment-title">Treat Wild Pet</h3>
                 <p id="adventure-treatment-copy">Catch a pet to begin treatment.</p>
+                <p id="adventure-treatment-hint" class="adventure-treatment-hint">Use the care buttons below to finish the rescue.</p>
                 <div id="adventure-tool-grid" class="adventure-tool-grid">
                     <button id="adventure-tool-examine" type="button">Examine</button>
                     <button id="adventure-tool-wash" type="button">Wash</button>
@@ -187,6 +188,23 @@
                     <button class="adv-outfit" data-outfit="glasses" type="button">Glasses 🕶️</button>
                     <button class="adv-outfit" data-outfit="hat" type="button">Hat 🎩</button>
                     <button class="adv-outfit" data-outfit="cape" type="button">Cape 🦸</button>
+                </div>
+            </div>
+
+            <div id="adventure-npc-prompt" class="adventure-panel adventure-prompt hidden">
+                <h3>Field Friend</h3>
+                <p id="adventure-npc-copy">How many coins do you want?</p>
+                <div class="adventure-choice-row adventure-coin-presets">
+                    <button type="button" data-coin-amount="10">10</button>
+                    <button type="button" data-coin-amount="25">25</button>
+                    <button type="button" data-coin-amount="50">50</button>
+                    <button type="button" data-coin-amount="100">100</button>
+                </div>
+                <label class="adventure-prompt-label" for="adventure-npc-input">Coins</label>
+                <input id="adventure-npc-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Enter coin amount">
+                <div class="adventure-choice-row">
+                    <button id="adventure-npc-confirm" type="button">Give Coins</button>
+                    <button id="adventure-npc-cancel" type="button">Cancel</button>
                 </div>
             </div>
 

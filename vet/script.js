@@ -48,6 +48,7 @@ const adventureStatusEl = document.getElementById('adventure-status');
 const adventureTreatmentEl = document.getElementById('adventure-treatment');
 const adventureTreatmentTitleEl = document.getElementById('adventure-treatment-title');
 const adventureTreatmentCopyEl = document.getElementById('adventure-treatment-copy');
+const adventureTreatmentHintEl = document.getElementById('adventure-treatment-hint');
 const adventureToolExamineBtn = document.getElementById('adventure-tool-examine');
 const adventureToolWashBtn = document.getElementById('adventure-tool-wash');
 const adventureToolTreatBtn = document.getElementById('adventure-tool-treat');
@@ -61,6 +62,12 @@ const adventureOutfitsEl = document.getElementById('adventure-outfits');
 const adventureIngButtons = document.querySelectorAll('#adventure-medicine .adv-ing');
 const adventureFoodButtons = document.querySelectorAll('#adventure-food .adv-food');
 const adventureOutfitButtons = document.querySelectorAll('#adventure-outfits .adv-outfit');
+const adventureNpcPromptEl = document.getElementById('adventure-npc-prompt');
+const adventureNpcCopyEl = document.getElementById('adventure-npc-copy');
+const adventureNpcInputEl = document.getElementById('adventure-npc-input');
+const adventureNpcPresetButtons = document.querySelectorAll('#adventure-npc-prompt [data-coin-amount]');
+const adventureNpcConfirmBtn = document.getElementById('adventure-npc-confirm');
+const adventureNpcCancelBtn = document.getElementById('adventure-npc-cancel');
 const adventureJoystickEl = document.getElementById('adventure-joystick');
 const adventureJoystickKnobEl = document.getElementById('adventure-joystick-knob');
 
@@ -147,9 +154,11 @@ let parentDoorHelps = 0;
 let parentRevealTimer = 0;
 let babyHelperUsed = false;
 let nextWildPetId = 1;
+let fieldNpc = null;
 
 const pressedKeys = new Set();
 const joystickState = { active: false, dx: 0, dy: 0 };
+const adventurePointerState = { joystickPointerId: null };
 const adventureInventory = {
     balls: 0,
     gogglesUnlocked: true,
@@ -412,17 +421,60 @@ function normalizeVector(x, y) {
     return { x: x / magnitude, y: y / magnitude };
 }
 
+function getAdventureFieldTop() {
+    return height * 0.22;
+}
+
+function getGrassPatchBounds(patch) {
+    const w = patch.wRatio * width;
+    const h = patch.hRatio * height;
+    const fieldTop = getAdventureFieldTop();
+    return {
+        x: clamp(patch.xRatio * width, w / 2 + 42, width - w / 2 - 42),
+        y: clamp(patch.yRatio * height, fieldTop + h / 2, height - h / 2 - 44),
+        w,
+        h
+    };
+}
+
+function scaleAdventureEntity(entity, previousWidth, previousHeight, bottomPadding) {
+    if (!entity || !previousWidth || !previousHeight) return;
+    const previousTop = previousHeight * 0.22;
+    const nextTop = getAdventureFieldTop();
+    const previousFieldHeight = Math.max(1, previousHeight - previousTop - bottomPadding);
+    const nextFieldHeight = Math.max(1, height - nextTop - bottomPadding);
+    entity.x = clamp((entity.x / previousWidth) * width, 42, width - 42);
+    entity.y = clamp(nextTop + (((entity.y - previousTop) / previousFieldHeight) * nextFieldHeight), nextTop, height - bottomPadding);
+}
+
+function getAdventureTaskLabel(task) {
+    if (task === 'wash') return 'Wash';
+    if (task === 'deliver') return 'Use Delivery Kit';
+    if (task === 'treat') return 'Treat';
+    if (task === 'pet') return 'Pet';
+    if (task === 'feed') return 'Feed';
+    if (task === 'dress') return 'Dress';
+    return task;
+}
+
 function createAdventureGrassPatches() {
     fieldGrassPatches = [];
     const patchCount = Math.max(8, Math.floor(width / 120));
     for (let index = 0; index < patchCount; index += 1) {
         fieldGrassPatches.push({
-            x: randomRange(70, width - 70),
-            y: randomRange(height * 0.22, height - 70),
-            w: randomRange(80, 150),
-            h: randomRange(50, 90)
+            xRatio: randomRange(0.12, 0.88),
+            yRatio: randomRange(0.3, 0.88),
+            wRatio: randomRange(0.1, 0.18),
+            hRatio: randomRange(0.08, 0.14)
         });
     }
+}
+
+function createAdventureNpc() {
+    fieldNpc = {
+        x: width * 0.18,
+        y: height * 0.66
+    };
 }
 
 function createWildPet() {
@@ -438,6 +490,8 @@ function createWildPet() {
         y,
         vx: direction.x,
         vy: direction.y,
+        facingX: direction.x,
+        facingY: direction.y,
         speed: randomRange(26, 42),
         animSeed: Math.random() * Math.PI * 2,
         turnTimer: randomRange(1.2, 3.4),
@@ -475,9 +529,11 @@ function startAdventureMode() {
     clearCurrentCustomer();
     resetFieldPlayer();
     createAdventureGrassPatches();
+    createAdventureNpc();
     populateWildPets();
     babyHelperUsed = false;
     hideAdventureChoicePanels();
+    closeAdventureNpcPrompt();
     closeAdventureShop();
     setAdventureAction('catch');
     updateAdventureUi();
@@ -500,12 +556,13 @@ function getAdventureMovementVector() {
 }
 
 function playerInGrass() {
-    return fieldGrassPatches.some((patch) => (
-        fieldPlayer.x > patch.x - patch.w / 2
-        && fieldPlayer.x < patch.x + patch.w / 2
-        && fieldPlayer.y > patch.y - patch.h / 2
-        && fieldPlayer.y < patch.y + patch.h / 2
-    ));
+    return fieldGrassPatches.some((patch) => {
+        const bounds = getGrassPatchBounds(patch);
+        return fieldPlayer.x > bounds.x - bounds.w / 2
+            && fieldPlayer.x < bounds.x + bounds.w / 2
+            && fieldPlayer.y > bounds.y - bounds.h / 2
+            && fieldPlayer.y < bounds.y + bounds.h / 2;
+    });
 }
 
 function getMountedPet() {
@@ -557,9 +614,11 @@ function beginAdventureTreatment(pet) {
     babyHelperUsed = false;
     activeTool = null;
     hideAdventureChoicePanels();
+    closeAdventureNpcPrompt();
     updateAdventureTreatmentUi();
     adventureTreatmentEl.classList.remove('hidden');
-    setAdventureStatus('Treat the rescued pet before heading back into the grass.');
+    showToast('Rescue started. Use Examine, Wash, Treat, Feed, and Dress to finish care.');
+    setAdventureStatus('Rescue in progress: complete every treatment task before heading back into the grass.');
     gameState = 'ADVENTURE_TREAT';
 }
 
@@ -582,14 +641,47 @@ function updateAdventureTreatmentUi() {
     if (!currentCustomer) {
         adventureTreatmentTitleEl.textContent = 'Treat Wild Pet';
         adventureTreatmentCopyEl.textContent = 'Catch a pet to begin treatment.';
+        adventureTreatmentHintEl.textContent = 'Use the care buttons below to finish the rescue.';
         adventureBabyHelperBtn.classList.add('hidden');
         return;
     }
+    const remainingTasks = currentCustomer.requiredTasks.map((task) => getAdventureTaskLabel(task));
     adventureTreatmentTitleEl.textContent = `${PET_LABELS[currentCustomer.pet.type]} Rescue`;
     adventureTreatmentCopyEl.textContent = currentCustomer.pregnant
         ? `This pet is expecting ${currentCustomer.babyCount > 1 ? `${currentCustomer.babyCount} babies` : 'a baby'}.`
         : (currentCustomer.pet.ailment ? `Diagnosis: ${getAilmentDiagnosisText(currentCustomer.pet.ailment)}.` : 'No obvious illness. Finish the comfort tasks.');
+    adventureTreatmentHintEl.textContent = remainingTasks.length
+        ? `Next steps: ${remainingTasks.join(', ')}.`
+        : 'All care tasks are complete.';
     adventureBabyHelperBtn.classList.toggle('hidden', babyHelperUsed || !hasBabyHelperForPet(currentCustomer.pet.type));
+}
+
+function closeAdventureNpcPrompt() {
+    if (!adventureNpcPromptEl) return;
+    adventureNpcPromptEl.classList.add('hidden');
+    if (adventureNpcInputEl) adventureNpcInputEl.value = '';
+}
+
+function openAdventureNpcPrompt() {
+    if (!fieldNpc || !adventureNpcPromptEl) return;
+    const friendLabel = avatar.gender === 'girl' ? 'Boy field friend' : 'Girl field friend';
+    adventureNpcCopyEl.textContent = `${friendLabel}: How many coins do you want?`;
+    adventureNpcInputEl.value = adventureNpcInputEl.value || '25';
+    adventureNpcPromptEl.classList.remove('hidden');
+    setAdventureStatus('Choose a coin amount from your field friend.');
+}
+
+function confirmAdventureNpcCoins() {
+    const requestedAmount = Math.floor(Number(adventureNpcInputEl.value));
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+        showToast('Enter a valid coin amount.', 'error');
+        return;
+    }
+    coins += requestedAmount;
+    updateHud();
+    closeAdventureNpcPrompt();
+    showToast(`Your field friend gave you ${requestedAmount} coins.`);
+    setAdventureStatus('Coins received. Explore the field when you are ready.');
 }
 
 function callBabyHelper() {
@@ -703,6 +795,7 @@ function clearCurrentCustomer() {
 function goToStartScreen() {
     clearPendingResultTimer();
     clearCurrentCustomer();
+    closeAdventureNpcPrompt();
     closeAdventureShop();
     gameState = 'START';
     activeTool = null;
@@ -898,18 +991,19 @@ function drawClinic() {
 }
 
 function drawGrassPatch(patch, hidden = false) {
+    const bounds = getGrassPatchBounds(patch);
     ctx.save();
-    ctx.translate(patch.x, patch.y);
+    ctx.translate(bounds.x, bounds.y);
     ctx.fillStyle = hidden ? 'rgba(52,131,70,0.92)' : 'rgba(104,191,96,0.78)';
     ctx.beginPath();
-    ctx.roundRect(-patch.w / 2, -patch.h / 2, patch.w, patch.h, 26);
+    ctx.roundRect(-bounds.w / 2, -bounds.h / 2, bounds.w, bounds.h, 26);
     ctx.fill();
     ctx.strokeStyle = hidden ? 'rgba(237,255,228,0.22)' : 'rgba(255,255,255,0.26)';
     ctx.lineWidth = 2;
-    for (let blade = -patch.w / 2 + 10; blade < patch.w / 2; blade += 18) {
+    for (let blade = -bounds.w / 2 + 10; blade < bounds.w / 2; blade += 18) {
         ctx.beginPath();
-        ctx.moveTo(blade, patch.h / 2 - 6);
-        ctx.lineTo(blade + 4, -patch.h / 2 + 10 + Math.sin(sceneTime + blade * 0.04) * 4);
+        ctx.moveTo(blade, bounds.h / 2 - 6);
+        ctx.lineTo(blade + 4, -bounds.h / 2 + 10 + Math.sin(sceneTime + blade * 0.04) * 4);
         ctx.stroke();
     }
     ctx.restore();
@@ -958,6 +1052,32 @@ function drawFieldPlayer() {
     drawAvatar(drawX, drawY);
 }
 
+function drawFieldNpc() {
+    if (!fieldNpc) return;
+    drawAvatar(fieldNpc.x, fieldNpc.y, {
+        gender: avatar.gender === 'girl' ? 'boy' : 'girl',
+        hair: '#5a4330',
+        outfit: '#ff8fb8',
+        label: 'Friend'
+    });
+    if (distanceBetween(fieldPlayer.x, fieldPlayer.y, fieldNpc.x, fieldNpc.y) <= 118 && gameState === 'ADVENTURE') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.strokeStyle = 'rgba(74,163,255,0.34)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(fieldNpc.x - 38, fieldNpc.y - 78, 76, 28, 14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#2f6a98';
+        ctx.font = 'bold 13px "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Tap to talk', fieldNpc.x, fieldNpc.y - 64);
+        ctx.restore();
+    }
+}
+
 function drawAdventureField() {
     const sky = ctx.createLinearGradient(0, 0, 0, height);
     sky.addColorStop(0, '#b8efff');
@@ -973,6 +1093,7 @@ function drawAdventureField() {
 
     fieldGrassPatches.forEach((patch, index) => drawGrassPatch(patch, index % 2 === 0));
     wildPets.forEach((pet) => drawWildPet(pet));
+    drawFieldNpc();
     drawFieldPlayer();
 
     if (fieldPlayer.hidden) {
@@ -994,12 +1115,20 @@ function drawAdventureField() {
 }
 
 function updateWildPet(pet, dt) {
+    if (fieldPlayer.ridingPetId === pet.id) {
+        pet.x = fieldPlayer.x;
+        pet.y = fieldPlayer.y;
+        pet.alertTimer = 0;
+        return;
+    }
     pet.turnTimer -= dt;
     pet.alertTimer = Math.max(0, pet.alertTimer - dt);
     if (pet.turnTimer <= 0) {
         const direction = normalizeVector(randomRange(-1, 1), randomRange(-1, 1));
         pet.vx = direction.x;
         pet.vy = direction.y;
+        pet.facingX = direction.x;
+        pet.facingY = direction.y;
         pet.turnTimer = randomRange(1.4, 3.5);
     }
 
@@ -1010,9 +1139,9 @@ function updateWildPet(pet, dt) {
 
     let playerVisible = !fieldPlayer.hidden;
     if (mountedPet && mountedPet.id !== pet.id) {
-        const rideForward = normalizeVector(mountedPet.vx || 0.1, mountedPet.vy || 0.1);
+        const rideForward = normalizeVector(mountedPet.facingX || mountedPet.vx || 0.1, mountedPet.facingY || mountedPet.vy || 0.1);
         const toWatcher = { x: pet.x - mountedPet.x, y: pet.y - mountedPet.y };
-        const isBehindMountedPet = (toWatcher.x * rideForward.x) + (toWatcher.y * rideForward.y) < 0;
+        const isBehindMountedPet = (toWatcher.x * rideForward.x) + (toWatcher.y * rideForward.y) < -12;
         if (isBehindMountedPet) playerVisible = false;
     }
 
@@ -1020,6 +1149,8 @@ function updateWildPet(pet, dt) {
         const flee = normalizeVector(pet.x - playerTargetX, pet.y - playerTargetY);
         pet.vx = flee.x;
         pet.vy = flee.y;
+        pet.facingX = flee.x;
+        pet.facingY = flee.y;
         pet.alertTimer = 1.25;
     }
 
@@ -1038,28 +1169,37 @@ function updateAdventureField(dt) {
         if (mountedPet) {
             mountedPet.x = fieldPlayer.x;
             mountedPet.y = fieldPlayer.y;
-            mountedPet.vx = move.x || mountedPet.vx;
-            mountedPet.vy = move.y || mountedPet.vy;
+            if (Math.abs(move.x) > 0.001 || Math.abs(move.y) > 0.001) {
+                mountedPet.vx = move.x;
+                mountedPet.vy = move.y;
+                mountedPet.facingX = move.x;
+                mountedPet.facingY = move.y;
+            }
         }
         fieldPlayer.hidden = !mountedPet && playerInGrass();
         wildPets.forEach((pet) => updateWildPet(pet, dt));
     }
 }
 
-function drawAvatar(x, y) {
+function drawAvatar(x, y, options = {}) {
+    const avatarGender = options.gender || avatar.gender;
+    const avatarSkin = options.skin || avatar.skin;
+    const avatarHair = options.hair || avatar.hair;
+    const avatarOutfit = options.outfit || avatar.outfit;
+    const avatarLabel = options.label || 'You';
     ctx.save();
     ctx.translate(x, y);
 
-    ctx.fillStyle = avatar.outfit;
+    ctx.fillStyle = avatarOutfit;
     ctx.fillRect(-18, -2, 36, 42);
 
-    ctx.fillStyle = avatar.skin;
+    ctx.fillStyle = avatarSkin;
     ctx.beginPath();
     ctx.arc(0, -22, 14, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = avatar.hair;
-    if (avatar.gender === 'girl') {
+    ctx.fillStyle = avatarHair;
+    if (avatarGender === 'girl') {
         ctx.fillRect(-14, -36, 28, 10);
         ctx.fillRect(-15, -30, 8, 12);
         ctx.fillRect(7, -30, 8, 12);
@@ -1107,7 +1247,7 @@ function drawAvatar(x, y) {
 
     ctx.fillStyle = '#1f4d70';
     ctx.font = '12px Arial';
-    ctx.fillText('You', -10, 58);
+    ctx.fillText(avatarLabel, avatarLabel === 'You' ? -10 : -16, 58);
     ctx.restore();
 }
 
@@ -1539,6 +1679,7 @@ function toggleAdventureShop(forceOpen = null) {
     const shouldOpen = forceOpen === null ? adventureShopEl.classList.contains('hidden') : forceOpen;
     adventureShopEl.classList.toggle('hidden', !shouldOpen);
     if (shouldOpen) {
+        closeAdventureNpcPrompt();
         setAdventureStatus('Buy catch balls before you head deeper into the field.');
     }
 }
@@ -1617,7 +1758,7 @@ function toggleRidePet(pet) {
     }
     fieldPlayer.ridingPetId = pet.id;
     fieldPlayer.hidden = false;
-    setAdventureStatus('You hopped on a pet. Pets behind it cannot spot you.');
+    setAdventureStatus('You hopped on a pet. Tap the pet again to hop off, and pets behind it cannot spot you.');
 }
 
 function useParentDoorHelp() {
@@ -1633,6 +1774,24 @@ function useParentDoorHelp() {
 
 function handleAdventurePointerDown(x, y) {
     if (gameState !== 'ADVENTURE') return;
+    if (adventureNpcPromptEl && !adventureNpcPromptEl.classList.contains('hidden')) return;
+    if (fieldNpc && distanceBetween(x, y, fieldNpc.x, fieldNpc.y) <= 76) {
+        if (distanceBetween(fieldPlayer.x, fieldPlayer.y, fieldNpc.x, fieldNpc.y) > 118) {
+            showToast('Walk closer to your field friend first.');
+            return;
+        }
+        openAdventureNpcPrompt();
+        return;
+    }
+    const mountedPet = getMountedPet();
+    if (mountedPet && currentAdventureAction === 'jump') {
+        const tappedMountedPet = distanceBetween(x, y, mountedPet.x, mountedPet.y) <= 84;
+        const tappedRider = distanceBetween(x, y, fieldPlayer.x, fieldPlayer.y) <= 84;
+        if (tappedMountedPet || tappedRider) {
+            toggleRidePet(mountedPet);
+            return;
+        }
+    }
     const pet = getClosestWildPet(x, y, 72);
     if (!pet) return;
     if (distanceBetween(fieldPlayer.x, fieldPlayer.y, pet.x, pet.y) > 96) {
@@ -1757,7 +1916,9 @@ canvas.addEventListener('pointerup', () => {
 window.addEventListener('keydown', (event) => {
     pressedKeys.add(event.key.toLowerCase());
     if (event.key === 'Escape' && fieldPlayer.ridingPetId) {
-        fieldPlayer.ridingPetId = null;
+        const mountedPet = getMountedPet();
+        if (mountedPet) toggleRidePet(mountedPet);
+        else fieldPlayer.ridingPetId = null;
     }
 });
 
@@ -1924,6 +2085,26 @@ adventureOutfitButtons.forEach((button) => button.addEventListener('click', () =
     applyOutfitChoice(selectedOutfit);
 }));
 
+adventureNpcPresetButtons.forEach((button) => button.addEventListener('click', () => {
+    adventureNpcInputEl.value = button.dataset.coinAmount;
+}));
+
+adventureNpcConfirmBtn.addEventListener('click', () => {
+    confirmAdventureNpcCoins();
+});
+
+adventureNpcCancelBtn.addEventListener('click', () => {
+    closeAdventureNpcPrompt();
+    setAdventureStatus('Sneak through tall grass and look for your next patient.');
+});
+
+adventureNpcInputEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        confirmAdventureNpcCoins();
+    }
+});
+
 resultContinue.addEventListener('click', () => {
     setVisibleScreen('CLINIC');
     gameState = 'CLINIC';
@@ -1943,7 +2124,11 @@ function updateJoystickFromPoint(clientX, clientY) {
     adventureJoystickKnobEl.style.transform = `translate(calc(-50% + ${vector.x * magnitude}px), calc(-50% + ${vector.y * magnitude}px))`;
 }
 
-function resetJoystick() {
+function resetJoystick(event = null) {
+    if (event && adventurePointerState.joystickPointerId !== null && adventureJoystickEl.hasPointerCapture(event.pointerId)) {
+        adventureJoystickEl.releasePointerCapture(event.pointerId);
+    }
+    adventurePointerState.joystickPointerId = null;
     joystickState.active = false;
     joystickState.dx = 0;
     joystickState.dy = 0;
@@ -1951,23 +2136,32 @@ function resetJoystick() {
 }
 
 adventureJoystickEl.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
     joystickState.active = true;
+    adventurePointerState.joystickPointerId = event.pointerId;
+    adventureJoystickEl.setPointerCapture(event.pointerId);
     updateJoystickFromPoint(event.clientX, event.clientY);
 });
 
 adventureJoystickEl.addEventListener('pointermove', (event) => {
+    if (adventurePointerState.joystickPointerId !== event.pointerId) return;
     if (!joystickState.active) return;
+    event.preventDefault();
     updateJoystickFromPoint(event.clientX, event.clientY);
 });
 
-adventureJoystickEl.addEventListener('pointerup', resetJoystick);
-adventureJoystickEl.addEventListener('pointerleave', resetJoystick);
-adventureJoystickEl.addEventListener('pointercancel', resetJoystick);
+adventureJoystickEl.addEventListener('pointerup', (event) => resetJoystick(event));
+adventureJoystickEl.addEventListener('pointerleave', (event) => resetJoystick(event));
+adventureJoystickEl.addEventListener('pointercancel', (event) => resetJoystick(event));
 
 window.addEventListener('resize', () => {
+    const previousWidth = width;
+    const previousHeight = height;
     resize();
     createDoors();
-    createAdventureGrassPatches();
+    scaleAdventureEntity(fieldPlayer, previousWidth, previousHeight, 28);
+    wildPets.forEach((pet) => scaleAdventureEntity(pet, previousWidth, previousHeight, 44));
+    scaleAdventureEntity(fieldNpc, previousWidth, previousHeight, 54);
     fieldPlayer.x = clamp(fieldPlayer.x || width * 0.5, 32, width - 32);
     fieldPlayer.y = clamp(fieldPlayer.y || height * 0.78, height * 0.2, height - 28);
 });
