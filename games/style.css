@@ -22,7 +22,7 @@ body {
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
-    background-image:
+    background-image: 
         radial-gradient(ellipse at top, #15152a 0%, transparent 50%),
         radial-gradient(ellipse at bottom, #0a1520 0%, transparent 50%);
 }
@@ -38,7 +38,7 @@ body {
 }
 
 .container {
-    max-width: 860px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
     min-height: 100vh;
@@ -48,53 +48,56 @@ body {
     z-index: 1;
 }
 
-/* Hero */
+/* Header */
 header {
     text-align: center;
-    padding: 4rem 0 3rem;
+    padding: 3rem 0;
 }
 
 header h1 {
-    font-size: 2.8rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--accent);
     text-shadow: 0 0 30px var(--accent-glow);
-    margin-bottom: 1rem;
-}
-
-.tagline {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 1rem;
-    letter-spacing: 0.02em;
+    margin-bottom: 0.5rem;
 }
 
 .subtitle {
     color: var(--text-dim);
-    font-size: 0.97rem;
-    line-height: 1.7;
-    max-width: 640px;
-    margin: 0 auto;
+    font-size: 1.1rem;
 }
 
-/* Projects Grid */
-.projects-grid {
+.home-link {
+    display: inline-block;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 1.25rem;
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.home-link:hover {
+    color: var(--accent);
+}
+
+/* Games Grid */
+.games-grid {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
     padding: 1rem 0;
 }
 
-.project-card {
+.game-card {
     display: flex;
     align-items: center;
     gap: 1.5rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.75rem;
+    padding: 1.5rem;
     text-decoration: none;
     color: inherit;
     transition: all 0.3s ease;
@@ -102,7 +105,7 @@ header h1 {
     overflow: hidden;
 }
 
-.project-card::before {
+.game-card::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -111,20 +114,20 @@ header h1 {
     transition: opacity 0.3s;
 }
 
-.project-card:hover {
+.game-card:hover {
     border-color: var(--accent);
     transform: translateY(-4px);
     box-shadow: 0 10px 40px rgba(0, 240, 255, 0.15);
 }
 
-.project-card:hover::before {
+.game-card:hover::before {
     opacity: 1;
 }
 
-.project-icon {
+.game-icon {
     font-size: 3.5rem;
-    width: 84px;
-    height: 84px;
+    width: 80px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -135,31 +138,31 @@ header h1 {
     z-index: 1;
 }
 
-.project-body {
+.game-info {
     flex: 1;
     position: relative;
     z-index: 1;
 }
 
-.project-body h2 {
-    font-size: 1.35rem;
+.game-info h2 {
+    font-size: 1.4rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: var(--text);
 }
 
-.project-card:hover .project-body h2 {
+.game-card:hover .game-info h2 {
     color: var(--accent);
 }
 
-.project-body p {
-    font-size: 0.92rem;
+.game-info p {
+    font-size: 0.9rem;
     color: var(--text-dim);
-    line-height: 1.65;
-    margin-bottom: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
 }
 
-.project-tags {
+.game-tags {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
@@ -176,17 +179,17 @@ header h1 {
     letter-spacing: 0.5px;
 }
 
-.tag-highlight {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: rgba(0, 240, 255, 0.08);
+.tag-new {
+    color: var(--warning);
+    border-color: var(--warning);
+    background: rgba(255, 170, 0, 0.12);
 }
 
-.project-card:hover .tag-highlight {
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+.game-card:hover .tag-new {
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.35);
 }
 
-.cta-btn {
+.play-btn {
     padding: 0.75rem 1.5rem;
     background: transparent;
     border: 2px solid var(--accent);
@@ -200,10 +203,24 @@ header h1 {
     z-index: 1;
 }
 
-.project-card:hover .cta-btn {
+.game-card:hover .play-btn {
     background: var(--accent);
     color: var(--bg-dark);
     box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.hub-score-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.hub-score-section h2 {
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
 }
 
 /* Footer */
@@ -238,34 +255,30 @@ footer {
 /* Mobile */
 @media (max-width: 640px) {
     header h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
-    .tagline {
-        font-size: 1.05rem;
-    }
-
-    .project-card {
+    .game-card {
         flex-direction: column;
         text-align: center;
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
 
-    .project-icon {
+    .game-icon {
         width: 70px;
         height: 70px;
         font-size: 2.5rem;
     }
 
-    .project-body h2 {
+    .game-info h2 {
         font-size: 1.2rem;
     }
 
-    .project-tags {
+    .game-tags {
         justify-content: center;
     }
 
-    .cta-btn {
+    .play-btn {
         width: 100%;
         text-align: center;
     }

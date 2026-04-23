@@ -3,180 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Hansen Games</title>
-    <link rel="stylesheet" href="shared/leaderboard.css">
+    <title>TeamHansen.us — Technical Projects</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="binary-rain" aria-hidden="true"></canvas>
     <div class="container">
         <header>
-            <h1>⚡ Team Hansen Games</h1>
-            <p class="subtitle">Fun & Educational Browser Games</p>
+            <h1>⚡ TeamHansen.us</h1>
+            <p class="tagline">Built to Learn. Built to Ship. Built to Demonstrate.</p>
+            <p class="subtitle">A collection of personal projects exploring security tooling, digital logic, and full-stack systems — built from scratch in vanilla HTML, CSS, and JavaScript, deployed on Cloudflare.</p>
         </header>
 
-        <main class="games-grid">
-            <section class="hub-score-section">
-                <h2>Today's Top Scores</h2>
-                <div id="hub-daily-scores" class="leaderboard-shell"></div>
-            </section>
+        <main class="projects-grid">
 
-            <a href="vet/index.html" class="game-card">
-                <div class="game-icon">🐾</div>
-                <div class="game-info">
-                    <h2>Vet Clinic</h2>
-                    <p>Care for pets: wash, examine, treat, pet and dress adorable animals. Build your clinic and unlock outfits.</p>
-                    <div class="game-tags">
-                        <span class="tag tag-new">New</span>
-                        <span class="tag">Casual</span>
-                        <span class="tag">Family</span>
-                        <span class="tag">Care</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-
-            <a href="goomba/index.html" class="game-card">
-                <div class="game-icon">🚀</div>
-                <div class="game-info">
-                    <h2>Goomba Invaders</h2>
-                    <p>Pilot Mario through deep space, blast descending Goombas, collect powerups, and call in Yoshi to chomp enemy ships and launch Bob-omb explosions.</p>
-                    <div class="game-tags">
-                        <span class="tag tag-new">New</span>
-                        <span class="tag">Action</span>
-                        <span class="tag">Arcade</span>
-                        <span class="tag">Space</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-
-            <a href="balloon/index.html" class="game-card">
-                <div class="game-icon">🎈</div>
-                <div class="game-info">
-                    <h2>Pop The Balloon</h2>
-                    <p>Defend your base against waves of incoming balloons! Upgrade your weapons, unlock new abilities, and survive as long as you can.</p>
-                    <div class="game-tags">
-                        <span class="tag">Action</span>
-                        <span class="tag">Arcade</span>
-                        <span class="tag">Upgrades</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-
-            <a href="snake/index.html" class="game-card">
-                <div class="game-icon">🐍</div>
-                <div class="game-info">
-                    <h2>Snake Neon</h2>
-                    <p>Guide the neon snake, collect energy orbs, and grow without crashing. Classic arcade gameplay with a cyber glow.</p>
-                    <div class="game-tags">
-                        <span class="tag">Arcade</span>
-                        <span class="tag">Classic</span>
-                        <span class="tag">Neon</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-            <a href="math/index.html" class="game-card">
-                <div class="game-icon">🧮</div>
-                <div class="game-info">
-                    <h2>Math Blaster</h2>
-                    <p>Now updated: unlock personalities, use the new Shop, and enjoy score-based background themes while solving falling problems fast.</p>
-                    <div class="game-tags">
-                        <span class="tag tag-new">Updated</span>
-                        <span class="tag">Educational</span>
-                        <span class="tag">Typing</span>
-                        <span class="tag">Arcade</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-
-            <a href="logic/index.html" class="game-card">
-                <div class="game-icon">🔌</div>
-                <div class="game-info">
-                    <h2>Logic Gates Fun</h2>
-                    <p>Learn digital logic through interactive puzzles! Drag and drop AND, OR, NOT, and more gates to solve challenges and understand how computers think.</p>
-                    <div class="game-tags">
-                        <span class="tag">Educational</span>
-                        <span class="tag">Puzzle</span>
-                        <span class="tag">Sandbox</span>
-                    </div>
-                </div>
-                <div class="play-btn">Play →</div>
-            </a>
-
-            <a href="lab/index.html" class="game-card">
-                <div class="game-icon">🧪</div>
-                <div class="game-info">
-                    <h2>Learn by Playing Lab</h2>
-                    <p>Short interactive experiments that teach one concept in under 2 minutes. Start with the Security Lab and become a cryptographer.</p>
-                    <div class="game-tags">
-                        <span class="tag">Educational</span>
-                        <span class="tag">Puzzle</span>
-                        <span class="tag">New</span>
-                    </div>
-                </div>
-                <div class="play-btn">Enter →</div>
-            </a>
-
-            <a href="password/index.html" class="game-card">
-                <div class="game-icon">🛡️</div>
-                <div class="game-info">
+            <a href="password/index.html" class="project-card">
+                <div class="project-icon">🔐</div>
+                <div class="project-body">
                     <h2>Password Strength Visualizer</h2>
-                    <p>See entropy, time-to-crack, and common-pattern warnings as you type. Includes a privacy-first breach check.</p>
-                    <div class="game-tags">
+                    <p>Real-time entropy calculation and time-to-crack analysis. Visualizes the security gap between weak and strong credentials, flags common patterns, and includes a privacy-first breach check using k-anonymity.</p>
+                    <div class="project-tags">
+                        <span class="tag tag-highlight">Security</span>
+                        <span class="tag">Cryptography</span>
                         <span class="tag">Educational</span>
-                        <span class="tag">Security</span>
-                        <span class="tag">Tool</span>
                     </div>
                 </div>
-                <div class="play-btn">Open →</div>
+                <div class="cta-btn">Explore →</div>
             </a>
 
-            <a href="snow/index.html" class="game-card">
-                <div class="game-icon">❄️</div>
-                <div class="game-info">
-                    <h2>Snow Way!</h2>
-                    <p>Predict weekend snowfall and the return-to-work date. Lock in your guess and compete for the best forecast.</p>
-                    <div class="game-tags">
-                        <span class="tag">Prediction</span>
-                        <span class="tag">Office</span>
-                        <span class="tag">Weather</span>
+            <a href="logic/index.html" class="project-card">
+                <div class="project-icon">🔌</div>
+                <div class="project-body">
+                    <h2>Logic Gates Circuit Builder</h2>
+                    <p>Interactive digital logic simulator. Drag and drop AND, OR, NOT, XOR, NAND, and NOR gates to build circuits and solve structured puzzles. Demonstrates hardware-layer thinking foundational to firmware analysis and low-level systems.</p>
+                    <div class="project-tags">
+                        <span class="tag tag-highlight">Digital Logic</span>
+                        <span class="tag">Hardware</span>
+                        <span class="tag">Puzzle</span>
                     </div>
                 </div>
-                <div class="play-btn">Play →</div>
+                <div class="cta-btn">Build →</div>
             </a>
 
-            <a href="overview/index.html" class="game-card">
-                <div class="game-icon">🧭</div>
-                <div class="game-info">
-                    <h2>How We Built This (Beginner Friendly)</h2>
-                    <p>A simple guide to our VS Code, GitHub, and Cloudflare workflow, with AI help at every step.</p>
-                    <div class="game-tags">
-                        <span class="tag tag-new">New</span>
-                        <span class="tag">Beginner</span>
-                        <span class="tag">AI</span>
-                        <span class="tag">Workflow</span>
+            <a href="lab/index.html" class="project-card">
+                <div class="project-icon">🧪</div>
+                <div class="project-body">
+                    <h2>Learn by Playing Lab</h2>
+                    <p>Short interactive experiments that teach one concept at a time — starting with the Security Lab. Build a Caesar cipher, explore XOR encryption, and understand how cryptographic primitives work hands-on.</p>
+                    <div class="project-tags">
+                        <span class="tag tag-highlight">Cryptography</span>
+                        <span class="tag">Interactive</span>
+                        <span class="tag">Educational</span>
                     </div>
                 </div>
-                <div class="play-btn">Open →</div>
+                <div class="cta-btn">Explore →</div>
             </a>
 
-            <a href="suggestions/index.html" class="game-card">
-                <div class="game-icon">💡</div>
-                <div class="game-info">
-                    <h2>Submit Ideas, Features, Bug Fixes</h2>
-                    <p>Share your suggestions to help shape what Team Hansen Games builds next.</p>
-                    <div class="game-tags">
-                        <span class="tag tag-new">New</span>
-                        <span class="tag">Community</span>
-                        <span class="tag">Feedback</span>
-                        <span class="tag">Roadmap</span>
+            <a href="overview/index.html" class="project-card">
+                <div class="project-icon">⚡</div>
+                <div class="project-body">
+                    <h2>How This Was Built</h2>
+                    <p>A full-stack build walkthrough: Linux (WSL/Debian), VS Code, Git, Cloudflare Workers backed by D1 SQLite, and a custom asset pipeline — documented from blank terminal to live deployment with AI-assisted development at every step.</p>
+                    <div class="project-tags">
+                        <span class="tag tag-highlight">Full-Stack</span>
+                        <span class="tag">Cloudflare Workers</span>
+                        <span class="tag">DevOps</span>
                     </div>
                 </div>
-                <div class="play-btn">Open →</div>
+                <div class="cta-btn">Read →</div>
+            </a>
+
+            <a href="games/index.html" class="project-card">
+                <div class="project-icon">🎮</div>
+                <div class="project-body">
+                    <h2>All Projects &amp; Games</h2>
+                    <p>Eleven browser-based games and tools — arcade, educational, and experimental. All built from scratch in vanilla HTML/CSS/JS. Features a live leaderboard backed by a Cloudflare D1 database and a custom Workers API with request routing and profanity filtering.</p>
+                    <div class="project-tags">
+                        <span class="tag">Vanilla JS</span>
+                        <span class="tag">Canvas API</span>
+                        <span class="tag">Workers API</span>
+                    </div>
+                </div>
+                <div class="cta-btn">Browse →</div>
             </a>
 
         </main>
@@ -186,7 +94,6 @@
         </footer>
     </div>
 
-    <script src="shared/leaderboard.js"></script>
     <script>
         (function () {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -312,13 +219,6 @@
             });
         })();
 
-    </script>
-    <script>
-        (function () {
-            const container = document.getElementById('hub-daily-scores');
-            if (!container || !window.LeaderboardAPI) return;
-            window.LeaderboardAPI.renderHubDailyWidget(container);
-        })();
     </script>
 </body>
 </html>
