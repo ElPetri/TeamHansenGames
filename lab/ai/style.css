@@ -260,6 +260,7 @@
 }
 
 .ai-canvas {
+    display: block;
     width: 100%;
     max-width: 640px;
     height: 300px;
@@ -289,15 +290,15 @@
 
 .line-handle {
     position: absolute;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: #e7f8ff;
     border: 2px solid var(--lab-accent);
     box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
     transform: translate(-50%, -50%);
-    cursor: grab;
-    touch-action: none;
+    pointer-events: none;
+    z-index: 10;
 }
 
 .class-legend {

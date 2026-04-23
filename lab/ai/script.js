@@ -288,8 +288,12 @@ function setupLine(exp) {
     holder.appendChild(handleB);
 
     wrap.appendChild(holder);
+    const instructions = createElement('div', 'raised-tile', 'Drag anywhere on the canvas to move the line endpoints. Get 90%+ accuracy, then click ✓ Check Line.');
+    instructions.style.fontSize = '0.8rem';
+    instructions.style.opacity = '0.75';
     const stats = createElement('div', 'raised-tile', 'Accuracy: 0%');
-    const checkBtn = createElement('button', 'maze-btn', 'Check Line');
+    const checkBtn = createElement('button', 'primary-btn', '✓ Check Line');
+    wrap.appendChild(instructions);
     wrap.appendChild(stats);
     wrap.appendChild(checkBtn);
     const legend = createElement('div', 'class-legend');
@@ -303,7 +307,7 @@ function setupLine(exp) {
     workspace.appendChild(wrap);
 
     const points = generateClusterPoints(exp.seed, exp.clusters, exp.clusterCount);
-    let line = { x1: 0.1, y1: 0.5, x2: 0.9, y2: 0.5 };
+    let line = { x1: 0.1, y1: 0.85, x2: 0.9, y2: 0.85 };
     let hasInteracted = false;
     let currentAccuracy = 0;
 
@@ -342,31 +346,30 @@ function setupLine(exp) {
         stats.textContent = `Accuracy: ${Math.round(currentAccuracy * 100)}%`;
     };
 
-    const startDrag = (event, handleKey) => {
-        event.preventDefault();
-        const handle = event.currentTarget;
-        handle.setPointerCapture(event.pointerId);
+    canvas.style.cursor = 'crosshair';
+    canvas.addEventListener('pointerdown', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const cx = (event.clientX - rect.left) / rect.width;
+        const cy = (event.clientY - rect.top) / rect.height;
+        const distA = Math.hypot(cx - line.x1, cy - line.y1);
+        const distB = Math.hypot(cx - line.x2, cy - line.y2);
+        const handleKey = distA <= distB ? 'x1' : 'x2';
+        canvas.setPointerCapture(event.pointerId);
         const move = (moveEvent) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = clamp((moveEvent.clientX - rect.left) / rect.width, 0, 1);
-            const y = clamp((moveEvent.clientY - rect.top) / rect.height, 0, 1);
-            line[handleKey] = x;
-            line[handleKey === 'x1' ? 'y1' : 'y2'] = y;
+            const r = canvas.getBoundingClientRect();
+            line[handleKey] = clamp((moveEvent.clientX - r.left) / r.width, 0, 1);
+            line[handleKey === 'x1' ? 'y1' : 'y2'] = clamp((moveEvent.clientY - r.top) / r.height, 0, 1);
             hasInteracted = true;
             updateHandles();
             render();
         };
         const stop = () => {
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', stop);
-            handle.releasePointerCapture(event.pointerId);
+            canvas.removeEventListener('pointermove', move);
+            canvas.removeEventListener('pointerup', stop);
         };
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', stop);
-    };
-
-    handleA.addEventListener('pointerdown', (event) => startDrag(event, 'x1'));
-    handleB.addEventListener('pointerdown', (event) => startDrag(event, 'x2'));
+        canvas.addEventListener('pointermove', move);
+        canvas.addEventListener('pointerup', stop);
+    });
 
     checkBtn.addEventListener('click', () => {
         if (!hasInteracted) {
