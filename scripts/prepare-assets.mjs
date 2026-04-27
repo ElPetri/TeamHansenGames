@@ -8,6 +8,7 @@ const includePaths = [
   'index.html',
   'style.css',
   'shared',
+  'games',
   'balloon',
   'vet',
   'goomba',
