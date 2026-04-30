@@ -179,10 +179,10 @@ const CHAPTERS = [
                 id: 'dns-3',
                 label: 'Query sent to recursive resolver',
                 activeDevices: ['client', 'ap', 'isp'],
-                packet: { from: 'client', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query' },
+                packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Step 3 — Recursive resolver query',
-                    body: 'Still no answer. The OS sends a DNS query (UDP, port 53) to a <strong>recursive resolver</strong> — typically provided by your ISP or a public service like Google (8.8.8.8) or Cloudflare (1.1.1.1). It asks: <em>"What is the IP for teamhansen.us?"</em>',
+                    body: 'Still no answer. The OS sends a DNS query (UDP, port 53) destined for the <strong>recursive resolver</strong> — typically Google (8.8.8.8) or Cloudflare (1.1.1.1). But the client has no direct path to 8.8.8.8 — it only knows its <strong>default gateway</strong>. So at Layer 2 the frame is addressed to the <strong>Home Router</strong>, which will forward it toward the resolver on the client\'s behalf.',
                 },
                 advancedDetail: {
                     title: 'UDP Port 53',
