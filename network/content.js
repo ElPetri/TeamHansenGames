@@ -139,7 +139,7 @@ const CHAPTERS = [
                 activeDevices: ['client'],
                 packet: null,
                 explanation: {
-                    title: 'Step 1 — Browser DNS cache',
+                    title: 'Browser DNS cache',
                     body: 'Before making any network request, your browser checks its own internal DNS cache. If it recently looked up <em>teamhansen.us</em>, it might already know the IP address and can skip the entire lookup.',
                 },
                 advancedDetail: {
@@ -160,7 +160,7 @@ const CHAPTERS = [
                 activeDevices: ['client'],
                 packet: null,
                 explanation: {
-                    title: 'Step 2 — OS local lookup',
+                    title: 'OS local lookup',
                     body: 'The browser got a cache miss and asks the operating system to look up the address for teamhansen.us. The OS checks two local sources first: the <strong>hosts file</strong> (a static name-to-IP list on your device) and the <strong>OS-level DNS cache</strong>. Both are misses — no saved answer for teamhansen.us — so the OS must reach out to the Home Router.',
                 },
                 advancedDetail: {
@@ -181,7 +181,7 @@ const CHAPTERS = [
                 activeDevices: ['client', 'ap'],
                 packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
-                    title: 'Step 3 — Query sent to Home Router',
+                    title: 'Query sent to Home Router',
                     body: 'The client sends a DNS query to the Home Router (<code>192.168.1.1</code>), which acts as a local DNS forwarder. The Home Router then performs <strong>NAT</strong>: it rewrites the source IP from the client\'s private address (192.168.1.5) to the Home Router\'s public WAN address (203.0.113.42). From the internet\'s perspective, the query originates from the Home Router, not the client.',
                 },
                 advancedDetail: {
@@ -202,7 +202,7 @@ const CHAPTERS = [
                 activeDevices: ['ap', 'isp'],
                 packet: { from: 'ap', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query (NATed)' },
                 explanation: {
-                    title: 'Step 4 — Home Router forwards to ISP',
+                    title: 'Home Router forwards to ISP',
                     body: 'The <strong>Home Router</strong> sends the frame to its default gateway, the <strong>ISP</strong>, to try to resolve the DNS query. If the ISP Router can\'t resolve the DNS query, the ISP then routes the packet onward to the recursive resolver.',
                 },
                 advancedDetail: {
@@ -216,7 +216,7 @@ const CHAPTERS = [
                 activeDevices: ['isp', 'resolver'],
                 packet: { from: 'isp', to: 'resolver', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
-                    title: 'Step 5 — ISP forwards to DNS Resolver',
+                    title: 'ISP forwards to DNS Resolver',
                     body: 'The ISP routes the DNS query to a <strong>recursive resolver</strong> — a server dedicated to tracking down IP addresses on your behalf. The resolver will work through the DNS hierarchy to find the answer for teamhansen.us.',
                 },
                 advancedDetail: {
@@ -238,7 +238,7 @@ const CHAPTERS = [
                 packet: { from: 'isp', to: 'root-ns', color: 'var(--pkt-dns)', label: 'Root Query' },
                 dnsOnly: true,
                 explanation: {
-                    title: 'Step 5 — Root Name Server',
+                    title: 'Root Name Server',
                     body: 'The recursive resolver doesn\'t cache the answer, so it starts from the top. There are <strong>13 sets of root name servers</strong> (labeled A–M) distributed globally. The resolver asks a root server: <em>"Who handles .us domains?"</em>',
                 },
                 advancedDetail: {
@@ -260,7 +260,7 @@ const CHAPTERS = [
                 packet: { from: 'root-ns', to: 'isp', color: 'var(--pkt-dns)', label: 'Referral → .us NS' },
                 dnsOnly: true,
                 explanation: {
-                    title: 'Step 6 — TLD referral',
+                    title: 'TLD referral',
                     body: 'The root server doesn\'t know the final answer — it returns a <strong>referral</strong>: <em>"I don\'t know, but here are the name servers for .us"</em>. The resolver now queries the .us TLD name server.',
                 },
                 advancedDetail: {
@@ -282,7 +282,7 @@ const CHAPTERS = [
                 packet: { from: 'isp', to: 'tld-ns', color: 'var(--pkt-dns)', label: '.us TLD Query' },
                 dnsOnly: true,
                 explanation: {
-                    title: 'Step 7 — .us TLD Name Server',
+                    title: '.us TLD Name Server',
                     body: 'The recursive resolver now asks the .us TLD name server: <em>"Who is authoritative for teamhansen.us?"</em> The TLD server responds with another referral — the authoritative name server for the domain itself.',
                 },
                 advancedDetail: {
@@ -304,7 +304,7 @@ const CHAPTERS = [
                 packet: { from: 'isp', to: 'auth-ns', color: 'var(--pkt-dns)', label: 'Auth Query' },
                 dnsOnly: true,
                 explanation: {
-                    title: 'Step 8 — Authoritative Name Server',
+                    title: 'Authoritative Name Server',
                     body: 'Finally the resolver reaches the <strong>authoritative name server</strong> for <em>teamhansen.us</em>. This server has the definitive answer. It returns an <strong>A record</strong>: the IPv4 address of the web server.',
                 },
                 advancedDetail: {
@@ -325,7 +325,7 @@ const CHAPTERS = [
                 activeDevices: ['client', 'isp'],
                 packet: { from: 'isp', to: 'client', color: 'var(--pkt-dns)', label: 'DNS Reply' },
                 explanation: {
-                    title: 'Step 6 — IP delivered & cached',
+                    title: 'IP delivered & cached',
                     body: 'The authoritative server\'s answer travels back through the recursive resolver, which <strong>caches the result</strong> for future queries (for the duration of the TTL), then delivers the IP address to your computer. Your browser now knows the destination: <code>203.0.113.5</code>.',
                 },
                 advancedDetail: {
