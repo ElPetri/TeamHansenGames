@@ -14,7 +14,7 @@ let currentChapter   = null;
 let currentStepIndex = 0;
 let dnsMode          = 'basic'; // 'basic' | 'advanced'
 let inspectorVisible = false;
-let animationSpeed   = 1200;    // ms per packet animation
+let animationSpeed   = 700;     // ms per hop (each device-to-device leg)
 let isAnimating      = false;
 let isFullJourney    = false;
 let fullJourneySteps = [];
@@ -302,7 +302,7 @@ async function runPacketAnimation(svgEl, packetDef) {
     const toIdx   = allDeviceIds.indexOf(to);
 
     if (fromIdx === -1 || toIdx === -1) {
-        // DNS devices — animate directly
+        // DNS devices — animate directly, one hop
         await animatePacketBetween(svgEl, from, to, color, duration);
         return;
     }
@@ -311,8 +311,9 @@ async function runPacketAnimation(svgEl, packetDef) {
         ? allDeviceIds.slice(fromIdx, toIdx + 1)
         : allDeviceIds.slice(toIdx, fromIdx + 1).reverse();
 
+    // Each hop gets the full per-hop duration so longer paths feel proportionally longer
     for (let i = 0; i < path.length - 1; i++) {
-        await animatePacketBetween(svgEl, path[i], path[i + 1], color, duration / Math.max(path.length - 1, 1));
+        await animatePacketBetween(svgEl, path[i], path[i + 1], color, duration);
     }
 }
 
@@ -421,7 +422,7 @@ function goToStep(index) {
     if (step.natEvent && step.natLabel) {
         natLabelEl.textContent = step.natLabel;
         natLabelEl.classList.remove('hidden');
-        setTimeout(() => natLabelEl.classList.add('hidden'), 4000);
+        // Label stays visible until the user navigates to a different step
     }
 
     // Packet animation
