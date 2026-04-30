@@ -182,7 +182,7 @@ const CHAPTERS = [
                 packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Step 3 — Frame delivered to default gateway',
-                    body: 'The OS sends a DNS query (UDP, port 53) destined for the <strong>recursive resolver</strong> (8.8.8.8). But the client has no direct path to 8.8.8.8 — it only knows its <strong>default gateway</strong>. So at Layer 2 the frame is addressed to the <strong>Home Router</strong>, which will forward it on the client\'s behalf.',
+                    body: 'The OS needs to send a DNS query but has no direct path to any resolver — it only knows its <strong>default gateway</strong>. The frame is addressed at Layer 2 to the <strong>Home Router</strong>. When the Home Router receives it, it performs <strong>NAT</strong>: rewriting the source IP from the private LAN address (192.168.1.5) to its public WAN address (203.0.113.42).',
                 },
                 advancedDetail: {
                     title: 'UDP Port 53',
@@ -203,7 +203,7 @@ const CHAPTERS = [
                 packet: { from: 'ap', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query (NATed)' },
                 explanation: {
                     title: 'Step 4 — NAT and forwarding',
-                    body: 'The Home Router receives the frame and performs <strong>NAT</strong>: it rewrites the source IP from the private address (192.168.1.5) to its public WAN address (203.0.113.42), then forwards a new frame toward the recursive resolver at 8.8.8.8. From the internet\'s perspective, the query comes from the router, not the client.',
+                    body: 'With the source IP rewritten, the <strong>Home Router</strong> forwards the new frame out to the internet toward a <strong>recursive resolver</strong> (e.g. Google\'s 8.8.8.8) which will do the actual DNS lookup. From the internet\'s perspective, the query originates from the <strong>Home Router</strong>, not the client.',
                 },
                 advancedDetail: {
                     title: 'NAT and Port Tracking',
