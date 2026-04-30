@@ -129,9 +129,6 @@ const CHAPTERS = [
         packetColor: 'var(--pkt-dns)',
         showDnsModeToggle: true,
         hasQuiz: true,
-        deviceAnnotations: [
-            { deviceId: 'isp', lines: ['Resolver: 8.8.8.8'], showFromStep: 2 },
-        ],
         steps: [
             {
                 id: 'dns-1',
