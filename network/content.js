@@ -140,7 +140,7 @@ const CHAPTERS = [
                 packet: null,
                 explanation: {
                     title: 'Browser DNS cache',
-                    body: 'Before making any network request, your browser checks its own internal DNS cache. If it recently looked up <em>teamhansen.us</em>, it might already know the IP address and can skip the entire lookup.',
+                    body: 'You open a browser and type <code>https://teamhansen.us</code>. Before making any network request, your browser checks its own internal DNS cache. If it recently looked up teamhansen.us, it might already know the IP address and can skip the entire lookup process. In this case, it\'s a miss and the browser asks the operating system to look up the address for teamhansen.us.',
                 },
                 advancedDetail: {
                     title: 'Cache Miss Scenario',
@@ -161,7 +161,7 @@ const CHAPTERS = [
                 packet: null,
                 explanation: {
                     title: 'OS local lookup',
-                    body: 'The browser got a cache miss and asks the operating system to look up the address for teamhansen.us. The OS checks two local sources first: the <strong>hosts file</strong> (a static name-to-IP list on your device) and the <strong>OS-level DNS cache</strong>. Both are misses — no saved answer for teamhansen.us — so the OS must reach out to the Home Router.',
+                    body: 'The OS checks two local sources first: the <strong>hosts file</strong> (a static name-to-IP list on your device) and the <strong>OS-level DNS cache</strong>. Both are misses — no saved answer for teamhansen.us — so the OS must reach out to the Home Router.',
                 },
                 advancedDetail: {
                     title: 'The Hosts File',
