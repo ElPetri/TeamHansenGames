@@ -182,7 +182,7 @@ const CHAPTERS = [
                 packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Step 3 — Frame delivered to default gateway',
-                    body: 'The OS needs to send a DNS query but has no direct path to any resolver — it only knows its <strong>default gateway</strong>. The frame is addressed at Layer 2 to the <strong>Home Router</strong>. When the Home Router receives it, it performs <strong>NAT</strong>: rewriting the source IP from the private LAN address (192.168.1.5) to its public WAN address (203.0.113.42).',
+                    body: 'The OS knows the resolver\'s IP (e.g. <code>8.8.8.8</code>) because <strong>DHCP</strong> provided it when the device joined the network. The L3 destination is already set to <code>8.8.8.8</code>. But the client\'s <strong>routing table</strong> says: <em>"8.8.8.8 is not on my local subnet"</em> — so it sends the frame to its <strong>default gateway</strong> instead. The Home Router\'s MAC becomes the L2 destination. When the Home Router receives it, it performs <strong>NAT</strong>: rewriting the source IP from the private LAN address (192.168.1.5) to its public WAN address (203.0.113.42).',
                 },
                 advancedDetail: {
                     title: 'UDP Port 53',
@@ -203,7 +203,7 @@ const CHAPTERS = [
                 packet: { from: 'ap', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query (NATed)' },
                 explanation: {
                     title: 'Step 4 — NAT and forwarding',
-                    body: 'With the source IP rewritten, the <strong>Home Router</strong> forwards the new frame out to the internet toward a <strong>recursive resolver</strong> (e.g. Google\'s 8.8.8.8) which will do the actual DNS lookup. From the internet\'s perspective, the query originates from the <strong>Home Router</strong>, not the client.',
+                    body: 'With the source IP rewritten, the <strong>Home Router</strong> checks <em>its own</em> routing table: <em>"Is 8.8.8.8 on my LAN? No."</em> — so it sends the frame to <em>its</em> default gateway, the <strong>ISP</strong>, filling in the ISP\'s MAC as the new L2 destination. The ISP routes the packet onward to the <strong>recursive resolver</strong> (e.g. Google\'s 8.8.8.8), which will perform the actual DNS lookup. From the internet\'s perspective, the query originates from the <strong>Home Router</strong>, not the client.',
                 },
                 advancedDetail: {
                     title: 'NAT and Port Tracking',
