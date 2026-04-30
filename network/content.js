@@ -377,6 +377,10 @@ const CHAPTERS = [
         packetColor: 'var(--pkt-tcp)',
         showDnsModeToggle: false,
         hasQuiz: true,
+        // Show router IPs from Step 2 (index 1) onward so the NAT moment is clear
+        deviceAnnotations: [
+            { deviceId: 'ap', lines: ['LAN: 192.168.1.1', 'WAN: 203.0.113.42'], showFromStep: 1 },
+        ],
         steps: [
             {
                 id: 'tcp-1',

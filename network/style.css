@@ -457,6 +457,14 @@ html, body {
     opacity: 0.6;
     pointer-events: none;
 }
+.dev-annotation {
+    fill: #ffb347;
+    font-size: 8.5px;
+    font-family: 'Courier New', Courier, monospace;
+    text-anchor: middle;
+    pointer-events: none;
+    opacity: 0.9;
+}
 .topo-device-emoji {
     font-size: 22px;
     text-anchor: middle;

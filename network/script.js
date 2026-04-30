@@ -420,6 +420,9 @@ function goToStep(index) {
     // Highlight devices
     highlightDevices(topoSvg, step.activeDevices);
 
+    // Chapter device annotations (e.g. router LAN/WAN IPs)
+    renderDeviceAnnotations(topoSvg, currentChapter, index);
+
     // Explanation panel
     renderExplanation(step);
 
@@ -634,11 +637,11 @@ function markChapterComplete(id) {
 function buildFullJourneySteps() {
     const result = [];
     CHAPTERS.filter(c => FULL_JOURNEY_CHAPTERS.includes(c.id)).forEach(chapter => {
-        result.push({ type: 'chapter-header', chapterTitle: chapter.title, chapterSubtitle: chapter.subtitle });
+        result.push({ type: 'chapter-header', chapterTitle: chapter.title, chapterSubtitle: chapter.subtitle, chapter });
         const steps = chapter.id === 'dns'
             ? chapter.steps.filter(s => !s.dnsOnly)
             : chapter.steps;
-        steps.forEach(step => result.push({ type: 'step', chapterTitle: chapter.title, step }));
+        steps.forEach((step, stepIndex) => result.push({ type: 'step', chapterTitle: chapter.title, step, chapter, stepIndex }));
     });
     return result;
 }
@@ -675,6 +678,7 @@ function goToFullJourneyStep(index) {
 
     if (item.type === 'chapter-header') {
         highlightDevices(topoSvg, []);
+        renderDeviceAnnotations(topoSvg, null, 0);
         explanationTitle.textContent = item.chapterTitle;
         explanationBody.innerHTML    = `<em>${item.chapterSubtitle}</em>`;
         simplNote.classList.add('hidden');
@@ -682,9 +686,10 @@ function goToFullJourneyStep(index) {
         tourChapterLabel.textContent = item.chapterTitle;
         linkifyAcronyms(explanationBody);
     } else {
-        const { step, chapterTitle } = item;
+        const { step, chapterTitle, chapter, stepIndex } = item;
         tourChapterLabel.textContent = chapterTitle;
         highlightDevices(topoSvg, step.activeDevices);
+        renderDeviceAnnotations(topoSvg, chapter, stepIndex);
         renderExplanation(step);
         renderInspector(step.inspector);
         if (step.natEvent && step.natLabel) {
@@ -702,6 +707,31 @@ function goToFullJourneyStep(index) {
             });
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// DEVICE ANNOTATIONS
+// Extra SVG labels pinned to a device node, shown from a specific step onward.
+// ---------------------------------------------------------------------------
+function renderDeviceAnnotations(svgEl, chapter, stepIndex) {
+    // Clear all existing annotations first
+    svgEl.querySelectorAll('.dev-annotation').forEach(el => el.remove());
+
+    if (!chapter || !chapter.deviceAnnotations) return;
+
+    chapter.deviceAnnotations.forEach(ann => {
+        if (stepIndex < ann.showFromStep) return;
+        const devGroup = svgEl.querySelector(`#dev-${ann.deviceId}`);
+        if (!devGroup) return;
+        ann.lines.forEach((line, i) => {
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('class', 'dev-annotation');
+            t.setAttribute('x', '0');
+            t.setAttribute('y', DEVICE_BOX_H / 2 + 38 + i * 12);
+            t.textContent = line;
+            devGroup.appendChild(t);
+        });
+    });
 }
 
 // ---------------------------------------------------------------------------
