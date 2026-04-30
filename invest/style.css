@@ -4,23 +4,26 @@
    DESIGN TOKENS
    ========================================================================= */
 :root {
-    --green:        #16a34a;
-    --green-light:  #dcfce7;
-    --green-dark:   #14532d;
-    --gold:         #d97706;
-    --gold-light:   #fef3c7;
-    --red:          #dc2626;
-    --red-light:    #fee2e2;
-    --gray:         #94a3b8;
-    --gray-light:   #f1f5f9;
-    --bg:           #f8fafc;
-    --surface:      #ffffff;
-    --text:         #1e293b;
-    --text-mid:     #475569;
-    --text-dim:     #94a3b8;
-    --border:       #e2e8f0;
-    --shadow:       0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md:    0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+    --green:        #00ff88;
+    --green-light:  rgba(0, 255, 136, 0.12);
+    --green-dark:   #00ff88;
+    --gold:         #ffaa00;
+    --gold-light:   rgba(255, 170, 0, 0.12);
+    --red:          #ff4466;
+    --red-light:    rgba(255, 68, 102, 0.12);
+    --gray:         #888;
+    --gray-light:   #1a1a25;
+    --bg:           #0a0a0f;
+    --surface:      #12121a;
+    --surface-2:    #1a1a25;
+    --text:         #e0e0e0;
+    --text-mid:     #aaa;
+    --text-dim:     #666;
+    --border:       #2a2a3a;
+    --accent:       #00f0ff;
+    --accent-glow:  rgba(0, 240, 255, 0.25);
+    --shadow:       0 1px 4px rgba(0,0,0,0.5);
+    --shadow-md:    0 4px 12px rgba(0,0,0,0.6);
     --radius:       12px;
     --radius-sm:    8px;
 }
@@ -36,6 +39,9 @@ body {
     color: var(--text);
     line-height: 1.6;
     min-height: 100vh;
+    background-image:
+        radial-gradient(ellipse at top, #15152a 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, #0a1520 0%, transparent 50%);
 }
 
 #app {
@@ -82,7 +88,8 @@ body {
 .hub-title-block h1 {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--accent);
+    text-shadow: 0 0 24px var(--accent-glow);
     line-height: 1.2;
 }
 
@@ -125,14 +132,15 @@ body {
     border-radius: var(--radius-sm);
     font-size: 1rem;
     color: var(--text);
-    background: var(--bg);
+    background: var(--surface-2);
     width: 200px;
     transition: border-color 0.15s;
 }
 
 .setup-field input:focus {
     outline: none;
-    border-color: var(--green);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 /* Scenario grid */
@@ -162,14 +170,14 @@ body {
 }
 
 .scenario-card:hover {
-    border-color: var(--green);
-    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+    box-shadow: 0 0 16px var(--accent-glow);
     transform: translateY(-1px);
 }
 
 .scenario-card.completed {
     border-color: var(--green);
-    background: linear-gradient(135deg, #f0fdf4 0%, var(--surface) 100%);
+    background: linear-gradient(135deg, rgba(0,255,136,0.06) 0%, var(--surface) 100%);
 }
 
 .scenario-icon {
@@ -200,8 +208,9 @@ body {
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 99px;
-    background: var(--green-light);
-    color: var(--green-dark);
+    background: rgba(0, 240, 255, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0, 240, 255, 0.2);
 }
 
 .card-status {
@@ -211,19 +220,22 @@ body {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--green-light);
-    color: var(--green);
+    background: var(--surface-2);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
     font-weight: 700;
     flex-shrink: 0;
+    border: 1px solid var(--border);
 }
 
 .card-status.done {
     background: var(--green);
-    color: #fff;
+    color: #0a0a0f;
+    border-color: var(--green);
+    box-shadow: 0 0 8px rgba(0,255,136,0.4);
 }
 
 /* Hub footer */
@@ -253,15 +265,17 @@ body {
 .btn:active { transform: translateY(0); }
 
 .btn-summary {
-    background: var(--green);
-    color: #fff;
+    background: var(--accent);
+    color: #0a0a0f;
     padding: 14px 32px;
     font-size: 1rem;
+    box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .btn-complete {
     background: var(--green);
-    color: #fff;
+    color: #0a0a0f;
+    box-shadow: 0 0 10px rgba(0,255,136,0.3);
 }
 
 /* =========================================================================
@@ -321,7 +335,7 @@ body {
 
 .control-group input[type="range"] {
     width: 100%;
-    accent-color: var(--green);
+    accent-color: var(--accent);
     cursor: pointer;
 }
 
@@ -334,7 +348,7 @@ body {
 .slider-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--green);
+    color: var(--accent);
 }
 
 .slider-unit {
@@ -348,13 +362,13 @@ body {
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     color: var(--text);
-    background: var(--surface);
+    background: var(--surface-2);
     cursor: pointer;
 }
 
 .control-group select:focus {
     outline: none;
-    border-color: var(--green);
+    border-color: var(--accent);
 }
 
 .mode-toggle {
@@ -370,15 +384,15 @@ body {
     font-size: 0.78rem;
     font-weight: 600;
     border: none;
-    background: var(--surface);
+    background: var(--surface-2);
     color: var(--text-mid);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .mode-btn.active {
-    background: var(--green);
-    color: #fff;
+    background: var(--accent);
+    color: #0a0a0f;
 }
 
 .control-note {
@@ -438,13 +452,13 @@ body {
 }
 
 .chart-axis-label {
-    fill: var(--text-dim);
+    fill: #666;
     font-size: 9px;
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .chart-axis-title {
-    fill: var(--text-dim);
+    fill: #666;
     font-size: 9px;
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
@@ -504,9 +518,9 @@ body {
 }
 
 .cmp-card.cmp-player { border-color: var(--green); }
-.cmp-card.cmp-jordan { border-color: var(--gray); }
-.cmp-card.cmp-winner { border-color: var(--green); background: var(--green-light); }
-.cmp-card.cmp-loser  { border-color: var(--red);   background: var(--red-light); }
+.cmp-card.cmp-jordan { border-color: var(--border); }
+.cmp-card.cmp-winner { border-color: var(--green); background: rgba(0,255,136,0.07); }
+.cmp-card.cmp-loser  { border-color: var(--red);   background: rgba(255,68,102,0.07); }
 
 .cmp-label {
     font-size: 0.75rem;
@@ -554,14 +568,14 @@ body {
 }
 
 .advantage-banner {
-    background: var(--green-light);
+    background: rgba(0,255,136,0.08);
     border: 1.5px solid var(--green);
     border-radius: var(--radius-sm);
     padding: 10px 16px;
     text-align: center;
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--green-dark);
+    color: var(--green);
 }
 
 /* =========================================================================
@@ -667,8 +681,8 @@ body {
    INSIGHT + BUFFETT QUOTE
    ========================================================================= */
 .scenario-insight {
-    background: var(--gold-light);
-    border: 1.5px solid var(--gold);
+    background: rgba(255, 170, 0, 0.07);
+    border: 1.5px solid rgba(255, 170, 0, 0.4);
     border-radius: var(--radius);
     padding: 20px 24px;
     margin-bottom: 20px;
@@ -689,7 +703,7 @@ body {
     align-items: flex-start;
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid rgba(217,119,6,0.3);
+    border-top: 1px solid rgba(255, 170, 0, 0.25);
 }
 
 .buffett-block.hidden { display: none; }
@@ -703,7 +717,7 @@ body {
 .buffett-block blockquote {
     font-size: 0.95rem;
     font-style: italic;
-    color: var(--text);
+    color: var(--gold);
     line-height: 1.5;
     margin-bottom: 4px;
 }
@@ -758,16 +772,16 @@ body {
 }
 
 .summary-buffett {
-    background: var(--gold-light);
-    border: 1.5px solid var(--gold);
+    background: rgba(255, 170, 0, 0.07);
+    border: 1.5px solid rgba(255, 170, 0, 0.4);
     border-radius: var(--radius);
     padding: 20px 24px;
     margin-bottom: 20px;
 }
 
 .voo-nudge {
-    background: var(--green-light);
-    border: 1.5px solid var(--green);
+    background: rgba(0, 255, 136, 0.06);
+    border: 1.5px solid rgba(0, 255, 136, 0.3);
     border-radius: var(--radius);
     padding: 20px 24px;
     display: flex;
@@ -784,7 +798,7 @@ body {
 .voo-nudge h3 {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--green-dark);
+    color: var(--green);
     margin-bottom: 8px;
 }
 

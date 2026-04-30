@@ -223,7 +223,7 @@ function buildLineChart(svgEl, datasets, options) {
     }
 
     // Background
-    svgEl.appendChild(el('rect', { x: 0, y: 0, width: CHART_W, height: CHART_H, fill: '#ffffff' }));
+    svgEl.appendChild(el('rect', { x: 0, y: 0, width: CHART_W, height: CHART_H, fill: '#12121a' }));
 
     // Y grid lines + labels
     var yTicks = 5;
@@ -279,7 +279,7 @@ function buildLineChart(svgEl, datasets, options) {
     datasets.forEach(function(ds, i) {
         var lx = legendX + i * 140;
         svgEl.appendChild(el('rect', { x: lx, y: CHART_PAD.top + 6, width: 16, height: 3, fill: ds.color, rx: 1 }));
-        svgEl.appendChild(text(ds.label, { x: lx + 22, y: CHART_PAD.top + 11, class: 'chart-legend-label', fill: '#475569' }));
+        svgEl.appendChild(text(ds.label, { x: lx + 22, y: CHART_PAD.top + 11, class: 'chart-legend-label', fill: '#aaa' }));
     });
 
     // Scrubber overlay
@@ -434,8 +434,8 @@ function renderInvest() {
         jordanResult = calcDCAHistorical(monthly, jordan,    investState.startYear, retireAge);
     }
 
-    var greenColor = '#16a34a';
-    var grayColor  = '#94a3b8';
+    var greenColor = '#00ff88';
+    var grayColor  = '#888';
 
     buildLineChart(mainChart, [
         { label: playerName + ' (age ' + playerAge + ')', color: greenColor, data: playerResult.series.map(function(p) { return { x: p.age, y: p.value }; }) },
@@ -592,8 +592,8 @@ function renderCar() {
         '      <div class="bar-interest"  style="width:' + pctInterest.toFixed(1) + '%"></div>',
         '    </div>',
         '    <div class="bar-legend">',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#16a34a"></div> Principal</div>',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#dc2626"></div> Interest (' + pctInterest.toFixed(0) + '%)</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#00ff88"></div> Principal</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#ff4466"></div> Interest (' + pctInterest.toFixed(0) + '%)</div>',
         '    </div>',
         '  </div>',
         '</div>',
@@ -698,8 +698,8 @@ function renderCredit() {
     var jSeries = jordanResult.series.filter(function(p) { return p.month <= maxMonths; });
 
     buildLineChart(mainChart, [
-        { label: playerName + ' ($' + payment + '/mo)',  color: '#16a34a', data: pSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
-        { label: 'Jordan (min payment)', color: '#94a3b8', data: jSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
+        { label: playerName + ' ($' + payment + '/mo)',  color: '#00ff88', data: pSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
+        { label: 'Jordan (min payment)', color: '#888', data: jSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
     ], {
         xLabel: 'Months',
         yLabel: 'Remaining Balance',
@@ -828,8 +828,8 @@ function renderHome() {
         '      <div class="bar-interest" style="width:' + pct15.toFixed(1) + '%"></div>',
         '    </div>',
         '    <div class="bar-legend">',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#16a34a"></div> Principal</div>',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#dc2626"></div> Interest (' + pct15.toFixed(0) + '%)</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#00ff88"></div> Principal</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#ff4466"></div> Interest (' + pct15.toFixed(0) + '%)</div>',
         '    </div>',
         '  </div>',
         '</div>',
@@ -844,8 +844,8 @@ function renderHome() {
         '      <div class="bar-interest" style="width:' + pct30.toFixed(1) + '%"></div>',
         '    </div>',
         '    <div class="bar-legend">',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#16a34a"></div> Principal</div>',
-        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#dc2626"></div> Interest (' + pct30.toFixed(0) + '%)</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#00ff88"></div> Principal</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#ff4466"></div> Interest (' + pct30.toFixed(0) + '%)</div>',
         '    </div>',
         '  </div>',
         '</div>',
