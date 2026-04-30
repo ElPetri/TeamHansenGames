@@ -9,6 +9,7 @@ const includePaths = [
   'style.css',
   'shared',
   'games',
+  'network',
   'balloon',
   'vet',
   'goomba',
