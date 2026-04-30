@@ -172,17 +172,17 @@ const CHAPTERS = [
                     l2: { 'Note': '(local — no frames sent)' },
                     l3: { 'Note': 'local lookup — no packets' },
                     l4: { 'Protocol': '—' },
-                    l7: { 'Action': 'Check /etc/hosts + OS DNS cache', 'Hosts File': 'No entry for teamhansen.us', 'OS Cache': '❌ Miss — forwarding to network resolver', 'Resolver IP': '8.8.8.8 (via DHCP)' },
+                    l7: { 'Action': 'Check /etc/hosts + OS DNS cache', 'Hosts File': 'No entry for teamhansen.us', 'OS Cache': '❌ Miss — forwarding to network resolver', 'Resolver IP': '192.168.1.1 (Home Router, via DHCP)' },
                 },
             },
             {
                 id: 'dns-3',
-                label: 'Query sent to Home Router (gateway)',
+                label: 'Query sent to Home Router (NAT)',
                 activeDevices: ['client', 'ap'],
                 packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
-                    title: 'Step 3 — Frame delivered to default gateway',
-                    body: 'The OS knows the resolver\'s IP (e.g. <code>8.8.8.8</code>) because <strong>DHCP</strong> provided it when the device joined the network. The L3 destination is already set to <code>8.8.8.8</code>. But the client\'s <strong>routing table</strong> says: <em>"8.8.8.8 is not on my local subnet"</em> — so it sends the frame to its <strong>default gateway</strong> instead. The Home Router\'s MAC becomes the L2 destination. When the Home Router receives it, it performs <strong>NAT</strong>: rewriting the source IP from the private LAN address (192.168.1.5) to its public WAN address (203.0.113.42).',
+                    title: 'Step 3 — Query sent to Home Router',
+                    body: '<strong>DHCP</strong> told the client to send DNS queries to the Home Router (<code>192.168.1.1</code>), which acts as a local DNS forwarder. The Home Router then performs <strong>NAT</strong>: it rewrites the source IP from the client\'s private address (192.168.1.5) to the Home Router\'s public WAN address (203.0.113.42). From the internet\'s perspective, the query originates from the Home Router, not the client.',
                 },
                 advancedDetail: {
                     title: 'UDP Port 53',
@@ -191,19 +191,19 @@ const CHAPTERS = [
                 },
                 inspector: {
                     l2: { 'Src MAC': 'a4:5e:60:11:22:33', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
-                    l3: { 'Src IP': '192.168.1.5', 'Dst IP': '8.8.8.8' },
+                    l3: { 'Src IP': '192.168.1.5', 'Dst IP': '192.168.1.1 (Home Router)' },
                     l4: { 'Protocol': 'UDP', 'Src Port': '54312', 'Dst Port': '53' },
                     l7: { 'Type': 'DNS Query', 'Query': 'teamhansen.us', 'Record': 'A' },
                 },
             },
             {
                 id: 'dns-3b',
-                label: 'Home Router NATs and forwards to resolver',
+                label: 'Home Router forwards to ISP',
                 activeDevices: ['ap', 'isp'],
                 packet: { from: 'ap', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query (NATed)' },
                 explanation: {
-                    title: 'Step 4 — NAT and forwarding',
-                    body: 'With the source IP rewritten, the <strong>Home Router</strong> checks <em>its own</em> routing table: <em>"Is 8.8.8.8 on my LAN? No."</em> — so it sends the frame to <em>its</em> default gateway, the <strong>ISP</strong>, filling in the ISP\'s MAC as the new L2 destination. The ISP routes the packet onward to the <strong>recursive resolver</strong> (e.g. Google\'s 8.8.8.8), which will perform the actual DNS lookup. From the internet\'s perspective, the query originates from the <strong>Home Router</strong>, not the client.',
+                    title: 'Step 4 — Home Router forwards to ISP',
+                    body: 'The <strong>Home Router</strong> sends the frame to its default gateway, the <strong>ISP</strong>, to resolve the DNS query. The ISP then routes the packet onward to the recursive resolver.',
                 },
                 advancedDetail: {
                     title: 'NAT and Port Tracking',
