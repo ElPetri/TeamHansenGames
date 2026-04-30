@@ -68,7 +68,7 @@ const CHAPTERS = [
                 packet: { from: 'client', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Chapter 1 preview — DNS',
-                    body: 'Your computer doesn\'t know where <em>teamhansen.us</em> lives on the internet. It asks a Domain Name System (DNS) resolver to look it up, which returns an IP address like <code>203.0.113.5</code>. This is like calling 411 to get a phone number.',
+                    body: 'Your computer doesn\'t know where <em>teamhansen.us</em> lives on the internet. It asks a Domain Name System (DNS) resolver to look it up, which returns an IP address like <code>203.0.113.5</code>. This is like typing a restaurant name into Google Maps — you know what you\'re looking for, but Maps has to find the actual address before it can route you there.',
                 },
                 inspector: null,
             },
