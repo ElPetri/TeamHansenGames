@@ -519,7 +519,7 @@ function loadScenarioCar() {
     playerAge  = getPlayerAge();
 
     scenarioTitleEl.textContent    = '🚗 Buying a Car';
-    scenarioSubtitleEl.textContent = 'The true cost of financing a new car — and what you're giving up';
+    scenarioSubtitleEl.textContent = "The true cost of financing a new car \u2014 and what you're giving up";
 
     scenarioControls.innerHTML = [
         '<div class="control-group">',
