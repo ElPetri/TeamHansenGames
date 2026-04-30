@@ -210,6 +210,13 @@ const CHAPTERS = [
                     body: 'The router also tracks the source port in a NAT table so it can deliver the response back to the correct internal device. This is called NAPT (Network Address and Port Translation), or more commonly just NAT.',
                     learnMoreUrl: 'https://www.cloudflare.com/learning/network-layer/what-is-nat/',
                 },
+                inspector: {
+                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router WAN)', 'Dst MAC': '(ISP gateway)' },
+                    l3: { 'Src IP': '203.0.113.42 (NATed)', 'Dst IP': '8.8.8.8' },
+                    l4: { 'Protocol': 'UDP', 'Src Port': '54312', 'Dst Port': '53' },
+                    l7: { 'Type': 'DNS Query', 'Query': 'teamhansen.us', 'Record': 'A' },
+                },
+            },
             {
                 id: 'dns-3c',
                 label: 'ISP forwards to DNS Resolver',
