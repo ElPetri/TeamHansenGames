@@ -905,6 +905,17 @@ function init() {
         }
     }, true); // capture = true
 
+    // Set the external back link destination based on where the user came from.
+    // Default to the main homepage; only use the games sub-page if the referrer
+    // explicitly shows the user navigated here from /games/.
+    const backLink = document.querySelector('a.back-btn');
+    if (backLink) {
+        const ref = document.referrer;
+        const fromGames = ref && new URL(ref).pathname.includes('/games/');
+        backLink.href      = fromGames ? '../games/index.html' : '../index.html';
+        backLink.textContent = fromGames ? '← Games' : '← Home';
+    }
+
     setupEvents();
     initHub();
     showScreen('HUB');
