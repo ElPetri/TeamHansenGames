@@ -182,7 +182,7 @@ const CHAPTERS = [
                 packet: { from: 'client', to: 'ap', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Step 3 — Query sent to Home Router',
-                    body: '<strong>DHCP</strong> told the client to send DNS queries to the Home Router (<code>192.168.1.1</code>), which acts as a local DNS forwarder. The Home Router then performs <strong>NAT</strong>: it rewrites the source IP from the client\'s private address (192.168.1.5) to the Home Router\'s public WAN address (203.0.113.42). From the internet\'s perspective, the query originates from the Home Router, not the client.',
+                    body: 'The client sends a DNS query to the Home Router (<code>192.168.1.1</code>), which acts as a local DNS forwarder. The Home Router then performs <strong>NAT</strong>: it rewrites the source IP from the client\'s private address (192.168.1.5) to the Home Router\'s public WAN address (203.0.113.42). From the internet\'s perspective, the query originates from the Home Router, not the client.',
                 },
                 advancedDetail: {
                     title: 'UDP Port 53',
@@ -203,16 +203,30 @@ const CHAPTERS = [
                 packet: { from: 'ap', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query (NATed)' },
                 explanation: {
                     title: 'Step 4 — Home Router forwards to ISP',
-                    body: 'The <strong>Home Router</strong> sends the frame to its default gateway, the <strong>ISP</strong>, to resolve the DNS query. The ISP then routes the packet onward to the recursive resolver.',
+                    body: 'The <strong>Home Router</strong> sends the frame to its default gateway, the <strong>ISP</strong>, to try to resolve the DNS query. If the ISP Router can\'t resolve the DNS query, the ISP then routes the packet onward to the recursive resolver.',
                 },
                 advancedDetail: {
                     title: 'NAT and Port Tracking',
                     body: 'The router also tracks the source port in a NAT table so it can deliver the response back to the correct internal device. This is called NAPT (Network Address and Port Translation), or more commonly just NAT.',
                     learnMoreUrl: 'https://www.cloudflare.com/learning/network-layer/what-is-nat/',
                 },
+            {
+                id: 'dns-3c',
+                label: 'ISP forwards to DNS Resolver',
+                activeDevices: ['isp', 'resolver'],
+                packet: { from: 'isp', to: 'resolver', color: 'var(--pkt-dns)', label: 'DNS Query' },
+                explanation: {
+                    title: 'Step 5 — ISP forwards to DNS Resolver',
+                    body: 'The ISP routes the DNS query to a <strong>recursive resolver</strong> — a server dedicated to tracking down IP addresses on your behalf. The resolver will work through the DNS hierarchy to find the answer for teamhansen.us.',
+                },
+                advancedDetail: {
+                    title: 'What is a Recursive Resolver?',
+                    body: 'A recursive resolver (like Google\'s 8.8.8.8 or Cloudflare\'s 1.1.1.1) does the heavy lifting of the DNS lookup — querying Root, TLD, and Authoritative name servers in sequence until it gets a definitive answer. It also caches results to speed up future lookups.',
+                    learnMoreUrl: 'https://www.cloudflare.com/learning/dns/what-is-a-dns-server/',
+                },
                 inspector: {
-                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router WAN)', 'Dst MAC': '(ISP gateway)' },
-                    l3: { 'Src IP': '203.0.113.42 (NATed)', 'Dst IP': '8.8.8.8' },
+                    l2: { 'Src MAC': '(ISP gateway NIC)', 'Dst MAC': '(resolver NIC)' },
+                    l3: { 'Src IP': '203.0.113.42 (NATed)', 'Dst IP': '8.8.8.8 (Recursive Resolver)' },
                     l4: { 'Protocol': 'UDP', 'Src Port': '54312', 'Dst Port': '53' },
                     l7: { 'Type': 'DNS Query', 'Query': 'teamhansen.us', 'Record': 'A' },
                 },
@@ -311,7 +325,7 @@ const CHAPTERS = [
                 activeDevices: ['client', 'isp'],
                 packet: { from: 'isp', to: 'client', color: 'var(--pkt-dns)', label: 'DNS Reply' },
                 explanation: {
-                    title: 'Step 9 — IP delivered & cached',
+                    title: 'Step 6 — IP delivered & cached',
                     body: 'The authoritative server\'s answer travels back through the recursive resolver, which <strong>caches the result</strong> for future queries (for the duration of the TTL), then delivers the IP address to your computer. Your browser now knows the destination: <code>203.0.113.5</code>.',
                 },
                 advancedDetail: {
