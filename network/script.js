@@ -254,7 +254,7 @@ function getDevicePosition(id) {
     return dev ? { x: dev.x, y: dev.y } : null;
 }
 
-function animatePacketBetween(svgEl, fromId, toId, color, duration) {
+function animatePacketBetween(svgEl, fromId, toId, color, duration, keepDot) {
     return new Promise(resolve => {
         const from = getDevicePosition(fromId);
         const to   = getDevicePosition(toId);
@@ -281,9 +281,12 @@ function animatePacketBetween(svgEl, fromId, toId, color, duration) {
 
             if (t < 1) {
                 requestAnimationFrame(frame);
-            } else {
-                // Leave dot resting at destination; goToStep clears it on next advance
+            } else if (keepDot) {
+                // Final hop — leave dot resting at destination to show where the packet ended up
                 dot.setAttribute('opacity', '0.5');
+                resolve();
+            } else {
+                dot.remove();
                 resolve();
             }
         }
@@ -303,8 +306,8 @@ async function runPacketAnimation(svgEl, packetDef) {
     const toIdx   = allDeviceIds.indexOf(to);
 
     if (fromIdx === -1 || toIdx === -1) {
-        // DNS devices — animate directly, one hop
-        await animatePacketBetween(svgEl, from, to, color, duration);
+        // DNS devices — animate directly, one hop (always the final hop)
+        await animatePacketBetween(svgEl, from, to, color, duration, true);
         return;
     }
 
@@ -312,9 +315,10 @@ async function runPacketAnimation(svgEl, packetDef) {
         ? allDeviceIds.slice(fromIdx, toIdx + 1)
         : allDeviceIds.slice(toIdx, fromIdx + 1).reverse();
 
-    // Each hop gets the full per-hop duration so longer paths feel proportionally longer
+    // Each hop gets the full per-hop duration; only the last hop keeps the dot
     for (let i = 0; i < path.length - 1; i++) {
-        await animatePacketBetween(svgEl, path[i], path[i + 1], color, duration);
+        const isLastHop = i === path.length - 2;
+        await animatePacketBetween(svgEl, path[i], path[i + 1], color, duration, isLastHop);
     }
 }
 
