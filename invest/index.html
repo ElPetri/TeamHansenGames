@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Moves</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+    <!-- ===== HUB SCREEN ===== -->
+    <div id="hub-screen" class="screen">
+        <header class="hub-header">
+            <a id="back-link" href="../games/index.html" class="back-btn">← Games</a>
+            <div class="hub-title-block">
+                <h1>💰 Money Moves</h1>
+                <p class="hub-subtitle">See how your financial choices today shape your life tomorrow</p>
+            </div>
+        </header>
+
+        <div class="player-setup">
+            <div class="setup-field">
+                <label for="player-name">Your name</label>
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" value="You">
+            </div>
+            <div class="setup-field">
+                <label for="player-age">Your current age</label>
+                <input type="number" id="player-age" min="15" max="50" value="18">
+            </div>
+        </div>
+
+        <div class="scenario-grid">
+
+            <div class="scenario-card" data-scenario="invest">
+                <div class="scenario-icon">📈</div>
+                <div class="scenario-info">
+                    <h2>Investing &amp; Compound Interest</h2>
+                    <p>See how a small monthly investment grows into life-changing wealth — and why starting today matters more than how much you invest.</p>
+                    <div class="tag-row">
+                        <span class="tag">S&amp;P 500</span>
+                        <span class="tag">Compound Interest</span>
+                        <span class="tag">DCA</span>
+                    </div>
+                </div>
+                <div class="card-status" id="status-invest">▶</div>
+            </div>
+
+            <div class="scenario-card" data-scenario="car">
+                <div class="scenario-icon">🚗</div>
+                <div class="scenario-info">
+                    <h2>Buying a Car</h2>
+                    <p>Financing a new car feels normal — but what does that decision actually cost you over your lifetime? See the true price of that monthly payment.</p>
+                    <div class="tag-row">
+                        <span class="tag">Auto Loans</span>
+                        <span class="tag">Opportunity Cost</span>
+                        <span class="tag">7% APR</span>
+                    </div>
+                </div>
+                <div class="card-status" id="status-car">▶</div>
+            </div>
+
+            <div class="scenario-card" data-scenario="credit">
+                <div class="scenario-icon">💳</div>
+                <div class="scenario-info">
+                    <h2>Credit Card Debt</h2>
+                    <p>Credit cards charge ~24% interest. Find out how long a balance takes to pay off making only minimum payments — and what it's really costing you.</p>
+                    <div class="tag-row">
+                        <span class="tag">24% APR</span>
+                        <span class="tag">Minimum Payments</span>
+                        <span class="tag">Debt Trap</span>
+                    </div>
+                </div>
+                <div class="card-status" id="status-credit">▶</div>
+            </div>
+
+            <div class="scenario-card" data-scenario="home">
+                <div class="scenario-icon">🏠</div>
+                <div class="scenario-info">
+                    <h2>Home Loan Comparison</h2>
+                    <p>15-year vs. 30-year mortgage: the shorter loan costs more monthly but dramatically less overall. See exactly how much you're paying for that lower payment.</p>
+                    <div class="tag-row">
+                        <span class="tag">Mortgage</span>
+                        <span class="tag">15 vs 30 Year</span>
+                        <span class="tag">Total Interest</span>
+                    </div>
+                </div>
+                <div class="card-status" id="status-home">▶</div>
+            </div>
+
+        </div>
+
+        <div class="hub-footer">
+            <button id="view-summary-btn" class="btn btn-summary">View My Financial Summary →</button>
+            <p class="disclaimer">For educational purposes only. Not financial advice.</p>
+        </div>
+    </div>
+
+    <!-- ===== SCENARIO SCREEN ===== -->
+    <div id="scenario-screen" class="screen hidden">
+
+        <div class="scenario-header">
+            <button id="back-to-hub" class="back-btn">← Hub</button>
+            <div class="scenario-title-block">
+                <h2 id="scenario-title"></h2>
+                <p id="scenario-subtitle" class="scenario-subtitle-text"></p>
+            </div>
+        </div>
+
+        <div class="scenario-body">
+
+            <aside class="scenario-controls" id="scenario-controls">
+                <!-- Populated dynamically per scenario -->
+            </aside>
+
+            <main class="scenario-main">
+                <div id="chart-wrapper" class="hidden">
+                    <svg id="main-chart" viewBox="0 0 720 280" preserveAspectRatio="xMidYMid meet" aria-label="Chart"></svg>
+                    <div id="chart-tooltip" class="chart-tooltip hidden"></div>
+                </div>
+                <div id="scenario-stats"></div>
+                <div id="comparison-cards"></div>
+            </main>
+
+        </div>
+
+        <div class="scenario-insight hidden" id="scenario-insight">
+            <p id="insight-text"></p>
+            <div class="buffett-block hidden" id="buffett-block">
+                <div class="buffett-avatar">🎩</div>
+                <div>
+                    <blockquote id="buffett-quote-text"></blockquote>
+                    <cite id="buffett-quote-ctx"></cite>
+                </div>
+            </div>
+        </div>
+
+        <div class="scenario-footer">
+            <button id="mark-complete-btn" class="btn btn-complete">✓ Mark as Explored</button>
+        </div>
+
+    </div>
+
+    <!-- ===== SUMMARY SCREEN ===== -->
+    <div id="summary-screen" class="screen hidden">
+
+        <div class="scenario-header">
+            <button id="back-from-summary" class="back-btn">← Hub</button>
+            <div class="scenario-title-block">
+                <h2>Your Financial Summary</h2>
+                <p class="scenario-subtitle-text">Here's what your choices could mean over a lifetime</p>
+            </div>
+        </div>
+
+        <div id="summary-content">
+            <!-- Populated dynamically -->
+        </div>
+
+        <div class="buffett-block summary-buffett">
+            <div class="buffett-avatar">🎩</div>
+            <div>
+                <blockquote>"Our favorite holding period is forever."</blockquote>
+                <cite>— Warren Buffett, on long-term investing</cite>
+            </div>
+        </div>
+
+        <div class="voo-nudge">
+            <div class="voo-icon">🎯</div>
+            <div>
+                <h3>The Simplest Strategy</h3>
+                <p>Warren Buffett has repeatedly recommended that most people simply invest in a low-cost S&amp;P 500 index fund. <strong>VOO</strong> (Vanguard S&amp;P 500 ETF, expense ratio: 0.03%) and <strong>SPY</strong> are popular choices. You don't need to pick stocks — just buy the whole market and hold it. <em>Time in the market beats timing the market, every time.</em></p>
+            </div>
+        </div>
+
+        <p class="disclaimer">For educational purposes only. Not financial advice. Past performance does not guarantee future results.</p>
+
+    </div>
+
+</div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@ const includePaths = [
   'shared',
   'games',
   'network',
+  'invest',
   'balloon',
   'vet',
   'goomba',
