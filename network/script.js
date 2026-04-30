@@ -355,6 +355,15 @@ function loadChapter(chapterId) {
     dnsModeLabel.textContent = dnsMode === 'basic' ? 'Basic' : 'Advanced';
     dnsModeToggle.classList.toggle('active', dnsMode === 'advanced');
 
+    // Show/hide inspector toggle based on whether any step in this chapter has data
+    const hasInspectorData = steps.some(s => s.inspector !== null && s.inspector !== undefined);
+    inspectorToggle.classList.toggle('hidden', !hasInspectorData);
+    if (!hasInspectorData) {
+        inspectorVisible = false;
+        packetInspector.classList.add('hidden');
+        inspectorToggle.classList.remove('active');
+    }
+
     // Build topology SVGs
     buildTopologySVG(topoSvg, isDns);
     buildTopologySVG(quizTopoSvg, isDns);

@@ -292,22 +292,26 @@ html, body {
 
 .control-btn {
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 0.35rem 0.9rem;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     transition: all 0.2s;
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.15);
 }
 .control-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    background: rgba(0, 240, 255, 0.12);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
 }
 .control-btn.active {
     border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0, 240, 255, 0.08);
+    color: var(--bg-dark);
+    background: var(--accent);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.45);
 }
 
 .speed-control {
