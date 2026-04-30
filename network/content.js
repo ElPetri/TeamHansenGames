@@ -129,6 +129,9 @@ const CHAPTERS = [
         packetColor: 'var(--pkt-dns)',
         showDnsModeToggle: true,
         hasQuiz: true,
+        deviceAnnotations: [
+            { deviceId: 'ap', lines: ['LAN: 192.168.1.1', 'WAN: 203.0.113.42'], showFromStep: 2 },
+        ],
         steps: [
             {
                 id: 'dns-1',
