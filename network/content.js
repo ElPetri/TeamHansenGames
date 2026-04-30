@@ -160,8 +160,8 @@ const CHAPTERS = [
                 activeDevices: ['client'],
                 packet: null,
                 explanation: {
-                    title: 'Step 2 — OS resolver',
-                    body: 'On a cache miss, the browser hands off to the operating system\'s DNS resolver. The OS first checks the <strong>hosts file</strong> (<code>/etc/hosts</code> on Linux/Mac, <code>C:\\Windows\\System32\\drivers\\etc\\hosts</code> on Windows). If there\'s no entry, it checks the OS-level DNS cache.',
+                    title: 'Step 2 — OS local lookup',
+                    body: 'The browser got a cache miss and asks the operating system to look up the address for teamhansen.us. The OS checks two local sources first: the <strong>hosts file</strong> (a static name-to-IP list on your device) and the <strong>OS-level DNS cache</strong>. Both are misses — no saved answer for teamhansen.us — so the OS must reach out to the Home Router.',
                 },
                 advancedDetail: {
                     title: 'The Hosts File',
