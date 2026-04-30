@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Journey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+
+        <!-- ===== HUB SCREEN ===== -->
+        <div id="hub-screen" class="screen">
+            <header class="hub-header">
+                <a href="../games/index.html" class="back-btn">← Games</a>
+                <h1>🌐 Network Journey</h1>
+                <p class="subtitle">Discover what really happens when you visit a website</p>
+            </header>
+
+            <div class="chapter-grid">
+                <div class="chapter-card chapter-overview" data-chapter="overview">
+                    <div class="chapter-icon">🗺️</div>
+                    <div class="chapter-info">
+                        <h2>Big Picture</h2>
+                        <p>A quick flyover of the entire journey — from typing a URL to seeing the page</p>
+                        <div class="chapter-tags">
+                            <span class="tag tag-start">Start Here</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="overview">
+                        <span class="status-icon">▶</span>
+                    </div>
+                </div>
+
+                <div class="chapter-card" data-chapter="dns">
+                    <div class="chapter-icon">📖</div>
+                    <div class="chapter-info">
+                        <h2>Chapter 1 — DNS Resolution</h2>
+                        <p>How does your computer turn <em>teamhansen.us</em> into an IP address?</p>
+                        <div class="chapter-tags">
+                            <span class="tag">DNS</span>
+                            <span class="tag">UDP</span>
+                            <span class="tag">Recursive Lookup</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="dns">
+                        <span class="status-icon">▶</span>
+                    </div>
+                </div>
+
+                <div class="chapter-card" data-chapter="tcp">
+                    <div class="chapter-icon">🤝</div>
+                    <div class="chapter-info">
+                        <h2>Chapter 2 — TCP Handshake</h2>
+                        <p>Before a single byte of data moves, both sides must agree to talk</p>
+                        <div class="chapter-tags">
+                            <span class="tag">TCP</span>
+                            <span class="tag">SYN/ACK</span>
+                            <span class="tag">NAT</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="tcp">
+                        <span class="status-icon">▶</span>
+                    </div>
+                </div>
+
+                <div class="chapter-card" data-chapter="tls">
+                    <div class="chapter-icon">🔒</div>
+                    <div class="chapter-info">
+                        <h2>Chapter 3 — TLS Handshake</h2>
+                        <p>How two strangers on the internet agree on a secret — without ever meeting</p>
+                        <div class="chapter-tags">
+                            <span class="tag">TLS</span>
+                            <span class="tag">Certificates</span>
+                            <span class="tag">Encryption</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="tls">
+                        <span class="status-icon">▶</span>
+                    </div>
+                </div>
+
+                <div class="chapter-card" data-chapter="http">
+                    <div class="chapter-icon">📡</div>
+                    <div class="chapter-info">
+                        <h2>Chapter 4 — HTTP Request &amp; Response</h2>
+                        <p>The GET request travels through every device — encrypted inside a TLS tunnel</p>
+                        <div class="chapter-tags">
+                            <span class="tag">HTTP</span>
+                            <span class="tag">GET</span>
+                            <span class="tag">200 OK</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="http">
+                        <span class="status-icon">▶</span>
+                    </div>
+                </div>
+
+                <div class="chapter-card chapter-journey locked" data-chapter="journey" id="full-journey-card">
+                    <div class="chapter-icon">🚀</div>
+                    <div class="chapter-info">
+                        <h2>Full Journey ★</h2>
+                        <p>Chain all four chapters into one uninterrupted end-to-end animation</p>
+                        <div class="chapter-tags">
+                            <span class="tag tag-locked">Complete all chapters to unlock</span>
+                        </div>
+                    </div>
+                    <div class="chapter-status" data-chapter-status="journey">
+                        <span class="status-icon">🔒</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TOUR SCREEN ===== -->
+        <div id="tour-screen" class="screen hidden">
+            <header id="tour-header">
+                <button id="back-to-hub" class="back-btn">← Hub</button>
+                <div class="tour-title-group">
+                    <span id="tour-chapter-label" class="tour-chapter-label"></span>
+                    <h1 id="tour-title"></h1>
+                </div>
+                <div class="tour-controls">
+                    <button id="dns-mode-toggle" class="control-btn hidden" title="Toggle DNS detail level">
+                        <span id="dns-mode-label">Basic</span>
+                    </button>
+                    <button id="inspector-toggle" class="control-btn" title="Toggle Packet Inspector">
+                        📦 Inspector
+                    </button>
+                    <div class="speed-control">
+                        <label>Speed:</label>
+                        <select id="speed-select">
+                            <option value="2000">Slow</option>
+                            <option value="1200" selected>Normal</option>
+                            <option value="600">Fast</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <div id="tour-body">
+                <!-- Left: Step List -->
+                <aside id="step-list">
+                    <h3>Steps</h3>
+                    <ol id="step-ol"></ol>
+                </aside>
+
+                <!-- Center: SVG Topology -->
+                <div id="topology-container">
+                    <svg id="topology-svg" viewBox="0 0 900 380" preserveAspectRatio="xMidYMid meet" aria-label="Network topology diagram"></svg>
+                    <div id="nat-label" class="nat-label hidden"></div>
+                </div>
+
+                <!-- Right: Explanation + Packet Inspector -->
+                <aside id="explanation-panel">
+                    <div id="step-explanation">
+                        <h3 id="explanation-title"></h3>
+                        <p id="explanation-body"></p>
+                        <div id="simplification-note" class="simplification-note hidden">
+                            <button class="simplification-toggle">⚠️ Simplified — want to go deeper?</button>
+                            <div class="simplification-content hidden"></div>
+                        </div>
+                    </div>
+
+                    <div id="packet-inspector" class="hidden">
+                        <h4>📦 Packet Inspector</h4>
+                        <div id="inspector-layers">
+                            <div class="layer layer-l2" id="layer-l2">
+                                <div class="layer-label">L2 — Ethernet</div>
+                                <div class="layer-fields" id="l2-fields"></div>
+                            </div>
+                            <div class="layer layer-l3" id="layer-l3">
+                                <div class="layer-label">L3 — IP</div>
+                                <div class="layer-fields" id="l3-fields"></div>
+                            </div>
+                            <div class="layer layer-l4" id="layer-l4">
+                                <div class="layer-label">L4 — TCP / UDP</div>
+                                <div class="layer-fields" id="l4-fields"></div>
+                            </div>
+                            <div class="layer layer-l7" id="layer-l7">
+                                <div class="layer-label">L7 — Application</div>
+                                <div class="layer-fields" id="l7-fields"></div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <footer id="tour-footer">
+                <div id="step-counter"></div>
+                <div class="tour-nav">
+                    <button id="prev-step-btn" class="nav-btn" disabled>← Previous</button>
+                    <button id="next-step-btn" class="nav-btn primary">Next →</button>
+                </div>
+            </footer>
+        </div>
+
+        <!-- ===== QUIZ SCREEN ===== -->
+        <div id="quiz-screen" class="screen hidden">
+            <header id="quiz-header">
+                <button id="quiz-back-btn" class="back-btn">← Hub</button>
+                <h1 id="quiz-title"></h1>
+                <div class="quiz-progress-wrap">
+                    <span id="quiz-progress-label"></span>
+                </div>
+            </header>
+
+            <div id="quiz-body">
+                <!-- Topology stays visible during quiz for "click a device" questions -->
+                <div id="quiz-topology-container">
+                    <svg id="quiz-topology-svg" viewBox="0 0 900 380" preserveAspectRatio="xMidYMid meet" aria-label="Network topology diagram"></svg>
+                </div>
+
+                <div id="quiz-question-panel">
+                    <div id="quiz-question-text"></div>
+                    <div id="quiz-options"></div>
+                    <div id="quiz-feedback" class="hidden">
+                        <div id="quiz-feedback-icon"></div>
+                        <p id="quiz-feedback-text"></p>
+                        <button id="quiz-next-btn" class="nav-btn primary">Next Question →</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quiz-result" class="hidden">
+                <div class="result-card">
+                    <div id="result-score-display"></div>
+                    <h2 id="result-title"></h2>
+                    <p id="result-message"></p>
+                    <div class="result-actions">
+                        <button id="retry-tour-btn" class="nav-btn">↩ Replay Tour</button>
+                        <button id="next-chapter-btn" class="nav-btn primary">Next Chapter →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="content.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
