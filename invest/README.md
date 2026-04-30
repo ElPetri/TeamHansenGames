@@ -17,7 +17,7 @@ An interactive, lightly-gamified financial education tool aimed at college stude
 | Milestone flow | Choosable cards — any order, any subset | Students have different entry points |
 | Borrowing lesson | Show debt cost AND lost investment opportunity cost | Most eye-opening when shown together |
 | Peer character | "Jordan" starts investing at 40 | Concrete comparison without judgment |
-| Visual style | Green/gold, clean financial theme (not neon) | Credible and legible |
+| Visual style | Dark neon — matches the rest of the site | Consistent with TeamHansen.us aesthetic |
 | Technology | Pure HTML/CSS/vanilla JS, no build step | Consistent with rest of repo |
 
 ---
@@ -77,11 +77,37 @@ An interactive, lightly-gamified financial education tool aimed at college stude
 ```
 invest/
   index.html    — App shell (3 screens: hub, scenario, summary)
-  style.css     — Financial theme (green #16a34a, gold #d97706)
+  style.css     — Dark neon theme matching site palette (see Color Theme below)
   script.js     — All game logic: calculators, chart renderer, scenario renderers, state machine
   data.js       — S&P 500 returns, rate constants, Buffett quotes, defaults
   README.md     — This file
 ```
+
+---
+
+## Color Theme
+
+This game uses the same dark neon palette as the rest of TeamHansen.us. When adding new UI elements, use these CSS variables (defined in `style.css :root`):
+
+| Variable | Value | Usage |
+|---|---|---|
+| `--bg` | `#0a0a0f` | Page background |
+| `--surface` | `#12121a` | Cards, chart background |
+| `--surface-2` | `#1a1a25` | Inputs, secondary panels |
+| `--border` | `#2a2a3a` | All borders and dividers |
+| `--text` | `#e0e0e0` | Primary text |
+| `--text-mid` | `#aaa` | Secondary / label text |
+| `--text-dim` | `#666` | Muted / placeholder text |
+| `--accent` | `#00f0ff` | Cyan — headings, slider thumbs, active buttons, hover glows |
+| `--green` | `#00ff88` | Positive values, gains, principal bars |
+| `--gold` | `#ffaa00` | Buffett quotes, opportunity cost values |
+| `--red` | `#ff4466` | Debt, interest paid, negative values |
+
+**Rules:**
+- Background radial gradients (`#15152a` top, `#0a1520` bottom) are applied on `body` — do not remove them.
+- Button text on `--accent` or `--green` backgrounds should be `#0a0a0f` (dark), not white.
+- Glow effects use `--accent-glow: rgba(0, 240, 255, 0.25)` for cyan and `rgba(0,255,136,0.4)` for green.
+- The SVG chart uses hardcoded hex values (`#12121a` background, `#aaa` legend text) since SVG elements can't read CSS custom properties from an external stylesheet. Keep these in sync with the token values above if the palette ever changes.
 
 ---
 
