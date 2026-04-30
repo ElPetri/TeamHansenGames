@@ -544,6 +544,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://tls13.xargs.org/',
                 },
                 inspector: {
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33 (client)', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '203.0.113.42', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': 'Client Hello', 'TLS Versions': 'TLS 1.2, TLS 1.3', 'Cipher Suites': 'TLS_AES_256_GCM_SHA384, …', 'Client Random': '3a7f…c219' },
@@ -563,6 +564,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://tls13.xargs.org/',
                 },
                 inspector: {
+                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router LAN)', 'Dst MAC': 'a4:5e:60:11:22:33 (client)' },
                     l3: { 'Src IP': '203.0.113.5', 'Dst IP': '203.0.113.42' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '443', 'Dst Port': '52340', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': 'Server Hello', 'Chosen Cipher': 'TLS_AES_256_GCM_SHA384', 'Server Random': 'b4e2…9f01', 'Certificate': 'CN=teamhansen.us, Issuer: Let\'s Encrypt' },
@@ -582,6 +584,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://www.cloudflare.com/learning/ssl/what-is-an-ssl-certificate/',
                 },
                 inspector: {
+                    l2: { 'Note': '(local — no Ethernet frames sent)' },
                     l3: { 'Src IP': '(local)', 'Dst IP': '(local verification)' },
                     l4: { 'Protocol': '—', 'Note': 'local computation, no packets' },
                     l7: { 'Action': 'Verify cert chain', 'Subject': 'teamhansen.us', 'Issuer': "Let's Encrypt R3", 'Root CA': 'ISRG Root X1', 'Expires': '2026-07-12', 'Valid': '✓ YES' },
@@ -601,6 +604,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman',
                 },
                 inspector: {
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33 (client)', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '203.0.113.42', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': 'Client Key Exchange', 'Method': 'ECDHE (P-256)', 'Client Public Key': 'ec3a…7f21 (public half only)', 'Pre-Master Secret': '(never transmitted — derived locally)' },
@@ -620,6 +624,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://tls13.xargs.org/#server-handshake-keys-calc',
                 },
                 inspector: {
+                    l2: { 'Note': '(local — no Ethernet frames sent)' },
                     l3: { 'Note': 'local computation on both sides' },
                     l4: { 'Protocol': '—' },
                     l7: { 'Action': 'Derive keys via HKDF', 'Input 1': 'Pre-master secret', 'Input 2': 'Client random + Server random', 'Output': 'Client write key, Server write key, IVs' },
@@ -639,6 +644,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake/',
                 },
                 inspector: {
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33 (client)', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '203.0.113.42', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': 'Finished (ENCRYPTED ✓)', 'MAC': 'handshake hash — verifies integrity', 'Status': '🔒 Encrypted session established' },
@@ -718,6 +724,7 @@ const CHAPTERS = [
                     body: 'With the encrypted TLS tunnel established, the browser sends an HTTP request. From this point on, the application data is <strong>encrypted</strong> — the intermediate devices (firewall, IDS) cannot read it. Inside the tunnel: <code>GET / HTTP/1.1<br>Host: teamhansen.us<br>Accept: text/html<br>User-Agent: Mozilla/5.0…</code>',
                 },
                 inspector: {
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33 (client)', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '203.0.113.42', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': '🔒 Encrypted', 'Plaintext (inside tunnel)': 'GET / HTTP/1.1', 'Host': 'teamhansen.us', 'Accept': 'text/html,application/xhtml+xml', 'User-Agent': 'Mozilla/5.0 (…)' },
@@ -749,6 +756,7 @@ const CHAPTERS = [
                     body: 'The web server decrypts the request, reads the path (<code>/</code>) and Host header (<code>teamhansen.us</code>), and looks up the resource. It finds the root HTML file and prepares a response: <code>HTTP/1.1 200 OK</code>, with headers like <code>Content-Type: text/html</code> and <code>Content-Length</code>.',
                 },
                 inspector: {
+                    l2: { 'Note': '(local — server processing, no frames sent yet)' },
                     l3: { 'Src IP': '203.0.113.5', 'Dst IP': '203.0.113.42' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '443', 'Dst Port': '52340', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': '🔒 Encrypted', 'Plaintext (response)': 'HTTP/1.1 200 OK', 'Content-Type': 'text/html; charset=UTF-8', 'Content-Length': '4821', 'Cache-Control': 'max-age=3600' },
@@ -780,6 +788,7 @@ const CHAPTERS = [
                     body: 'The browser parses the HTML, builds the DOM tree, then fetches linked resources (CSS, JS, images) — each triggering new HTTP requests over the same TLS connection. Once all resources are loaded and processed, the page is displayed. The journey is complete.',
                 },
                 inspector: {
+                    l2: { 'Note': '(local — browser parsing, no frames sent)' },
                     l3: { 'Note': 'local processing — no network packets' },
                     l4: { 'Protocol': '—' },
                     l7: { 'Action': 'Parse HTML → build DOM', 'Sub-resources': 'style.css, script.js, images…', 'Status': '✅ Page rendered' },
@@ -795,6 +804,7 @@ const CHAPTERS = [
                     body: 'When done, the connection is gracefully closed using a <strong>FIN-ACK</strong> exchange (four-way). The client sends FIN → server ACKs → server sends FIN → client ACKs. Both ends move to the CLOSED state. The firewall removes the connection from its state table. NAT entry is released.',
                 },
                 inspector: {
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33 (client)', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '203.0.113.42', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'FIN+ACK', 'Note': '4-way teardown begins' },
                     l7: { 'HTTP': 'Connection: close', 'TLS': 'close_notify alert sent first' },
