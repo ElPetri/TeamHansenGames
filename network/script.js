@@ -282,7 +282,8 @@ function animatePacketBetween(svgEl, fromId, toId, color, duration) {
             if (t < 1) {
                 requestAnimationFrame(frame);
             } else {
-                dot.remove();
+                // Leave dot resting at destination; goToStep clears it on next advance
+                dot.setAttribute('opacity', '0.5');
                 resolve();
             }
         }
@@ -393,6 +394,9 @@ function buildStepList(steps) {
 function goToStep(index) {
     const steps = getChapterSteps(currentChapter);
     if (index < 0 || index >= steps.length) return;
+
+    // Clear any resting packet dots from the previous step
+    topoSvg.querySelectorAll('.packet-dot').forEach(el => el.remove());
 
     currentStepIndex = index;
     const step = steps[index];
@@ -666,6 +670,10 @@ function loadFullJourney() {
 
 function goToFullJourneyStep(index) {
     if (index < 0 || index >= fullJourneySteps.length) return;
+
+    // Clear any resting packet dots from the previous step
+    topoSvg.querySelectorAll('.packet-dot').forEach(el => el.remove());
+
     fullJourneyIndex = index;
     const item  = fullJourneySteps[index];
     const total = fullJourneySteps.length;
