@@ -5,23 +5,22 @@
 
 // ---------------------------------------------------------------------------
 // TOPOLOGY DEVICE DEFINITIONS
-// Seven devices shown in the SVG, referenced by id in packet steps.
+// Six devices shown in the SVG, referenced by id in packet steps.
+// (Home Router combines Wireless AP + NAT router — standard in modern households.)
 // ---------------------------------------------------------------------------
 const DEVICES = [
     { id: 'client',   label: 'Client',        sublabel: '192.168.1.5',   emoji: '💻', x: 60,  y: 190 },
-    { id: 'ap',       label: 'Wireless AP',   sublabel: '',              emoji: '📡', x: 185, y: 190 },
-    { id: 'router',   label: 'Home Router',   sublabel: 'NAT',           emoji: '🔌', x: 320, y: 190 },
-    { id: 'isp',      label: 'ISP Router',    sublabel: '',              emoji: '🌐', x: 455, y: 190 },
-    { id: 'firewall', label: 'Firewall',       sublabel: '',              emoji: '🛡️', x: 590, y: 190 },
-    { id: 'ids',      label: 'IDS / IPS',     sublabel: '',              emoji: '🔍', x: 720, y: 190 },
-    { id: 'server',   label: 'Web Server',    sublabel: '203.0.113.5',   emoji: '🖥️', x: 845, y: 190 },
+    { id: 'ap',       label: 'Home Router',   sublabel: 'NAT',           emoji: '📡', x: 220, y: 190 },
+    { id: 'isp',      label: 'ISP Router',    sublabel: '',              emoji: '🌐', x: 380, y: 190 },
+    { id: 'firewall', label: 'Firewall',       sublabel: '',              emoji: '🛡️', x: 540, y: 190 },
+    { id: 'ids',      label: 'IDS / IPS',     sublabel: '',              emoji: '🔍', x: 700, y: 190 },
+    { id: 'server',   label: 'Web Server',    sublabel: '203.0.113.5',   emoji: '🖥️', x: 860, y: 190 },
 ];
 
 // Links between devices (drawn as lines in the SVG)
 const LINKS = [
     { from: 'client',   to: 'ap'       },
-    { from: 'ap',       to: 'router'   },
-    { from: 'router',   to: 'isp'      },
+    { from: 'ap',       to: 'isp'      },
     { from: 'isp',      to: 'firewall' },
     { from: 'firewall', to: 'ids'      },
     { from: 'ids',      to: 'server'   },
@@ -29,10 +28,10 @@ const LINKS = [
 
 // Also define off-screen DNS resolver positions (used in DNS chapter)
 const DNS_DEVICES = [
-    { id: 'resolver',  label: 'Recursive Resolver', sublabel: '8.8.8.8',  emoji: '🔄', x: 455, y: 60  },
-    { id: 'root-ns',   label: 'Root Name Server',   sublabel: '.',         emoji: '🌍', x: 595, y: 60  },
-    { id: 'tld-ns',    label: 'TLD Name Server',    sublabel: '.us',       emoji: '🏷️', x: 720, y: 60  },
-    { id: 'auth-ns',   label: 'Auth Name Server',   sublabel: 'teamhansen.us', emoji: '📋', x: 845, y: 60  },
+    { id: 'resolver',  label: 'Recursive Resolver', sublabel: '8.8.8.8',  emoji: '🔄', x: 380, y: 60  },
+    { id: 'root-ns',   label: 'Root Name Server',   sublabel: '.',         emoji: '🌍', x: 540, y: 60  },
+    { id: 'tld-ns',    label: 'TLD Name Server',    sublabel: '.us',       emoji: '🏷️', x: 700, y: 60  },
+    { id: 'auth-ns',   label: 'Auth Name Server',   sublabel: 'teamhansen.us', emoji: '📋', x: 860, y: 60  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -65,7 +64,7 @@ const CHAPTERS = [
             {
                 id: 'ov-2',
                 label: 'DNS: find the IP address',
-                activeDevices: ['client', 'router', 'isp'],
+                activeDevices: ['client', 'ap', 'isp'],
                 packet: { from: 'client', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Chapter 1 preview — DNS',
@@ -76,11 +75,11 @@ const CHAPTERS = [
             {
                 id: 'ov-3',
                 label: 'TCP: open a connection',
-                activeDevices: ['client', 'ap', 'router', 'isp', 'firewall', 'ids', 'server'],
+                activeDevices: ['client', 'ap', 'isp', 'firewall', 'ids', 'server'],
                 packet: { from: 'client', to: 'server', color: 'var(--pkt-tcp)', label: 'SYN' },
                 explanation: {
                     title: 'Chapter 2 preview — TCP Handshake',
-                    body: 'Before any data is sent, the client and server perform a three-way handshake (SYN → SYN-ACK → ACK) to open a reliable, ordered connection. Every packet crosses all seven network devices.',
+                    body: 'Before any data is sent, the client and server perform a three-way handshake (SYN → SYN-ACK → ACK) to open a reliable, ordered connection. Every packet crosses all six network devices.'
                 },
                 inspector: null,
             },
@@ -166,7 +165,7 @@ const CHAPTERS = [
             {
                 id: 'dns-3',
                 label: 'Query sent to recursive resolver',
-                activeDevices: ['client', 'ap', 'router', 'isp'],
+                activeDevices: ['client', 'ap', 'isp'],
                 packet: { from: 'client', to: 'isp', color: 'var(--pkt-dns)', label: 'DNS Query' },
                 explanation: {
                     title: 'Step 3 — Recursive resolver query',
@@ -178,7 +177,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://www.cloudflare.com/learning/dns/what-is-a-dns-server/',
                 },
                 inspector: {
-                    l2: { 'Src MAC': 'a4:5e:60:11:22:33', 'Dst MAC': '00:1a:2b:3c:4d:5e (Router)' },
+                    l2: { 'Src MAC': 'a4:5e:60:11:22:33', 'Dst MAC': '00:1a:2b:3c:4d:5e (Home Router)' },
                     l3: { 'Src IP': '192.168.1.5', 'Dst IP': '8.8.8.8' },
                     l4: { 'Protocol': 'UDP', 'Src Port': '54312', 'Dst Port': '53' },
                     l7: { 'Type': 'DNS Query', 'Query': 'teamhansen.us', 'Record': 'A' },
@@ -287,7 +286,7 @@ const CHAPTERS = [
                     learnMoreUrl: 'https://www.cloudflare.com/learning/dns/what-is-dns/',
                 },
                 inspector: {
-                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Router)', 'Dst MAC': 'a4:5e:60:11:22:33' },
+                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router)', 'Dst MAC': 'a4:5e:60:11:22:33' },
                     l3: { 'Src IP': '8.8.8.8', 'Dst IP': '192.168.1.5' },
                     l4: { 'Protocol': 'UDP', 'Src Port': '53', 'Dst Port': '54312' },
                     l7: { 'Type': 'DNS Reply', 'Answer': 'teamhansen.us → 203.0.113.5', 'TTL': '300s' },
@@ -335,7 +334,7 @@ const CHAPTERS = [
                 id: 'dns-q4',
                 question: 'Which device on the network diagram is responsible for forwarding the DNS query from your home to the internet?',
                 options: [
-                    'The Wireless AP',
+                    'The Firewall',
                     'The IDS/IPS',
                     'The Home Router (NAT)',
                     'The Web Server',
@@ -387,16 +386,16 @@ const CHAPTERS = [
             },
             {
                 id: 'tcp-2',
-                label: 'SYN travels to AP → Router (NAT)',
-                activeDevices: ['client', 'ap', 'router'],
-                packet: { from: 'client', to: 'router', color: 'var(--pkt-tcp)', label: 'SYN' },
+                label: 'SYN travels to Home Router (NAT)',
+                activeDevices: ['client', 'ap'],
+                packet: { from: 'client', to: 'ap', color: 'var(--pkt-tcp)', label: 'SYN' },
                 natEvent: true,
                 explanation: {
                     title: 'Step 2 — NAT at the Home Router',
-                    body: 'The SYN packet crosses your wireless AP (layer 2 relay) and reaches your Home Router. The router performs <strong>Network Address Translation (NAT)</strong>: it replaces your private IP (<code>192.168.1.5</code>) with your public IP (<code>203.0.113.42</code>). Your private address is invisible to the public internet.',
+                    body: 'The SYN packet reaches your Home Router — a single device that combines Wi-Fi and NAT routing (as most modern home routers do). It performs <strong>Network Address Translation (NAT)</strong>: replacing your private IP (<code>192.168.1.5</code>) with your public IP (<code>203.0.113.42</code>). Your private address is invisible to the public internet.',
                 },
                 inspector: {
-                    l2: { 'Src MAC': 'f0:2f:74:aa:bb:cc (Router WAN)', 'Dst MAC': '(ISP next-hop)' },
+                    l2: { 'Src MAC': 'f0:2f:74:aa:bb:cc (Home Router WAN)', 'Dst MAC': '(ISP next-hop)' },
                     l3: { 'Src IP': '203.0.113.42 ← was 192.168.1.5', 'Dst IP': '203.0.113.5' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '52340', 'Dst Port': '443', 'Flags': 'SYN', 'Seq': '1000', 'Ack': '0' },
                     l7: { 'Data': '(none)' },
@@ -407,7 +406,7 @@ const CHAPTERS = [
                 id: 'tcp-3',
                 label: 'SYN crosses ISP → Firewall → IDS → Server',
                 activeDevices: ['isp', 'firewall', 'ids', 'server'],
-                packet: { from: 'router', to: 'server', color: 'var(--pkt-tcp)', label: 'SYN' },
+                packet: { from: 'ap', to: 'server', color: 'var(--pkt-tcp)', label: 'SYN' },
                 explanation: {
                     title: 'Step 3 — SYN traverses the internet',
                     body: 'The SYN packet travels through the ISP backbone, then hits the web server\'s <strong>firewall</strong>. The firewall checks: <em>is port 443 allowed inbound?</em> Yes. The packet then passes the <strong>IDS/IPS</strong> (intrusion detection/prevention) which inspects for known attack signatures. Clean, it reaches the web server.',
@@ -438,14 +437,14 @@ const CHAPTERS = [
             {
                 id: 'tcp-5',
                 label: 'SYN-ACK travels back to client',
-                activeDevices: ['server', 'ids', 'firewall', 'isp', 'router', 'ap', 'client'],
+                activeDevices: ['server', 'ids', 'firewall', 'isp', 'ap', 'client'],
                 packet: { from: 'server', to: 'client', color: 'var(--pkt-tcp)', label: 'SYN-ACK' },
                 explanation: {
                     title: 'Step 5 — Return path',
                     body: 'The SYN-ACK travels the reverse path. The firewall allows it through because it tracks state (the outbound SYN created a connection table entry). The Home Router\'s NAT table translates the destination IP back to <code>192.168.1.5</code> before delivering to your computer.',
                 },
                 inspector: {
-                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Router LAN)', 'Dst MAC': 'a4:5e:60:11:22:33' },
+                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router LAN)', 'Dst MAC': 'a4:5e:60:11:22:33' },
                     l3: { 'Src IP': '203.0.113.5', 'Dst IP': '192.168.1.5 ← NAT translated back' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '443', 'Dst Port': '52340', 'Flags': 'SYN+ACK', 'Seq': '5000', 'Ack': '1001' },
                     l7: { 'Data': '(none)' },
@@ -454,7 +453,7 @@ const CHAPTERS = [
             {
                 id: 'tcp-6',
                 label: 'Client sends ACK — connection open',
-                activeDevices: ['client', 'ap', 'router', 'isp', 'firewall', 'ids', 'server'],
+                activeDevices: ['client', 'ap', 'isp', 'firewall', 'ids', 'server'],
                 packet: { from: 'client', to: 'server', color: 'var(--pkt-tcp)', label: 'ACK' },
                 explanation: {
                     title: 'Step 6 — ACK: connection established',
@@ -491,7 +490,7 @@ const CHAPTERS = [
                     'Blocking incoming connections from the internet',
                 ],
                 correct: 1,
-                explanation: 'NAT replaces the private source IP (192.168.1.5) with the router\'s public IP (203.0.113.42) on outbound packets, and reverses this for inbound packets using a connection table. This allows many devices to share one public IP.',
+                explanation: 'NAT replaces the private source IP (192.168.1.5) with the Home Router\'s public IP (203.0.113.42) on outbound packets, and reverses this for inbound packets using a connection table. This allows many devices to share one public IP.',
             },
             {
                 id: 'tcp-q3',
@@ -727,7 +726,7 @@ const CHAPTERS = [
             {
                 id: 'http-2',
                 label: 'GET travels through all devices',
-                activeDevices: ['client', 'ap', 'router', 'isp', 'firewall', 'ids', 'server'],
+                activeDevices: ['client', 'ap', 'isp', 'firewall', 'ids', 'server'],
                 packet: { from: 'client', to: 'server', color: 'var(--pkt-http)', label: 'GET / (encrypted)' },
                 explanation: {
                     title: 'Step 2 — Stateful inspection at the firewall & IDS',
@@ -758,14 +757,14 @@ const CHAPTERS = [
             {
                 id: 'http-4',
                 label: '200 OK response travels back',
-                activeDevices: ['server', 'ids', 'firewall', 'isp', 'router', 'ap', 'client'],
+                activeDevices: ['server', 'ids', 'firewall', 'isp', 'ap', 'client'],
                 packet: { from: 'server', to: 'client', color: 'var(--pkt-http)', label: '200 OK (encrypted)' },
                 explanation: {
                     title: 'Step 4 — Response traverses back',
                     body: 'The HTTP response — encrypted inside TLS — travels the full return path. At the home router, NAT translates the destination IP back to <code>192.168.1.5</code>. The client decrypts and hands the HTML body to the browser\'s rendering engine.',
                 },
                 inspector: {
-                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Router LAN)', 'Dst MAC': 'a4:5e:60:11:22:33' },
+                    l2: { 'Src MAC': '00:1a:2b:3c:4d:5e (Home Router LAN)', 'Dst MAC': 'a4:5e:60:11:22:33' },
                     l3: { 'Src IP': '203.0.113.5', 'Dst IP': '192.168.1.5 ← NAT translated back' },
                     l4: { 'Protocol': 'TCP', 'Src Port': '443', 'Dst Port': '52340', 'Flags': 'PSH+ACK' },
                     l7: { 'TLS': '🔒 Encrypted', 'Plaintext (after decrypt)': '<!DOCTYPE html><html>…' },
@@ -789,7 +788,7 @@ const CHAPTERS = [
             {
                 id: 'http-6',
                 label: 'TCP connection closes (FIN-ACK)',
-                activeDevices: ['client', 'ap', 'router', 'isp', 'firewall', 'ids', 'server'],
+                activeDevices: ['client', 'ap', 'isp', 'firewall', 'ids', 'server'],
                 packet: { from: 'client', to: 'server', color: 'var(--pkt-tcp)', label: 'FIN' },
                 explanation: {
                     title: 'Step 6 — TCP Teardown',
