@@ -144,7 +144,12 @@ const CHAPTERS = [
                     body: 'Each cached record has a Time-To-Live (TTL) set by the domain owner. Once expired, the browser must re-query. Common TTLs range from 60 seconds to 24 hours. A brand-new visitor with a cold cache will always trigger a full lookup.',
                     learnMoreUrl: 'https://www.cloudflare.com/learning/dns/dns-cache-poisoning/',
                 },
-                inspector: null,
+                inspector: {
+                    l2: { 'Note': '(local — no frames sent)' },
+                    l3: { 'Note': 'local cache lookup — no packets' },
+                    l4: { 'Protocol': '—' },
+                    l7: { 'Action': 'Check browser DNS cache', 'Query': 'teamhansen.us (A record)', 'Result': '❌ Cache miss — TTL expired or first visit' },
+                },
             },
             {
                 id: 'dns-2',
@@ -160,7 +165,12 @@ const CHAPTERS = [
                     body: 'The hosts file predates DNS — it was the original way computers mapped names to addresses. It is checked before any DNS query, making it useful for local development (<code>127.0.0.1 myapp.local</code>) or blocking domains. Malware sometimes modifies it to redirect legitimate sites.',
                     learnMoreUrl: 'https://en.wikipedia.org/wiki/Hosts_(file)',
                 },
-                inspector: null,
+                inspector: {
+                    l2: { 'Note': '(local — no frames sent)' },
+                    l3: { 'Note': 'local lookup — no packets' },
+                    l4: { 'Protocol': '—' },
+                    l7: { 'Action': 'Check /etc/hosts + OS DNS cache', 'Hosts File': 'No entry for teamhansen.us', 'OS Cache': '❌ Miss — forwarding to network resolver', 'Resolver IP': '8.8.8.8 (via DHCP)' },
+                },
             },
             {
                 id: 'dns-3',
