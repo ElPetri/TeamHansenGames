@@ -81,3 +81,55 @@ const BUFFETT_QUOTES = [
         id:      'summary',
     },
 ];
+
+// =========================================================================
+// ADVANCED DEEP DIVE DATA
+// =========================================================================
+
+// Major S&P 500 bear markets — for the bear market recovery visualizer
+const BEAR_MARKETS = [
+    {
+        name:             'Dot-com Crash',
+        start:            'Mar 2000',
+        trough:           'Oct 2002',
+        peakDrop:         -0.491,
+        recoveryMonths:   87,
+        note:             'The Nasdaq fell ~78%. The S&P 500 took over 7 years to recover. Investors who stayed in recovered fully; those who sold locked in losses.',
+    },
+    {
+        name:             'Global Financial Crisis',
+        start:            'Oct 2007',
+        trough:           'Mar 2009',
+        peakDrop:         -0.565,
+        recoveryMonths:   49,
+        note:             'The worst crash since the Great Depression. Banks failed, housing collapsed. The S&P 500 took ~4 years to recover — DCA investors who kept buying at the bottom were richly rewarded.',
+    },
+    {
+        name:             'COVID Crash',
+        start:            'Feb 2020',
+        trough:           'Mar 2020',
+        peakDrop:         -0.340,
+        recoveryMonths:   5,
+        note:             'The fastest bear market in history — and the fastest recovery. The market was back to all-time highs in just 5 months. Investors who sold in panic missed the entire rebound.',
+    },
+    {
+        name:             '2022 Rate Hike Bear',
+        start:            'Jan 2022',
+        trough:           'Oct 2022',
+        peakDrop:         -0.252,
+        recoveryMonths:   21,
+        note:             'The Fed raised rates aggressively to fight 40-year-high inflation. Growth stocks were hit hardest. The market recovered to new highs by early 2024.',
+    },
+];
+
+// Approximate average new car value retention by year (year 0 = purchase price = 1.0)
+const DEPRECIATION_CURVE = [1.0, 0.80, 0.67, 0.56, 0.48, 0.42, 0.37, 0.33, 0.30, 0.27, 0.25];
+
+// FICO score factor breakdown for the credit donut chart
+const FICO_FACTORS = [
+    { label: 'Payment History',        pct: 35, color: '#00f0ff', description: 'Whether you pay bills on time. A single missed payment can drop your score 60–110 points.' },
+    { label: 'Amounts Owed',           pct: 30, color: '#00ff88', description: 'Your credit utilization ratio — how much of your available credit you\'re using. Keep it below 30%, ideally below 10%.' },
+    { label: 'Length of History',      pct: 15, color: '#ffaa00', description: 'How long your accounts have been open. Don\'t close old cards — they help your average age.' },
+    { label: 'New Credit',             pct: 10, color: '#ff4466', description: 'Hard inquiries from applying for new credit. Each application can ding your score by 5–10 points temporarily.' },
+    { label: 'Credit Mix',             pct: 10, color: '#a78bfa', description: 'Having a variety of credit types (credit card, auto loan, mortgage) shows you can manage different debt.' },
+];

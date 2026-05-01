@@ -828,3 +828,370 @@ body {
 .text-gold  { color: var(--gold); }
 .text-dim   { color: var(--text-dim); }
 .fw-bold    { font-weight: 700; }
+
+/* =========================================================================
+   TAB BAR
+   ========================================================================= */
+.tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    gap: 0;
+}
+
+.tab-btn {
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    background: none;
+    color: var(--text-mid);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* =========================================================================
+   ADVANCED — SHARED COMPONENTS
+   ========================================================================= */
+
+/* Advanced section wrapper */
+.adv-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Sub-topic block */
+.adv-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.adv-block-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.adv-block-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex: 1;
+}
+
+.adv-block-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Two-column layout inside advanced blocks */
+.adv-cols {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 768px) { .adv-cols { grid-template-columns: 1fr; } }
+
+.adv-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.adv-results {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Concept definition cards */
+.concept-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.concept-card {
+    background: var(--surface-2);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.concept-card strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-bottom: 3px;
+}
+
+.concept-card p {
+    font-size: 0.82rem;
+    color: var(--text-mid);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Case study block */
+.case-study {
+    background: rgba(255, 170, 0, 0.07);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+}
+
+.case-study-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin-bottom: 5px;
+}
+
+.case-study p {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Learn more links */
+.learn-more-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.learn-more-link {
+    font-size: 0.78rem;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 3px 10px;
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 99px;
+    transition: background 0.15s;
+}
+
+.learn-more-link:hover {
+    background: rgba(0,240,255,0.08);
+}
+
+.learn-more-link::after { content: ' ↗'; }
+
+/* =========================================================================
+   ADVANCED — QUIZ
+   ========================================================================= */
+.quiz-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+}
+
+.quiz-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.quiz-toggle-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.quiz-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 16px;
+}
+
+.quiz-question p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.quiz-option:hover:not(:disabled) { border-color: var(--accent); }
+
+.quiz-option.correct {
+    border-color: var(--green);
+    background: rgba(0,255,136,0.08);
+    color: var(--green);
+}
+
+.quiz-option.wrong {
+    border-color: var(--red);
+    background: rgba(255,68,102,0.08);
+    color: var(--red);
+}
+
+.quiz-option:disabled { cursor: default; }
+
+.quiz-explanation {
+    margin-top: 8px;
+    font-size: 0.82rem;
+    color: var(--text-mid);
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    display: none;
+}
+
+/* =========================================================================
+   ADVANCED — SPECIFIC COMPONENTS
+   ========================================================================= */
+
+/* FICO donut chart */
+.fico-chart-wrap {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.fico-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.fico-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-mid);
+}
+
+.fico-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.fico-pct {
+    font-weight: 700;
+    color: var(--text);
+    min-width: 32px;
+}
+
+/* Bear market table */
+.bear-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.bear-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+}
+
+.bear-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+}
+
+.bear-table tr:last-child td { border-bottom: none; }
+
+.bear-table .peak-drop { color: var(--red); font-weight: 700; }
+.bear-table .recovery  { color: var(--green); font-weight: 700; }
+
+/* Depreciation bar */
+.depr-bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+.depr-year-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+
+.depr-year-label {
+    width: 44px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.depr-bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.depr-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--gold), var(--red));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.depr-value {
+    width: 46px;
+    text-align: right;
+    color: var(--text-mid);
+    font-size: 0.75rem;
+}
