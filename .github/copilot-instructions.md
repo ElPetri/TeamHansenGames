@@ -28,3 +28,7 @@
 ## Workflows
 - No tests or build commands. Run by opening the HTML files or serving the repo statically.
 - For quick manual testing, open [index.html](index.html) and follow links to the games.
+
+## Copilot agent behaviour
+- After implementing any set of changes, always run `node --check` on modified JS files, then `git add … && git commit … && git push` automatically.
+- Inform the user once the push completes with the short commit hash and a one-line summary. Do not wait to be asked.

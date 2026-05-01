@@ -25,30 +25,29 @@ An interactive, lightly-gamified financial education tool aimed at college stude
 ## Scenarios
 
 ### 📈 Scenario A — Investing & Compound Interest
-- **Inputs**: Monthly contribution slider ($50–$1,000), simulation mode (Historical S&P 500 **default** / Average 10.5%), start year picker
-- **Comparison**: Player (starts at chosen age) vs Jordan — Jordan's details are now fully configurable by the user (see Jordan Configuration below)
+- **Inputs**: Monthly contribution slider ($25–$1,000), simulation mode (Historical S&P 500 **default** / Average 10.5%), start year picker
+- **Live rate note**: Below the Start Year dropdown, a cyan callout shows the effective annualised return (geometric mean) for the exact years the simulation cycles through — updates on every change
+- **Comparison**: Player (starts at chosen age) vs Jordan — fully configurable (see Jordan Configuration below)
+- **Comparison card milestones**: Age-aware — players under 25 get near-term 5-year checkpoints (e.g. age 15 → cards at 20, 25, 30, 40, 50, 65) so the first milestone is never 15+ years away
 - **Chart**: SVG line chart — two diverging lines to age 65, hover scrubber
-- **Comparison cards**: Wealth at ages 30, 40, 50, 65
 - **Buffett Quote #1**: *"Someone is sitting in the shade today because someone planted a tree a long time ago."*
 
 ### 🚗 Scenario B — Buying a Car
-- **Inputs**: Car price ($10k–$60k), down payment, loan term (3–7 years)
-- **Comparison**: Finance new car (7% APR) vs invest the car payment instead
-- **Visual**: Side-by-side cost breakdown (monthly payment, total interest, total cost) + what that money becomes at age 65 if invested
-- **Key insight**: The true cost of a car loan is not just interest — it's the compound growth you gave up
+- **Player inputs**: Car price ($10k–$60k), down payment ($0–$20k), loan term (3–7 years), APR slider (3–20%)
+- **Jordan's Car config box**: Price ($10k–$80k), down payment, loan term, APR — defaults to same price, $0 down, 7yr, 8% (worse credit)
+- **Visual**: Side-by-side stats blocks for player and Jordan — loan amount, monthly payment, total interest, opportunity cost, interest bar
+- **Opportunity cost panel**: What player's payments would have grown to at avg S&P 500 return
 
 ### 💳 Scenario C — Credit Card Debt
-- **Inputs**: Balance ($500–$10k), monthly payment slider ($25–$500)
-- **Comparison**: Player (set payment) vs Jordan (minimum payments only — 2% of balance or $25)
-- **Chart**: Debt paydown line chart — two lines showing remaining balance over months
-- **Stats**: Payoff date, total interest paid, lost investment gains
+- **Player inputs**: Balance ($500–$10k), monthly payment ($25–$500), APR slider (8–36%, default 24%)
+- **Jordan's Settings box**: "Minimum payments only" checkbox (default on); uncheck to reveal independent payment slider; separate APR slider (8–36%)
+- **Chart**: Debt paydown line chart — player (green) and Jordan (orange) lines; x-axis tick density auto-scales by range so labels never blur
 - **Buffett Quote #2**: *"The stock market is a device for transferring money from the impatient to the patient."*
 
 ### 🏠 Scenario D — Home Loan Comparison
-- **Inputs**: Home price ($150k–$800k), down payment percentage
-- **Comparison**: 15-year at 6.5% vs 30-year at 7.0%
-- **Visual**: Stacked bar showing principal vs interest for each option + monthly payment difference invested over 15 years
-- **Key insight**: The 30-year saves $X/month short-term but costs $Y more in total — and the payment difference invested over 15 years = $Z
+- **Player inputs**: Home price ($150k–$800k), down payment % (5–40%), 15-year rate slider (3–10%), 30-year rate slider (3–10%)
+- **Jordan's Situation box**: Jordan's down payment % (default 5% vs player's 20%) — shows how lower down payment inflates loan and total interest
+- **Visual**: Side-by-side 15yr vs 30yr blocks for player + Jordan's 30yr block; monthly difference panel; all with interest bars
 
 ---
 
@@ -160,14 +159,13 @@ Jordan's details in the Investing scenario are now **user-configurable** via con
 Jordan's settings live in `investState.jordan = { startAge: 40, monthly: null }`. When `monthly` is `null`, it mirrors `investState.monthly` at render time. The jordan controls are rendered as part of the `#scenario-controls` sidebar in `loadScenarioInvest()` and update on `input`/`change` events.
 
 ### Other scenarios
-- Car, Credit, Home: Jordan still uses fixed-behavior defaults (new car at 7%, minimum payments, 30yr mortgage). These scenarios don't have a Jordan-config UI — the lesson there is about the debt structure, not the person.
+All four scenarios now have configurable Jordan settings:
 
----
-
-## Jordan's Defaults (other scenarios)
-- Finances a **new car** at 7% APR (Car scenario)
-- Pays only **minimum payments** on credit card (Credit scenario)
-- Takes a **30-year mortgage** (Home scenario)
+| Scenario | Jordan config controls | Defaults |
+|---|---|---|
+| 💳 Credit | Payment toggle (min-only checkbox) + payment slider + APR slider | Min payments, 24% APR |
+| 🚗 Car | Car price, down payment, loan term, APR | Same price, $0 down, 7yr, 8% APR |
+| 🏠 Home | Down payment % | 5% down, 30yr mortgage at same rate |
 
 ---
 
@@ -186,7 +184,7 @@ Shown when 2+ scenarios have been explored:
 #### 📈 Invest
 - Portfolio at retirement with contributor/growth split (how much came from contributions vs market gains)
 - Jordan comparison: head-start advantage + estimated cost of waiting 1 more year
-- "How calculated" explanation: DCA formula, 10.5% avg, monthly compounding
+- "How calculated" explanation: DCA formula with **dynamic return rate** — shows either `10.5% avg annual return (smooth average)` or `historical S&P 500 returns starting YYYY (effective avg: X.X%/yr)` depending on simulation mode and selected start year
 - Key takeaway callout: time advantage quantified in dollars
 
 #### 🚗 Car
@@ -213,6 +211,15 @@ Shown when 2+ scenarios have been explored:
 
 ### Age Input
 The "Your current age" field on the hub screen is a `<select>` dropdown (options 15–50, default 18). This prevents invalid values and is faster to use on mobile than a number input.
+
+### Chart Tooltip
+The hover scrubber tooltip uses the dark site theme: `#0e0e18` background, `var(--text)` colour, `var(--border)` outline. Earlier versions used `var(--text)` as background (light grey), making it unreadable.
+
+### Chart X-Axis Tick Density
+`buildLineChart()` auto-selects a sensible tick step based on x-range:
+- ≤20 → step 5 | ≤50 → step 10 | ≤120 → step 12 | ≤300 → step 24 | >300 → step 60
+
+Callers can also pass `xStep` in options to override. This prevents label crowding on month-scale charts (credit card payoff).
 
 ### Advanced Tab Pulse
 When a scenario is open and the **Basic** tab is active, the **Advanced ↓** tab pulses with a glowing purple animation (`@keyframes advTabPulse`) to draw attention. The animation stops as soon as the user clicks the Advanced tab (once `active` class is applied).
