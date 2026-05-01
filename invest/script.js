@@ -874,13 +874,31 @@ function renderInvest() {
     scenarioInsight.classList.remove('hidden');
     scenarioStats.innerHTML = '';
 
+    // Compute effective annualised return for the summary note
+    var effectiveAnnualRate;
+    if (investState.mode === 'avg') {
+        effectiveAnnualRate = RATES.sp500Avg;
+    } else {
+        var _years = retireAge - playerAge;
+        var _geo = 1;
+        for (var _i = 0; _i < _years; _i++) {
+            var _idx = (investState.startYear + _i - SP500_RETURNS[0].year) % SP500_RETURNS.length;
+            if (_idx < 0) _idx += SP500_RETURNS.length;
+            _geo *= (1 + SP500_RETURNS[_idx].return);
+        }
+        effectiveAnnualRate = Math.pow(_geo, 1 / _years) - 1;
+    }
+
     exploredScenarios['invest'] = {
-        playerFinal:    playerResult.final,
-        jordanFinal:    jordanResult.final,
-        monthly:        monthly,
-        jordanMonthly:  jordanMonthly,
-        jordanStartAge: jordan,
-        playerAge:      playerAge,
+        playerFinal:        playerResult.final,
+        jordanFinal:        jordanResult.final,
+        monthly:            monthly,
+        jordanMonthly:      jordanMonthly,
+        jordanStartAge:     jordan,
+        playerAge:          playerAge,
+        mode:               investState.mode,
+        startYear:          investState.startYear,
+        effectiveAnnualRate: effectiveAnnualRate,
     };
     updateCardStatuses();
 }
@@ -2485,8 +2503,11 @@ function renderSummary() {
             html += '<div class="stat-row"><span class="stat-label">' + playerName + '\'s final portfolio</span><span class="stat-value text-green">' + fmtDollarFull(res.playerFinal) + '</span></div>';
             html += '<div class="stat-row"><span class="stat-label">Total you contributed</span><span class="stat-value">' + fmtDollarFull(totalContributed) + '</span></div>';
             html += '<div class="stat-row"><span class="stat-label">Market growth on top</span><span class="stat-value text-green">' + fmtDollarFull(investGains) + '</span></div>';
+            var rateNote = res.mode === 'avg'
+                ? '10.5% avg annual return (smooth average)'
+                : 'historical S&P 500 returns starting ' + res.startYear + ' (effective avg: ' + (res.effectiveAnnualRate * 100).toFixed(1) + '%/yr)';
             html += '<div class="sum-calc-note">How calculated: $' + res.monthly + '/mo invested each month from age ' + res.playerAge + ' to 65 (' + monthsInvested + ' months), ' +
-                'compounding at 10.5% avg annual return. Formula: each month, portfolio = (portfolio + $' + res.monthly + ') \xd7 (1 + 0.105/12). ' +
+                'compounding using ' + rateNote + '. ' +
                 'The market added <strong>' + fmtDollarFull(investGains) + '</strong> on top of your <strong>' + fmtDollarFull(totalContributed) + '</strong> in contributions \u2014 ' +
                 'that\'s the market doing <strong>' + (investGains / totalContributed).toFixed(1) + 'x</strong> the work you did.</div>';
 

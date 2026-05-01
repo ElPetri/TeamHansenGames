@@ -479,8 +479,9 @@ body {
 
 .chart-tooltip {
     position: absolute;
-    background: var(--text);
-    color: #fff;
+    background: #0e0e18;
+    color: var(--text);
+    border: 1px solid var(--border);
     padding: 8px 12px;
     border-radius: var(--radius-sm);
     font-size: 0.8rem;
@@ -488,7 +489,7 @@ body {
     z-index: 10;
     white-space: nowrap;
     line-height: 1.6;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
 }
 
 .chart-tooltip.hidden { display: none; }
