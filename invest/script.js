@@ -546,7 +546,7 @@ function buildLineChart(svgEl, datasets, options) {
 
     // X grid lines + labels
     var xRange = xMax - xMin;
-    var xStep = xRange <= 20 ? 5 : xRange <= 50 ? 10 : 10;
+    var xStep = options.xStep || (xRange <= 20 ? 5 : xRange <= 50 ? 10 : xRange <= 120 ? 12 : xRange <= 300 ? 24 : 60);
     for (var xv = Math.ceil(xMin / xStep) * xStep; xv <= xMax; xv += xStep) {
         var xPx = scaleX(xv);
         svgEl.appendChild(el('line', { x1: xPx, y1: CHART_PAD.top, x2: xPx, y2: CHART_PAD.top + CHART_INNER_H, class: 'chart-grid' }));
@@ -807,7 +807,20 @@ function renderInvest() {
     });
 
     // Comparison cards at milestones
-    var milestones = [30, 40, 50, retireAge];
+    // For younger players, prepend near-term 5-year checkpoints so the first
+    // milestone isn't 15+ years away (e.g. age 15 → show 20, 25, 30, 40, 50, 65)
+    var milestones = (function() {
+        var base = [30, 40, 50, retireAge];
+        if (playerAge < 25) {
+            var next5  = Math.ceil((playerAge + 1) / 5) * 5;
+            var next10 = next5 + 5;
+            if (next10 < 30) base.unshift(next10);
+            if (next5  < 30) base.unshift(next5);
+        }
+        return base.filter(function(age, i, arr) {
+            return arr.indexOf(age) === i;
+        }).sort(function(a, b) { return a - b; });
+    }());
     var cardsHtml = '<div class="comparison-cards">';
 
     milestones.forEach(function(age) {
@@ -877,6 +890,13 @@ var carState = {
     price:     DEFAULTS.carPrice,
     down:      DEFAULTS.carDown,
     years:     DEFAULTS.carLoanYears,
+    playerApr: RATES.carLoan,
+    jordan: {
+        price: null,   // null = same as player
+        down:  0,
+        years: 7,
+        apr:   0.08,   // Jordan has worse credit: 8% vs 7%
+    },
 };
 
 function loadScenarioCar() {
@@ -888,30 +908,53 @@ function loadScenarioCar() {
 
     scenarioControls.innerHTML = [
         '<div class="control-group">',
-        '  <div class="control-label">Car Price</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="car-price-display">$30,000</span>',
-        '  </div>',
+        '  <div class="control-label">Your Car Price</div>',
+        '  <div class="slider-display"><span class="slider-value" id="car-price-display">' + fmtDollarFull(carState.price) + '</span></div>',
         '  <input type="range" id="car-price" min="10000" max="60000" step="1000" value="' + carState.price + '">',
         '</div>',
         '<div class="control-group">',
-        '  <div class="control-label">Down Payment</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="car-down-display">$5,000</span>',
-        '  </div>',
+        '  <div class="control-label">Your Down Payment</div>',
+        '  <div class="slider-display"><span class="slider-value" id="car-down-display">' + fmtDollarFull(carState.down) + '</span></div>',
         '  <input type="range" id="car-down" min="0" max="20000" step="500" value="' + carState.down + '">',
         '</div>',
         '<div class="control-group">',
-        '  <div class="control-label">Loan Term</div>',
+        '  <div class="control-label">Your Loan Term</div>',
         '  <select id="car-years">',
         [3,4,5,6,7].map(function(y) {
             return '<option value="' + y + '"' + (y === carState.years ? ' selected' : '') + '>' + y + ' years</option>';
         }).join(''),
         '  </select>',
         '</div>',
-        '<div class="compare-info">',
-        '  Rate: <strong>7.0% APR</strong> (avg. 2024 new car loan)<br>',
-        '  Opportunity cost calculated at <strong>10.5% avg. S&P 500</strong>',
+        '<div class="control-group">',
+        '  <div class="control-label">Your APR</div>',
+        '  <div class="slider-display"><span class="slider-value" id="car-apr-display">' + (carState.playerApr * 100).toFixed(1) + '%</span></div>',
+        '  <input type="range" id="car-apr" min="3" max="20" step="0.5" value="' + (carState.playerApr * 100) + '">',
+        '</div>',
+        '<div class="control-label" style="margin-top:12px;margin-bottom:6px">Jordan\'s Car</div>',
+        '<div class="jordan-config">',
+        '  <div class="control-group">',
+        '    <div class="control-label">Car Price</div>',
+        '    <div class="slider-display"><span class="slider-value" id="car-jordan-price-display">' + fmtDollarFull(carState.jordan.price !== null ? carState.jordan.price : carState.price) + '</span></div>',
+        '    <input type="range" id="car-jordan-price" min="10000" max="80000" step="1000" value="' + (carState.jordan.price !== null ? carState.jordan.price : carState.price) + '">',
+        '  </div>',
+        '  <div class="control-group">',
+        '    <div class="control-label">Down Payment</div>',
+        '    <div class="slider-display"><span class="slider-value" id="car-jordan-down-display">' + fmtDollarFull(carState.jordan.down) + '</span></div>',
+        '    <input type="range" id="car-jordan-down" min="0" max="20000" step="500" value="' + carState.jordan.down + '">',
+        '  </div>',
+        '  <div class="control-group">',
+        '    <div class="control-label">Loan Term</div>',
+        '    <select id="car-jordan-years">',
+        [3,4,5,6,7].map(function(y) {
+            return '<option value="' + y + '"' + (y === carState.jordan.years ? ' selected' : '') + '>' + y + ' years</option>';
+        }).join(''),
+        '    </select>',
+        '  </div>',
+        '  <div class="control-group" style="margin-bottom:0">',
+        '    <div class="control-label">APR</div>',
+        '    <div class="slider-display"><span class="slider-value" id="car-jordan-apr-display">' + (carState.jordan.apr * 100).toFixed(1) + '%</span></div>',
+        '    <input type="range" id="car-jordan-apr" min="3" max="20" step="0.5" value="' + (carState.jordan.apr * 100) + '">',
+        '  </div>',
         '</div>',
     ].join('\n');
 
@@ -929,29 +972,61 @@ function loadScenarioCar() {
         carState.years = parseInt(this.value, 10);
         renderCar();
     });
+    document.getElementById('car-apr').addEventListener('input', function() {
+        carState.playerApr = parseFloat(this.value) / 100;
+        document.getElementById('car-apr-display').textContent = parseFloat(this.value).toFixed(1) + '%';
+        renderCar();
+    });
+    document.getElementById('car-jordan-price').addEventListener('input', function() {
+        carState.jordan.price = parseInt(this.value, 10);
+        document.getElementById('car-jordan-price-display').textContent = fmtDollarFull(carState.jordan.price);
+        renderCar();
+    });
+    document.getElementById('car-jordan-down').addEventListener('input', function() {
+        carState.jordan.down = parseInt(this.value, 10);
+        document.getElementById('car-jordan-down-display').textContent = fmtDollarFull(carState.jordan.down);
+        renderCar();
+    });
+    document.getElementById('car-jordan-years').addEventListener('change', function() {
+        carState.jordan.years = parseInt(this.value, 10);
+        renderCar();
+    });
+    document.getElementById('car-jordan-apr').addEventListener('input', function() {
+        carState.jordan.apr = parseFloat(this.value) / 100;
+        document.getElementById('car-jordan-apr-display').textContent = parseFloat(this.value).toFixed(1) + '%';
+        renderCar();
+    });
 
     chartWrapper.classList.add('hidden');
     renderCar();
 }
 
 function renderCar() {
-    var principal = Math.max(100, carState.price - carState.down);
-    var loan = calcLoan(principal, RATES.carLoan, carState.years);
-    var oppCost = calcOpportunityCost(loan.monthlyPayment, carState.years);
+    var principal   = Math.max(100, carState.price - carState.down);
+    var playerApr   = carState.playerApr;
+    var loan        = calcLoan(principal, playerApr, carState.years);
+    var oppCost     = calcOpportunityCost(loan.monthlyPayment, carState.years);
     var oppCostTo65 = calcDCA(loan.monthlyPayment, playerAge + carState.years, DEFAULTS.retireAge, RATES.sp500Avg).final;
 
-    var pctInterest = (loan.totalInterest / loan.totalPaid) * 100;
+    var jPrice     = carState.jordan.price !== null ? carState.jordan.price : carState.price;
+    var jPrincipal = Math.max(100, jPrice - carState.jordan.down);
+    var jLoan      = calcLoan(jPrincipal, carState.jordan.apr, carState.jordan.years);
+    var jOppCost   = calcOpportunityCost(jLoan.monthlyPayment, carState.jordan.years);
+
+    var pctInterest  = (loan.totalInterest  / loan.totalPaid)  * 100;
+    var jPctInterest = (jLoan.totalInterest / jLoan.totalPaid) * 100;
 
     scenarioStats.innerHTML = [
         '<div class="stats-dual">',
         '<div class="stats-block">',
-        '  <h3>Loan Details</h3>',
+        '  <h3>' + playerName + ' (' + (playerApr * 100).toFixed(1) + '% · ' + carState.years + ' yr)</h3>',
+        '  <div class="stat-row"><span class="stat-label">Car Price</span><span class="stat-value">' + fmtDollarFull(carState.price) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Loan Amount</span><span class="stat-value">' + fmtDollarFull(principal) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value red">' + fmtDollarFull(loan.monthlyPayment) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(loan.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Cost of Car</span><span class="stat-value">' + fmtDollarFull(carState.down + loan.totalPaid) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Opportunity Cost</span><span class="stat-value gold">' + fmtDollarFull(oppCost) + '</span></div>',
         '  <div class="interest-bar-wrap">',
-        '    <div class="interest-bar-label"><span>How your payments break down</span></div>',
         '    <div class="interest-bar">',
         '      <div class="bar-principal" style="width:' + (100 - pctInterest).toFixed(1) + '%"></div>',
         '      <div class="bar-interest"  style="width:' + pctInterest.toFixed(1) + '%"></div>',
@@ -963,22 +1038,46 @@ function renderCar() {
         '  </div>',
         '</div>',
         '<div class="stats-block">',
-        '  <h3>Opportunity Cost</h3>',
-        '  <div class="stat-row"><span class="stat-label">If invested over loan term</span><span class="stat-value green">' + fmtDollarFull(oppCost) + '</span></div>',
-        '  <div class="stat-row"><span class="stat-label">If invested until age ' + DEFAULTS.retireAge + '</span><span class="stat-value green">' + fmtDollarFull(oppCost + oppCostTo65) + '</span></div>',
-        '  <div class="stat-row"><span class="stat-label">Total "real" cost of car</span><span class="stat-value red">' + fmtDollarFull(carState.down + loan.totalPaid + oppCost) + '</span></div>',
-        '  <p class="control-note" style="margin-top:12px">The opportunity cost is what your monthly car payment <em>could have grown to</em> if invested in an S&P 500 index fund instead.</p>',
+        '  <h3>Jordan (' + (carState.jordan.apr * 100).toFixed(1) + '% · ' + carState.jordan.years + ' yr)</h3>',
+        '  <div class="stat-row"><span class="stat-label">Car Price</span><span class="stat-value">' + fmtDollarFull(jPrice) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Loan Amount</span><span class="stat-value">' + fmtDollarFull(jPrincipal) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value red">' + fmtDollarFull(jLoan.monthlyPayment) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(jLoan.totalInterest) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Cost of Car</span><span class="stat-value">' + fmtDollarFull(carState.jordan.down + jLoan.totalPaid) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Opportunity Cost</span><span class="stat-value gold">' + fmtDollarFull(jOppCost) + '</span></div>',
+        '  <div class="interest-bar-wrap">',
+        '    <div class="interest-bar">',
+        '      <div class="bar-principal" style="width:' + (100 - jPctInterest).toFixed(1) + '%"></div>',
+        '      <div class="bar-interest"  style="width:' + jPctInterest.toFixed(1) + '%"></div>',
+        '    </div>',
+        '    <div class="bar-legend">',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#00ff88"></div> Principal</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#ff4466"></div> Interest (' + jPctInterest.toFixed(0) + '%)</div>',
+        '    </div>',
+        '  </div>',
         '</div>',
+        '</div>',
+        '<div class="stats-block" style="margin-top:16px">',
+        '  <h3>Opportunity Cost: If invested at avg. S&P 500</h3>',
+        '  <div class="stat-row"><span class="stat-label">' + playerName + ' — if invested over loan term</span><span class="stat-value green">' + fmtDollarFull(oppCost) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">' + playerName + ' — if invested until age ' + DEFAULTS.retireAge + '</span><span class="stat-value green">' + fmtDollarFull(oppCost + oppCostTo65) + '</span></div>',
+        '  <p class="control-note" style="margin-top:8px">Monthly car payments <em>could have grown to</em> this if invested instead.</p>',
         '</div>',
     ].join('\n');
 
+    var interestDiff  = jLoan.totalInterest - loan.totalInterest;
+    var monthlyDiff   = jLoan.monthlyPayment - loan.monthlyPayment;
     comparisonCards.innerHTML = '';
     insightText.innerHTML = [
-        'You borrow <strong>' + fmtDollarFull(principal) + '</strong> at 7% APR for ' + carState.years + ' years.',
-        'Your monthly payment is <strong class="text-red">' + fmtDollarFull(loan.monthlyPayment) + '</strong>,',
-        'and you pay <strong class="text-red">' + fmtDollarFull(loan.totalInterest) + '</strong> in interest.',
-        'But the real cost is the <strong class="text-green">' + fmtDollarFull(oppCost) + '</strong> that money <em>could have become</em>',
-        'if invested at average S&P 500 returns over the same ' + carState.years + ' years.',
+        playerName + ' borrows <strong>' + fmtDollarFull(principal) + '</strong> at <strong>' + (playerApr * 100).toFixed(1) + '%</strong> for ' + carState.years + ' years',
+        '(<strong class="text-red">' + fmtDollarFull(loan.monthlyPayment) + '/mo</strong>, <strong class="text-red">' + fmtDollarFull(loan.totalInterest) + '</strong> interest).',
+        'Jordan borrows <strong>' + fmtDollarFull(jPrincipal) + '</strong> at <strong>' + (carState.jordan.apr * 100).toFixed(1) + '%</strong> for ' + carState.jordan.years + ' years',
+        '(<strong class="text-red">' + fmtDollarFull(jLoan.monthlyPayment) + '/mo</strong>, <strong class="text-red">' + fmtDollarFull(jLoan.totalInterest) + '</strong> interest).',
+        interestDiff > 0
+            ? 'Jordan pays <strong class="text-red">' + fmtDollarFull(interestDiff) + ' more in interest</strong>.'
+            : interestDiff < 0
+                ? playerName + ' pays <strong class="text-red">' + fmtDollarFull(Math.abs(interestDiff)) + ' more in interest</strong>.'
+                : 'Total interest is equal.',
     ].join(' ');
     buffettBlock.classList.add('hidden');
     scenarioInsight.classList.remove('hidden');
@@ -987,20 +1086,33 @@ function renderCar() {
         price:          carState.price,
         down:           carState.down,
         years:          carState.years,
+        playerApr:      playerApr,
         loanAmount:     principal,
         monthlyPayment: loan.monthlyPayment,
         totalPaid:      loan.totalPaid,
         totalInterest:  loan.totalInterest,
         oppCost:        oppCost,
         oppCostTo65:    oppCostTo65,
+        jordanPrice:    jPrice,
+        jordanDown:     carState.jordan.down,
+        jordanYears:    carState.jordan.years,
+        jordanApr:      carState.jordan.apr,
+        jordanMonthly:  jLoan.monthlyPayment,
+        jordanInterest: jLoan.totalInterest,
+        jordanOppCost:  jOppCost,
     };
     updateCardStatuses();
 }
 
 // ----- CREDIT -----
 var creditState = {
-    balance:  DEFAULTS.creditBalance,
-    payment:  150,
+    balance:   DEFAULTS.creditBalance,
+    payment:   150,
+    playerApr: RATES.creditCard,
+    jordan: {
+        payment: null,           // null = minimum payment
+        apr:     RATES.creditCard,
+    },
 };
 
 function loadScenarioCredit() {
@@ -1008,28 +1120,42 @@ function loadScenarioCredit() {
     playerAge  = getPlayerAge();
 
     scenarioTitleEl.textContent    = '💳 Credit Card Debt';
-    scenarioSubtitleEl.textContent = 'How 24% APR turns small balances into years of payments';
-
-    var minPay = Math.round(calcMinPayment(DEFAULTS.creditBalance));
+    scenarioSubtitleEl.textContent = 'How high APR turns small balances into years of payments';
 
     scenarioControls.innerHTML = [
         '<div class="control-group">',
-        '  <div class="control-label">Current Balance</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="cc-balance-display">$5,000</span>',
-        '  </div>',
+        '  <div class="control-label">Your Balance</div>',
+        '  <div class="slider-display"><span class="slider-value" id="cc-balance-display">' + fmtDollarFull(creditState.balance) + '</span></div>',
         '  <input type="range" id="cc-balance" min="500" max="10000" step="100" value="' + creditState.balance + '">',
         '</div>',
         '<div class="control-group">',
         '  <div class="control-label">Your Monthly Payment</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="cc-payment-display">$150</span>',
-        '  </div>',
+        '  <div class="slider-display"><span class="slider-value" id="cc-payment-display">' + fmtDollarFull(creditState.payment) + '</span></div>',
         '  <input type="range" id="cc-payment" min="25" max="500" step="25" value="' + creditState.payment + '">',
         '</div>',
-        '<div class="compare-info">',
-        '  Rate: <strong>24% APR</strong> (avg. 2024 credit card rate)<br>',
-        '  <strong>Jordan</strong> makes minimum payments only (2% of balance or $25)',
+        '<div class="control-group">',
+        '  <div class="control-label">Your APR</div>',
+        '  <div class="slider-display"><span class="slider-value" id="cc-apr-display">' + Math.round(creditState.playerApr * 100) + '%</span></div>',
+        '  <input type="range" id="cc-apr" min="8" max="36" step="1" value="' + Math.round(creditState.playerApr * 100) + '">',
+        '</div>',
+        '<div class="control-label" style="margin-top:12px;margin-bottom:6px">Jordan\'s Settings</div>',
+        '<div class="jordan-config">',
+        '  <div class="control-group" style="margin-bottom:8px">',
+        '    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">',
+        '      <input type="checkbox" id="cc-jordan-minpay" ' + (creditState.jordan.payment === null ? 'checked' : '') + '>',
+        '      Minimum payments only',
+        '    </label>',
+        '  </div>',
+        '  <div id="cc-jordan-payment-group" class="control-group" style="' + (creditState.jordan.payment === null ? 'display:none' : '') + '">',
+        '    <div class="control-label">Jordan\'s Monthly Payment</div>',
+        '    <div class="slider-display"><span class="slider-value" id="cc-jordan-payment-display">' + fmtDollarFull(creditState.jordan.payment || Math.round(calcMinPayment(creditState.balance))) + '</span></div>',
+        '    <input type="range" id="cc-jordan-payment" min="25" max="500" step="25" value="' + (creditState.jordan.payment || Math.round(calcMinPayment(creditState.balance))) + '">',
+        '  </div>',
+        '  <div class="control-group" style="margin-bottom:0">',
+        '    <div class="control-label">Jordan\'s APR</div>',
+        '    <div class="slider-display"><span class="slider-value" id="cc-jordan-apr-display">' + Math.round(creditState.jordan.apr * 100) + '%</span></div>',
+        '    <input type="range" id="cc-jordan-apr" min="8" max="36" step="1" value="' + Math.round(creditState.jordan.apr * 100) + '">',
+        '  </div>',
         '</div>',
     ].join('\n');
 
@@ -1043,56 +1169,110 @@ function loadScenarioCredit() {
         document.getElementById('cc-payment-display').textContent = fmtDollarFull(creditState.payment);
         renderCredit();
     });
+    document.getElementById('cc-apr').addEventListener('input', function() {
+        creditState.playerApr = parseInt(this.value, 10) / 100;
+        document.getElementById('cc-apr-display').textContent = this.value + '%';
+        renderCredit();
+    });
+    document.getElementById('cc-jordan-minpay').addEventListener('change', function() {
+        var group = document.getElementById('cc-jordan-payment-group');
+        if (this.checked) {
+            creditState.jordan.payment = null;
+            group.style.display = 'none';
+        } else {
+            var slider = document.getElementById('cc-jordan-payment');
+            creditState.jordan.payment = parseInt(slider.value, 10);
+            group.style.display = '';
+        }
+        renderCredit();
+    });
+    document.getElementById('cc-jordan-payment').addEventListener('input', function() {
+        creditState.jordan.payment = parseInt(this.value, 10);
+        document.getElementById('cc-jordan-payment-display').textContent = fmtDollarFull(creditState.jordan.payment);
+        renderCredit();
+    });
+    document.getElementById('cc-jordan-apr').addEventListener('input', function() {
+        creditState.jordan.apr = parseInt(this.value, 10) / 100;
+        document.getElementById('cc-jordan-apr-display').textContent = this.value + '%';
+        renderCredit();
+    });
 
     chartWrapper.classList.remove('hidden');
     renderCredit();
 }
 
 function renderCredit() {
-    var balance = creditState.balance;
-    var payment = creditState.payment;
-    var minPay  = calcMinPayment(balance);
+    var balance    = creditState.balance;
+    var payment    = creditState.payment;
+    var playerApr  = creditState.playerApr;
+    var jordanApr  = creditState.jordan.apr;
+    var jordanPay  = creditState.jordan.payment !== null
+        ? creditState.jordan.payment
+        : calcMinPayment(balance);
 
-    // Ensure player payment > minimum interest to avoid infinite loop
-    var monthlyInterestOnBalance = balance * (RATES.creditCard / 12);
-    if (payment <= monthlyInterestOnBalance) {
-        payment = Math.ceil(monthlyInterestOnBalance) + 1;
+    // Ensure player payment > monthly interest to avoid infinite loop
+    var monthlyInterest = balance * (playerApr / 12);
+    if (payment <= monthlyInterest) {
+        payment = Math.ceil(monthlyInterest) + 1;
+    }
+    // Same guard for Jordan
+    var jordanMonthlyInterest = balance * (jordanApr / 12);
+    if (jordanPay <= jordanMonthlyInterest) {
+        jordanPay = Math.ceil(jordanMonthlyInterest) + 1;
     }
 
-    var playerResult = calcCreditCardPayoff(balance, RATES.creditCard, payment);
-    var jordanResult = calcCreditCardPayoff(balance, RATES.creditCard, minPay);
+    var playerResult = calcCreditCardPayoff(balance, playerApr,  payment);
+    var jordanResult = calcCreditCardPayoff(balance, jordanApr, jordanPay);
 
-    // Chart — remaining balance over months
+    // Chart — remaining balance over months. Cap Jordan at 360 months.
     var maxMonths = Math.max(playerResult.months, Math.min(jordanResult.months, 360));
-    var pSeries = playerResult.series.filter(function(p) { return p.month <= maxMonths; });
-    var jSeries = jordanResult.series.filter(function(p) { return p.month <= maxMonths; });
+    var pSeries   = playerResult.series.filter(function(p) { return p.month <= maxMonths; });
+    // If Jordan never pays off, show the declining (or flat) line up to cap month
+    var jSeries   = jordanResult.series.filter(function(p) { return p.month <= maxMonths; });
+    // Ensure Jordan's series reaches maxMonths so line extends to chart edge
+    if (jordanResult.neverPaidOff && jSeries.length > 0 && jSeries[jSeries.length - 1].month < maxMonths) {
+        jSeries.push({ month: maxMonths, balance: jordanResult.series[jordanResult.series.length - 1].balance });
+    }
+
+    var jordanLabel = creditState.jordan.payment === null
+        ? 'Jordan (min pay · ' + Math.round(jordanApr * 100) + '% APR)'
+        : 'Jordan ($' + jordanPay + '/mo · ' + Math.round(jordanApr * 100) + '% APR)';
 
     buildLineChart(mainChart, [
-        { label: playerName + ' ($' + payment + '/mo)',  color: '#00ff88', data: pSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
-        { label: 'Jordan (min payment)', color: '#888', data: jSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
+        { label: playerName + ' ($' + payment + '/mo · ' + Math.round(playerApr * 100) + '% APR)', color: '#00ff88',
+          data: pSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
+        { label: jordanLabel, color: '#ff8844',
+          data: jSeries.map(function(p) { return { x: p.month, y: p.balance }; }) },
     ], {
         xLabel: 'Months',
         yLabel: 'Remaining Balance',
-        xFmt: function(v) { return fmtMonths(v); },
-        yFmt: fmtDollarFull,
+        xFmt:   function(v) { return fmtMonths(v); },
+        yFmt:   fmtDollarFull,
+        xStep:  maxMonths <= 60 ? 6 : maxMonths <= 120 ? 12 : 24,
     });
 
-    var jordanMsg = jordanResult.neverPaidOff
-        ? 'Jordan <strong>never pays it off</strong> making minimum payments — the interest exceeds the payment!'
-        : 'Jordan takes <strong>' + fmtMonths(jordanResult.months) + '</strong> to pay off, paying <strong class="text-red">' + fmtDollarFull(jordanResult.totalInterest) + '</strong> in interest.';
+    var jordanPayoffMsg = jordanResult.neverPaidOff
+        ? 'Jordan <strong>never pays it off</strong> — interest exceeds the payment!'
+        : 'Jordan takes <strong>' + fmtMonths(jordanResult.months) + '</strong>, paying <strong class="text-red">' + fmtDollarFull(jordanResult.totalInterest) + '</strong> in interest.';
+
+    var jordanPayDesc = creditState.jordan.payment === null
+        ? 'Minimum payments (' + fmtDollarFull(calcMinPayment(balance)) + '/mo)'
+        : fmtDollarFull(creditState.jordan.payment) + '/mo';
 
     scenarioStats.innerHTML = [
         '<div class="stats-dual">',
         '<div class="stats-block">',
-        '  <h3>' + playerName + ' (' + fmtDollarFull(payment) + '/mo)</h3>',
+        '  <h3>' + playerName + ' (' + Math.round(playerApr * 100) + '% APR)</h3>',
+        '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value">' + fmtDollarFull(payment) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Payoff Time</span><span class="stat-value">' + fmtMonths(playerResult.months) + '</span></div>',
-        '  <div class="stat-row"><span class="stat-label">Total Interest Paid</span><span class="stat-value red">' + fmtDollarFull(playerResult.totalInterest) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(playerResult.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Paid</span><span class="stat-value">' + fmtDollarFull(playerResult.totalPaid) + '</span></div>',
         '</div>',
         '<div class="stats-block">',
-        '  <h3>Jordan (minimum payments)</h3>',
-        '  <div class="stat-row"><span class="stat-label">Payoff Time</span><span class="stat-value red">' + (jordanResult.neverPaidOff ? '∞' : fmtMonths(jordanResult.months)) + '</span></div>',
-        '  <div class="stat-row"><span class="stat-label">Total Interest Paid</span><span class="stat-value red">' + fmtDollarFull(jordanResult.totalInterest) + '</span></div>',
+        '  <h3>Jordan (' + Math.round(jordanApr * 100) + '% APR)</h3>',
+        '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value">' + jordanPayDesc + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Payoff Time</span><span class="stat-value red">' + (jordanResult.neverPaidOff ? '∞ (never)' : fmtMonths(jordanResult.months)) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(jordanResult.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Paid</span><span class="stat-value red">' + fmtDollarFull(jordanResult.totalPaid) + '</span></div>',
         '</div>',
         '</div>',
@@ -1100,10 +1280,10 @@ function renderCredit() {
 
     comparisonCards.innerHTML = '';
     insightText.innerHTML = [
-        'With a <strong>' + fmtDollarFull(balance) + '</strong> balance at 24% APR,',
-        'paying <strong>' + fmtDollarFull(payment) + '/month</strong> pays it off in',
-        '<strong>' + fmtMonths(playerResult.months) + '</strong> with <strong class="text-red">' + fmtDollarFull(playerResult.totalInterest) + '</strong> in interest.',
-        jordanMsg,
+        'With a <strong>' + fmtDollarFull(balance) + '</strong> balance at <strong>' + Math.round(playerApr * 100) + '% APR</strong>,',
+        'paying <strong>' + fmtDollarFull(payment) + '/month</strong> clears it in',
+        '<strong>' + fmtMonths(playerResult.months) + '</strong> with <strong class="text-red">' + fmtDollarFull(playerResult.totalInterest) + '</strong> in interest. ',
+        jordanPayoffMsg,
     ].join(' ');
 
     var quote = BUFFETT_QUOTES[1];
@@ -1113,22 +1293,28 @@ function renderCredit() {
     scenarioInsight.classList.remove('hidden');
 
     exploredScenarios['credit'] = {
-        balance:           balance,
-        payment:           payment,
-        months:            playerResult.months,
-        totalInterest:     playerResult.totalInterest,
-        totalPaid:         playerResult.totalPaid,
-        minMonths:         jordanResult.months,
-        minTotalInterest:  jordanResult.totalInterest,
-        minNeverPaidOff:   jordanResult.neverPaidOff,
+        balance:          balance,
+        payment:          payment,
+        playerApr:        playerApr,
+        months:           playerResult.months,
+        totalInterest:    playerResult.totalInterest,
+        totalPaid:        playerResult.totalPaid,
+        jordanPayment:    jordanPay,
+        jordanApr:        jordanApr,
+        minMonths:        jordanResult.months,
+        minTotalInterest: jordanResult.totalInterest,
+        minNeverPaidOff:  jordanResult.neverPaidOff,
     };
     updateCardStatuses();
 }
 
 // ----- HOME -----
 var homeState = {
-    price:    DEFAULTS.homePrice,
-    downPct:  DEFAULTS.homeDownPct,
+    price:       DEFAULTS.homePrice,
+    downPct:     DEFAULTS.homeDownPct,
+    rate15yr:    RATES.mortgage15yr,
+    rate30yr:    RATES.mortgage30yr,
+    jordanDownPct: 0.05,   // Jordan only puts 5% down (vs player's 20%)
 };
 
 function loadScenarioHome() {
@@ -1141,22 +1327,32 @@ function loadScenarioHome() {
     scenarioControls.innerHTML = [
         '<div class="control-group">',
         '  <div class="control-label">Home Price</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="home-price-display">$350,000</span>',
-        '  </div>',
+        '  <div class="slider-display"><span class="slider-value" id="home-price-display">' + fmtDollarFull(homeState.price) + '</span></div>',
         '  <input type="range" id="home-price" min="150000" max="800000" step="10000" value="' + homeState.price + '">',
         '</div>',
         '<div class="control-group">',
-        '  <div class="control-label">Down Payment</div>',
-        '  <div class="slider-display">',
-        '    <span class="slider-value" id="home-down-display">20%</span>',
-        '  </div>',
+        '  <div class="control-label">Your Down Payment</div>',
+        '  <div class="slider-display"><span class="slider-value" id="home-down-display">' + Math.round(homeState.downPct * 100) + '%</span></div>',
         '  <input type="range" id="home-down" min="5" max="40" step="5" value="' + Math.round(homeState.downPct * 100) + '">',
         '</div>',
-        '<div class="compare-info">',
-        '  <strong>15-year</strong> at 6.5% APR<br>',
-        '  <strong>30-year</strong> at 7.0% APR<br>',
-        '  Payment difference invested at 10.5% avg.',
+        '<div class="control-group">',
+        '  <div class="control-label">15-Year Rate</div>',
+        '  <div class="slider-display"><span class="slider-value" id="home-rate15-display">' + (homeState.rate15yr * 100).toFixed(2) + '%</span></div>',
+        '  <input type="range" id="home-rate15" min="3" max="10" step="0.25" value="' + (homeState.rate15yr * 100) + '">',
+        '</div>',
+        '<div class="control-group">',
+        '  <div class="control-label">30-Year Rate</div>',
+        '  <div class="slider-display"><span class="slider-value" id="home-rate30-display">' + (homeState.rate30yr * 100).toFixed(2) + '%</span></div>',
+        '  <input type="range" id="home-rate30" min="3" max="10" step="0.25" value="' + (homeState.rate30yr * 100) + '">',
+        '</div>',
+        '<div class="control-label" style="margin-top:12px;margin-bottom:6px">Jordan\'s Situation</div>',
+        '<div class="jordan-config">',
+        '  <div class="control-group" style="margin-bottom:0">',
+        '    <div class="control-label">Jordan\'s Down Payment</div>',
+        '    <div class="slider-display"><span class="slider-value" id="home-jordan-down-display">' + Math.round(homeState.jordanDownPct * 100) + '%</span></div>',
+        '    <input type="range" id="home-jordan-down" min="3" max="40" step="1" value="' + Math.round(homeState.jordanDownPct * 100) + '">',
+        '    <div class="control-note" style="margin-top:6px">Jordan uses a 30-year mortgage. A lower down payment means a larger loan — and PMI costs may apply.</div>',
+        '  </div>',
         '</div>',
     ].join('\n');
 
@@ -1170,29 +1366,49 @@ function loadScenarioHome() {
         document.getElementById('home-down-display').textContent = Math.round(homeState.downPct * 100) + '%';
         renderHome();
     });
+    document.getElementById('home-rate15').addEventListener('input', function() {
+        homeState.rate15yr = parseFloat(this.value) / 100;
+        document.getElementById('home-rate15-display').textContent = parseFloat(this.value).toFixed(2) + '%';
+        renderHome();
+    });
+    document.getElementById('home-rate30').addEventListener('input', function() {
+        homeState.rate30yr = parseFloat(this.value) / 100;
+        document.getElementById('home-rate30-display').textContent = parseFloat(this.value).toFixed(2) + '%';
+        renderHome();
+    });
+    document.getElementById('home-jordan-down').addEventListener('input', function() {
+        homeState.jordanDownPct = parseInt(this.value, 10) / 100;
+        document.getElementById('home-jordan-down-display').textContent = Math.round(homeState.jordanDownPct * 100) + '%';
+        renderHome();
+    });
 
     chartWrapper.classList.add('hidden');
     renderHome();
 }
 
 function renderHome() {
-    var downAmt   = homeState.price * homeState.downPct;
-    var principal = homeState.price - downAmt;
-    var loan15 = calcLoan(principal, RATES.mortgage15yr, 15);
-    var loan30 = calcLoan(principal, RATES.mortgage30yr, 30);
+    var downAmt    = homeState.price * homeState.downPct;
+    var principal  = homeState.price - downAmt;
+    var loan15     = calcLoan(principal, homeState.rate15yr, 15);
+    var loan30     = calcLoan(principal, homeState.rate30yr, 30);
 
-    var monthlyDiff = loan30.monthlyPayment - loan15.monthlyPayment;
-    // For 30yr, the lower monthly payment frees up cash vs 15yr — but 30yr COSTS more
-    // The 15yr payer saves the payment difference after year 15 (loan paid off) for 15 more years
+    // Jordan: same home price, 30yr mortgage, but with their own down payment
+    var jordanDownAmt  = homeState.price * homeState.jordanDownPct;
+    var jordanPrincipal = homeState.price - jordanDownAmt;
+    var jordanLoan     = calcLoan(jordanPrincipal, homeState.rate30yr, 30);
+
+    var monthlyDiff    = loan30.monthlyPayment - loan15.monthlyPayment;
     var diffInvested15 = calcDCA(Math.abs(monthlyDiff), 0, 15, RATES.sp500Avg).final;
 
-    var pct15 = (loan15.totalInterest / (loan15.totalPaid)) * 100;
-    var pct30 = (loan30.totalInterest / (loan30.totalPaid)) * 100;
+    var pct15 = (loan15.totalInterest / loan15.totalPaid) * 100;
+    var pct30 = (loan30.totalInterest / loan30.totalPaid) * 100;
+    var jPct  = (jordanLoan.totalInterest / jordanLoan.totalPaid) * 100;
 
     scenarioStats.innerHTML = [
         '<div class="stats-dual">',
         '<div class="stats-block">',
-        '  <h3>15-Year at 6.5%</h3>',
+        '  <h3>' + playerName + ' — 15-Year at ' + (homeState.rate15yr * 100).toFixed(2) + '%</h3>',
+        '  <div class="stat-row"><span class="stat-label">Down Payment</span><span class="stat-value">' + fmtDollarFull(downAmt) + ' (' + Math.round(homeState.downPct * 100) + '%)</span></div>',
         '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value red">' + fmtDollarFull(loan15.monthlyPayment) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(loan15.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Cost</span><span class="stat-value">' + fmtDollarFull(downAmt + loan15.totalPaid) + '</span></div>',
@@ -1208,7 +1424,8 @@ function renderHome() {
         '  </div>',
         '</div>',
         '<div class="stats-block">',
-        '  <h3>30-Year at 7.0%</h3>',
+        '  <h3>' + playerName + ' — 30-Year at ' + (homeState.rate30yr * 100).toFixed(2) + '%</h3>',
+        '  <div class="stat-row"><span class="stat-label">Down Payment</span><span class="stat-value">' + fmtDollarFull(downAmt) + ' (' + Math.round(homeState.downPct * 100) + '%)</span></div>',
         '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value green">' + fmtDollarFull(loan30.monthlyPayment) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(loan30.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">Total Cost</span><span class="stat-value">' + fmtDollarFull(downAmt + loan30.totalPaid) + '</span></div>',
@@ -1224,12 +1441,32 @@ function renderHome() {
         '  </div>',
         '</div>',
         '</div>',
-        '<div class="stats-block" style="margin-top:16px">',
+        '<div class="stats-dual" style="margin-top:16px">',
+        '<div class="stats-block">',
         '  <h3>The Monthly Difference: ' + fmtDollarFull(Math.abs(monthlyDiff)) + '/mo</h3>',
         '  <div class="stat-row"><span class="stat-label">30-yr saves per month vs 15-yr</span><span class="stat-value green">' + (monthlyDiff > 0 ? '+' : '') + fmtDollarFull(Math.abs(monthlyDiff)) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">30-yr costs more in total interest</span><span class="stat-value red">+' + fmtDollarFull(loan30.totalInterest - loan15.totalInterest) + '</span></div>',
         '  <div class="stat-row"><span class="stat-label">If monthly savings invested 15 yrs</span><span class="stat-value gold">' + fmtDollarFull(diffInvested15) + '</span></div>',
-        '  <p class="control-note" style="margin-top:8px">The 15-year mortgage costs more each month but pays off in half the time — and the savings after payoff can be invested, often closing the gap.</p>',
+        '  <p class="control-note" style="margin-top:8px">The 15-year mortgage costs more each month but pays off in half the time.</p>',
+        '</div>',
+        '<div class="stats-block">',
+        '  <h3>Jordan — 30-Year at ' + (homeState.rate30yr * 100).toFixed(2) + '% (' + Math.round(homeState.jordanDownPct * 100) + '% down)</h3>',
+        '  <div class="stat-row"><span class="stat-label">Down Payment</span><span class="stat-value">' + fmtDollarFull(jordanDownAmt) + ' (' + Math.round(homeState.jordanDownPct * 100) + '%)</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Loan Amount</span><span class="stat-value">' + fmtDollarFull(jordanPrincipal) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Monthly Payment</span><span class="stat-value red">' + fmtDollarFull(jordanLoan.monthlyPayment) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Interest</span><span class="stat-value red">' + fmtDollarFull(jordanLoan.totalInterest) + '</span></div>',
+        '  <div class="stat-row"><span class="stat-label">Total Cost</span><span class="stat-value">' + fmtDollarFull(jordanDownAmt + jordanLoan.totalPaid) + '</span></div>',
+        '  <div class="interest-bar-wrap">',
+        '    <div class="interest-bar">',
+        '      <div class="bar-principal" style="width:' + (100 - jPct).toFixed(1) + '%"></div>',
+        '      <div class="bar-interest" style="width:' + jPct.toFixed(1) + '%"></div>',
+        '    </div>',
+        '    <div class="bar-legend">',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#00ff88"></div> Principal</div>',
+        '      <div class="bar-legend-item"><div class="bar-swatch" style="background:#ff4466"></div> Interest (' + jPct.toFixed(0) + '%)</div>',
+        '    </div>',
+        '  </div>',
+        '</div>',
         '</div>',
     ].join('\n');
 
@@ -1238,24 +1475,31 @@ function renderHome() {
         'A <strong>' + fmtDollarFull(homeState.price) + '</strong> home with <strong>' + Math.round(homeState.downPct * 100) + '% down</strong>:',
         'the 30-year mortgage is <strong class="text-green">' + fmtDollarFull(Math.abs(monthlyDiff)) + '/mo cheaper</strong>,',
         'but costs <strong class="text-red">' + fmtDollarFull(loan30.totalInterest - loan15.totalInterest) + ' more in interest</strong>.',
-        'The 15-year homeowner is mortgage-free in half the time — and those freed-up payments can then be invested.',
+        'Jordan puts only <strong>' + Math.round(homeState.jordanDownPct * 100) + '% down</strong> on a 30-year, borrowing <strong>' + fmtDollarFull(jordanPrincipal) + '</strong>',
+        'and paying <strong class="text-red">' + fmtDollarFull(jordanLoan.totalInterest) + '</strong> in total interest.',
     ].join(' ');
     buffettBlock.classList.add('hidden');
     scenarioInsight.classList.remove('hidden');
 
     exploredScenarios['home'] = {
-        price:              homeState.price,
-        downPct:            homeState.downPct,
-        loanAmount:         principal,
-        loan15Monthly:      loan15.monthlyPayment,
+        price:               homeState.price,
+        downPct:             homeState.downPct,
+        rate15yr:            homeState.rate15yr,
+        rate30yr:            homeState.rate30yr,
+        loanAmount:          principal,
+        loan15Monthly:       loan15.monthlyPayment,
         loan15TotalInterest: loan15.totalInterest,
-        loan15TotalPaid:    loan15.totalPaid,
-        loan30Monthly:      loan30.monthlyPayment,
+        loan15TotalPaid:     loan15.totalPaid,
+        loan30Monthly:       loan30.monthlyPayment,
         loan30TotalInterest: loan30.totalInterest,
-        loan30TotalPaid:    loan30.totalPaid,
-        interestDiff:       loan30.totalInterest - loan15.totalInterest,
-        monthlySavings:     Math.abs(monthlyDiff),
-        diffInvested15:     diffInvested15,
+        loan30TotalPaid:     loan30.totalPaid,
+        interestDiff:        loan30.totalInterest - loan15.totalInterest,
+        monthlySavings:      Math.abs(monthlyDiff),
+        diffInvested15:      diffInvested15,
+        jordanDownPct:       homeState.jordanDownPct,
+        jordanPrincipal:     jordanPrincipal,
+        jordanMonthly:       jordanLoan.monthlyPayment,
+        jordanTotalInterest: jordanLoan.totalInterest,
     };
     updateCardStatuses();
 }
