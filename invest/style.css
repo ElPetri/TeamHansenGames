@@ -494,6 +494,18 @@ body {
 
 .chart-tooltip.hidden { display: none; }
 
+.hist-rate-note {
+    margin-top: 6px;
+    padding: 5px 8px;
+    background: #1a1a2e;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
 /* =========================================================================
    COMPARISON CARDS
    ========================================================================= */

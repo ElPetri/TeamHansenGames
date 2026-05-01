@@ -701,6 +701,7 @@ function loadScenarioInvest() {
             return '<option value="' + r.year + '"' + (r.year === investState.startYear ? ' selected' : '') + '>' + r.year + '</option>';
         }).join(''),
         '  </select>',
+        '  <div id="inv-hist-rate-note" class="hist-rate-note"></div>',
         '</div>',
         '<div class="control-group jordan-config">',
         '  <div class="control-label" style="color:var(--text-mid)">Jordan\'s Settings</div>',
@@ -887,6 +888,20 @@ function renderInvest() {
             _geo *= (1 + SP500_RETURNS[_idx].return);
         }
         effectiveAnnualRate = Math.pow(_geo, 1 / _years) - 1;
+    }
+
+    // Update the live rate note next to the Start Year dropdown
+    var rateNoteEl = document.getElementById('inv-hist-rate-note');
+    if (rateNoteEl) {
+        if (investState.mode === 'historical') {
+            var _numYears = retireAge - playerAge;
+            var _startYr  = investState.startYear;
+            var _endYr    = _startYr + _numYears - 1;
+            rateNoteEl.textContent = 'Effective avg return ' + _startYr + '\u2013' + _endYr + ': ' + (effectiveAnnualRate * 100).toFixed(1) + '%/yr';
+            rateNoteEl.style.display = '';
+        } else {
+            rateNoteEl.style.display = 'none';
+        }
     }
 
     exploredScenarios['invest'] = {
