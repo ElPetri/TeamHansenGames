@@ -1374,7 +1374,15 @@ body {
     .summary-hero-stats { grid-template-columns: 1fr 1fr; }
 }
 
-/* Collapsible scenario blocks */
+/* Jordan configuration section in invest sidebar */
+.jordan-config {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-top: 4px;
+}
+
 .sum-toggle-header {
     cursor: pointer;
     user-select: none;

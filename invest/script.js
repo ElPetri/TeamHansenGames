@@ -659,8 +659,12 @@ function buildLineChart(svgEl, datasets, options) {
 // ----- INVEST -----
 var investState = {
     monthly:    DEFAULTS.monthlyContrib,
-    mode:       'avg',      // 'avg' | 'historical'
+    mode:       'historical',   // 'avg' | 'historical'  (historical is default — more realistic)
     startYear:  1990,
+    jordan: {
+        startAge:   DEFAULTS.jordanInvestAge,
+        monthly:    null,   // null = mirror player's contribution
+    },
 };
 
 function loadScenarioInvest() {
@@ -671,6 +675,8 @@ function loadScenarioInvest() {
     scenarioSubtitleEl.textContent = 'How a small, consistent investment compounds into real wealth';
 
     // Controls
+    var jordanSameAsMe = (investState.jordan.monthly === null);
+    var jordanMonthly  = investState.jordan.monthly !== null ? investState.jordan.monthly : investState.monthly;
     scenarioControls.innerHTML = [
         '<div class="control-group">',
         '  <div class="control-label">Monthly Contribution</div>',
@@ -696,15 +702,35 @@ function loadScenarioInvest() {
         }).join(''),
         '  </select>',
         '</div>',
-        '<div class="compare-info">',
-        '  <strong>' + playerName + '</strong> starts at age ' + playerAge + '<br>',
-        '  <strong>Jordan</strong> starts at age ' + DEFAULTS.jordanInvestAge,
+        '<div class="control-group jordan-config">',
+        '  <div class="control-label" style="color:var(--text-mid)">Jordan\'s Settings</div>',
+        '  <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">',
+        '    <div>',
+        '      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px">Start age: <strong id="jordan-age-display">' + investState.jordan.startAge + '</strong></div>',
+        '      <input type="range" id="jordan-start-age" min="' + (Math.min(playerAge + 1, 64)) + '" max="64" step="1" value="' + Math.max(investState.jordan.startAge, playerAge + 1) + '">',
+        '    </div>',
+        '    <div>',
+        '      <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text-mid);cursor:pointer">',
+        '        <input type="checkbox" id="jordan-same-as-me" ' + (jordanSameAsMe ? 'checked' : '') + ' style="accent-color:var(--accent)">',
+        '        Same contribution as me',
+        '      </label>',
+        '    </div>',
+        '    <div id="jordan-contrib-group"' + (jordanSameAsMe ? ' style="display:none"' : '') + '>',
+        '      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px">Jordan\'s monthly: <strong id="jordan-contrib-display">$' + jordanMonthly + '</strong></div>',
+        '      <input type="range" id="jordan-contrib" min="25" max="1000" step="25" value="' + jordanMonthly + '">',
+        '    </div>',
+        '  </div>',
         '</div>',
     ].join('\n');
 
     document.getElementById('inv-contrib').addEventListener('input', function() {
         investState.monthly = parseInt(this.value, 10);
         document.getElementById('inv-contrib-display').textContent = '$' + investState.monthly;
+        // If "same as me" is checked, keep Jordan's contrib display in sync
+        if (investState.jordan.monthly === null) {
+            var jd = document.getElementById('jordan-contrib-display');
+            if (jd) jd.textContent = '$' + investState.monthly;
+        }
         renderInvest();
     });
     document.getElementById('inv-mode-avg').addEventListener('click', function() {
@@ -726,22 +752,45 @@ function loadScenarioInvest() {
         renderInvest();
     });
 
+    // Jordan controls
+    document.getElementById('jordan-start-age').addEventListener('input', function() {
+        investState.jordan.startAge = parseInt(this.value, 10);
+        document.getElementById('jordan-age-display').textContent = investState.jordan.startAge;
+        renderInvest();
+    });
+    document.getElementById('jordan-same-as-me').addEventListener('change', function() {
+        var sameAsMe = this.checked;
+        investState.jordan.monthly = sameAsMe ? null : investState.monthly;
+        document.getElementById('jordan-contrib-group').style.display = sameAsMe ? 'none' : '';
+        if (!sameAsMe) {
+            document.getElementById('jordan-contrib').value = investState.monthly;
+            document.getElementById('jordan-contrib-display').textContent = '$' + investState.monthly;
+        }
+        renderInvest();
+    });
+    document.getElementById('jordan-contrib').addEventListener('input', function() {
+        investState.jordan.monthly = parseInt(this.value, 10);
+        document.getElementById('jordan-contrib-display').textContent = '$' + investState.jordan.monthly;
+        renderInvest();
+    });
+
     chartWrapper.classList.remove('hidden');
     renderInvest();
 }
 
 function renderInvest() {
-    var monthly   = investState.monthly;
-    var retireAge = DEFAULTS.retireAge;
-    var jordan    = DEFAULTS.jordanInvestAge;
+    var monthly      = investState.monthly;
+    var retireAge    = DEFAULTS.retireAge;
+    var jordan       = Math.max(investState.jordan.startAge, playerAge + 1);
+    var jordanMonthly = investState.jordan.monthly !== null ? investState.jordan.monthly : monthly;
 
     var playerResult, jordanResult;
     if (investState.mode === 'avg') {
-        playerResult = calcDCA(monthly, playerAge, retireAge, RATES.sp500Avg);
-        jordanResult = calcDCA(monthly, jordan,    retireAge, RATES.sp500Avg);
+        playerResult = calcDCA(monthly,       playerAge, retireAge, RATES.sp500Avg);
+        jordanResult = calcDCA(jordanMonthly, jordan,    retireAge, RATES.sp500Avg);
     } else {
-        playerResult = calcDCAHistorical(monthly, playerAge, investState.startYear, retireAge);
-        jordanResult = calcDCAHistorical(monthly, jordan,    investState.startYear, retireAge);
+        playerResult = calcDCAHistorical(monthly,       playerAge, investState.startYear, retireAge);
+        jordanResult = calcDCAHistorical(jordanMonthly, jordan,    investState.startYear, retireAge);
     }
 
     var greenColor = '#00ff88';
@@ -749,7 +798,7 @@ function renderInvest() {
 
     buildLineChart(mainChart, [
         { label: playerName + ' (age ' + playerAge + ')', color: greenColor, data: playerResult.series.map(function(p) { return { x: p.age, y: p.value }; }) },
-        { label: 'Jordan (age ' + jordan + ')',           color: grayColor,  data: jordanResult.series.map(function(p) { return { x: p.age, y: p.value }; }) },
+        { label: 'Jordan (age ' + jordan + (jordanMonthly !== monthly ? ', $' + jordanMonthly + '/mo' : '') + ')', color: grayColor,  data: jordanResult.series.map(function(p) { return { x: p.age, y: p.value }; }) },
     ], {
         xLabel: 'Age',
         yLabel: 'Portfolio Value',
@@ -779,7 +828,8 @@ function renderInvest() {
         cardsHtml += '<div style="font-size:0.8rem;font-weight:700;margin-top:4px">Age ' + age + '</div>';
         cardsHtml += '</div>';
         cardsHtml += '<div class="cmp-card cmp-jordan' + (jVal > pVal ? ' cmp-winner' : ' cmp-loser') + '">';
-        cardsHtml += '<div class="cmp-label">Jordan</div>';
+        cardsHtml += '<div class="cmp-label">Jordan (age ' + jordan + ')</div>';
+        cardsHtml += '<div class="cmp-sub">$' + jordanMonthly + '/mo</div>';
         cardsHtml += '<div class="cmp-value ' + (jVal > pVal ? 'green' : 'gray') + '">' + fmtDollar(jVal) + '</div>';
         cardsHtml += '</div>';
         cardsHtml += '</div>';
@@ -794,10 +844,13 @@ function renderInvest() {
     var finalDiff = playerResult.final - jordanResult.final;
     var years = retireAge - playerAge;
     var totalContrib = monthly * 12 * years;
+    var jordanContribNote = jordanMonthly !== monthly
+        ? 'Jordan (starts at ' + jordan + ', $' + jordanMonthly + '/mo)'
+        : 'Jordan (starts at ' + jordan + ', same contribution)';
     insightText.innerHTML = [
         'By investing <strong>' + fmtDollarFull(monthly) + '/month</strong> from age ' + playerAge + ',',
         playerName + ' accumulates <strong>' + fmtDollarFull(playerResult.final) + '</strong> by age ' + retireAge + '.',
-        'Jordan, starting at 40, ends up with <strong>' + fmtDollarFull(jordanResult.final) + '</strong> — a difference of <strong class="text-green">' + fmtDollarFull(Math.abs(finalDiff)) + '</strong>.',
+        jordanContribNote + ' ends up with <strong>' + fmtDollarFull(jordanResult.final) + '</strong> — a difference of <strong class="text-green">' + fmtDollarFull(Math.abs(finalDiff)) + '</strong>.',
         'Your total contributions: <strong>' + fmtDollarFull(totalContrib) + '</strong>. The rest is compound growth.',
     ].join(' ');
 
@@ -809,10 +862,12 @@ function renderInvest() {
     scenarioStats.innerHTML = '';
 
     exploredScenarios['invest'] = {
-        playerFinal: playerResult.final,
-        jordanFinal: jordanResult.final,
-        monthly: monthly,
-        playerAge: playerAge,
+        playerFinal:    playerResult.final,
+        jordanFinal:    jordanResult.final,
+        monthly:        monthly,
+        jordanMonthly:  jordanMonthly,
+        jordanStartAge: jordan,
+        playerAge:      playerAge,
     };
     updateCardStatuses();
 }
@@ -2163,14 +2218,18 @@ function renderSummary() {
             html += '<div class="sum-block-body"><p class="summary-not-explored">Not yet explored — go back to the hub and try this scenario.</p></div>';
 
         } else if (sc.id === 'invest') {
-            var monthsInvested  = (DEFAULTS.retireAge - res.playerAge) * 12;
+            var monthsInvested   = (DEFAULTS.retireAge - res.playerAge) * 12;
             var totalContributed = res.monthly * monthsInvested;
             var investGains      = res.playerFinal - totalContributed;
-            var yearsDiff        = DEFAULTS.jordanInvestAge - res.playerAge;
+            var jordanStartAge   = res.jordanStartAge || DEFAULTS.jordanInvestAge;
+            var jordanM          = res.jordanMonthly  || res.monthly;
+            var yearsDiff        = jordanStartAge - res.playerAge;
             var advantage        = res.playerFinal - res.jordanFinal;
-            // Cost of waiting 1 year: roughly the marginal loss of 12 months of compounding
             var oneYearLaterResult = calcDCA(res.monthly, res.playerAge + 1, DEFAULTS.retireAge, RATES.sp500Avg);
             var costOfWaiting1Yr   = res.playerFinal - oneYearLaterResult.final;
+            var jordanContribLabel = jordanM !== res.monthly
+                ? 'Jordan ($' + jordanM + '/mo, starts at ' + jordanStartAge + ')'
+                : 'Jordan (starts at ' + jordanStartAge + ', same $' + res.monthly + '/mo)';
 
             html += '<div class="sum-block-header sum-toggle-header">' +
                 '<h3>' + sc.icon + ' ' + sc.title + '</h3>' +
@@ -2183,21 +2242,28 @@ function renderSummary() {
             html += '<div class="stat-row"><span class="stat-label">Total you contributed</span><span class="stat-value">' + fmtDollarFull(totalContributed) + '</span></div>';
             html += '<div class="stat-row"><span class="stat-label">Market growth on top</span><span class="stat-value text-green">' + fmtDollarFull(investGains) + '</span></div>';
             html += '<div class="sum-calc-note">How calculated: $' + res.monthly + '/mo invested each month from age ' + res.playerAge + ' to 65 (' + monthsInvested + ' months), ' +
-                'compounding at 10.5% avg annual return. Formula: each month, portfolio = (portfolio + $' + res.monthly + ') × (1 + 0.105/12). ' +
-                'The market added <strong>' + fmtDollarFull(investGains) + '</strong> on top of your <strong>' + fmtDollarFull(totalContributed) + '</strong> in contributions — ' +
+                'compounding at 10.5% avg annual return. Formula: each month, portfolio = (portfolio + $' + res.monthly + ') \xd7 (1 + 0.105/12). ' +
+                'The market added <strong>' + fmtDollarFull(investGains) + '</strong> on top of your <strong>' + fmtDollarFull(totalContributed) + '</strong> in contributions \u2014 ' +
                 'that\'s the market doing <strong>' + (investGains / totalContributed).toFixed(1) + 'x</strong> the work you did.</div>';
 
-            html += '<div class="sum-sub-heading" style="margin-top:4px">vs Jordan (Starts at Age 40)</div>';
+            html += '<div class="sum-sub-heading" style="margin-top:4px">vs ' + jordanContribLabel + '</div>';
             html += '<div class="stat-row"><span class="stat-label">Jordan\'s final portfolio</span><span class="stat-value" style="color:var(--text-mid)">' + fmtDollarFull(res.jordanFinal) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Your head-start advantage</span><span class="stat-value text-green">+' + fmtDollarFull(advantage) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Waiting cost per year lost</span><span class="stat-value text-red">~' + fmtDollarFull(costOfWaiting1Yr) + '/yr</span></div>';
-            html += '<div class="sum-calc-note">Jordan invests the same $' + res.monthly + '/mo but starts at 40 — only 25 years of growth instead of ' + (DEFAULTS.retireAge - res.playerAge) + '. ' +
-                'The extra ' + yearsDiff + ' years you have aren\'t just worth 12 more monthly payments — they\'re worth compounding on the entire portfolio for an extra ' + yearsDiff + ' years. ' +
+            html += '<div class="stat-row"><span class="stat-label">Your advantage</span><span class="stat-value ' + (advantage >= 0 ? 'text-green' : 'text-red') + '">' + (advantage >= 0 ? '+' : '') + fmtDollarFull(advantage) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Cost of waiting 1 extra year</span><span class="stat-value text-red">~' + fmtDollarFull(costOfWaiting1Yr) + '/yr</span></div>';
+            var calcNoteJordan = jordanM !== res.monthly
+                ? 'Jordan invests $' + jordanM + '/mo starting at ' + jordanStartAge + ' \u2014 ' + (DEFAULTS.retireAge - jordanStartAge) + ' years of growth vs your ' + (DEFAULTS.retireAge - res.playerAge) + '.'
+                : 'Jordan invests the same $' + res.monthly + '/mo but starts at ' + jordanStartAge + ' \u2014 only ' + (DEFAULTS.retireAge - jordanStartAge) + ' years of growth instead of ' + (DEFAULTS.retireAge - res.playerAge) + '.';
+            html += '<div class="sum-calc-note">' + calcNoteJordan + ' ' +
+                (yearsDiff > 0 ? 'The extra ' + yearsDiff + ' years you have aren\'t just worth ' + yearsDiff + ' more years of payments \u2014 they\'re worth compounding on the entire portfolio for an extra ' + yearsDiff + ' years. ' : '') +
                 'That\'s why <strong>time is more valuable than contribution size</strong>.</div>';
 
             html += '<div class="sum-takeaway green">' +
-                '<span class="sum-takeaway-icon">🌱</span>' +
-                '<span>Starting at age <strong>' + res.playerAge + '</strong> vs 40 adds <strong>' + fmtDollarFull(advantage) + '</strong> to your retirement — and every year you wait costs you roughly <strong>' + fmtDollarFull(costOfWaiting1Yr) + '</strong>.</span>' +
+                '<span class="sum-takeaway-icon">\ud83c\udf31</span>' +
+                '<span>Starting at age <strong>' + res.playerAge + '</strong> vs <strong>' + jordanStartAge + '</strong> ' +
+                (advantage >= 0
+                    ? 'adds <strong>' + fmtDollarFull(advantage) + '</strong> to your retirement'
+                    : 'means Jordan ends up <strong>' + fmtDollarFull(Math.abs(advantage)) + ' ahead</strong>') +
+                ' \u2014 and every year you wait costs roughly <strong>' + fmtDollarFull(costOfWaiting1Yr) + '</strong>.</span>' +
                 '</div>';
 
             html += '</div>'; // sum-block-body

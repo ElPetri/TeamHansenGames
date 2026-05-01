@@ -25,8 +25,8 @@ An interactive, lightly-gamified financial education tool aimed at college stude
 ## Scenarios
 
 ### 📈 Scenario A — Investing & Compound Interest
-- **Inputs**: Monthly contribution slider ($50–$1,000), simulation mode (average 10.5% / historical S&P 500), start year picker
-- **Comparison**: Player (starts at chosen age) vs Jordan (starts at 40, same contribution)
+- **Inputs**: Monthly contribution slider ($50–$1,000), simulation mode (Historical S&P 500 **default** / Average 10.5%), start year picker
+- **Comparison**: Player (starts at chosen age) vs Jordan — Jordan's details are now fully configurable by the user (see Jordan Configuration below)
 - **Chart**: SVG line chart — two diverging lines to age 65, hover scrubber
 - **Comparison cards**: Wealth at ages 30, 40, 50, 65
 - **Buffett Quote #1**: *"Someone is sitting in the shade today because someone planted a tree a long time ago."*
@@ -141,8 +141,30 @@ opportunityCost = calcDCA(payment, 0, years, 0.105)
 
 ---
 
-## Jordan's Defaults (the comparison character)
-- Starts investing at **age 40** (Invest scenario)
+## Jordan Configuration
+
+Jordan's details in the Investing scenario are now **user-configurable** via controls in the sidebar. This lets users build their own comparison scenarios — e.g. "what if Jordan starts at 35?" or "what if Jordan saves twice as much but started late?"
+
+### Configurable fields
+| Field | Default | Range | Control type |
+|---|---|---|---|
+| Jordan's start age | 40 | playerAge+1 to 64 | Slider |
+| Jordan's monthly contribution | Same as player | $25–$1,000 | Toggle + slider |
+
+### "Same as mine" toggle
+- Default: Jordan contributes the **same amount as the player**. The contribution slider is hidden/disabled.
+- When unchecked/toggled off: a separate slider appears so the user can set Jordan's contribution independently.
+- This keeps the default comparison clean (time is the only variable) while allowing "what if Jordan saves harder?" exploration.
+
+### State
+Jordan's settings live in `investState.jordan = { startAge: 40, monthly: null }`. When `monthly` is `null`, it mirrors `investState.monthly` at render time. The jordan controls are rendered as part of the `#scenario-controls` sidebar in `loadScenarioInvest()` and update on `input`/`change` events.
+
+### Other scenarios
+- Car, Credit, Home: Jordan still uses fixed-behavior defaults (new car at 7%, minimum payments, 30yr mortgage). These scenarios don't have a Jordan-config UI — the lesson there is about the debt structure, not the person.
+
+---
+
+## Jordan's Defaults (other scenarios)
 - Finances a **new car** at 7% APR (Car scenario)
 - Pays only **minimum payments** on credit card (Credit scenario)
 - Takes a **30-year mortgage** (Home scenario)
