@@ -43,6 +43,16 @@ var summaryContent   = document.getElementById('summary-content');
 // =========================================================================
 // NAVIGATION
 // =========================================================================
+
+// If user arrived from the portfolio page, reflect that in the back link
+(function() {
+    var backLink = document.getElementById('back-link');
+    if (backLink && new URLSearchParams(window.location.search).get('from') === 'portfolio') {
+        backLink.href = '../index.html';
+        backLink.textContent = '\u2190 Portfolio';
+    }
+}());
+
 function showScreen(name) {
     hubScreen.classList.add('hidden');
     scenarioScreen.classList.add('hidden');
@@ -2162,8 +2172,11 @@ function renderSummary() {
             var oneYearLaterResult = calcDCA(res.monthly, res.playerAge + 1, DEFAULTS.retireAge, RATES.sp500Avg);
             var costOfWaiting1Yr   = res.playerFinal - oneYearLaterResult.final;
 
-            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
-            html += '<div class="sum-block-body">';
+            html += '<div class="sum-block-header sum-toggle-header">' +
+                '<h3>' + sc.icon + ' ' + sc.title + '</h3>' +
+                '<div class="sum-header-right"><span class="sum-header-stat text-green">Portfolio at 65: ' + fmtDollarFull(res.playerFinal) + '</span><span class="sum-toggle-chevron">▼</span></div>' +
+                '</div>';
+            html += '<div class="sum-block-body collapsed">';
 
             html += '<div class="sum-sub-heading">Your Portfolio at Retirement (Age 65)</div>';
             html += '<div class="stat-row"><span class="stat-label">' + playerName + '\'s final portfolio</span><span class="stat-value text-green">' + fmtDollarFull(res.playerFinal) + '</span></div>';
@@ -2193,8 +2206,11 @@ function renderSummary() {
             var pctInterest   = (res.totalInterest / res.totalPaid) * 100;
             var totalRealCost = res.down + res.totalPaid + res.oppCost;
 
-            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
-            html += '<div class="sum-block-body">';
+            html += '<div class="sum-block-header sum-toggle-header">' +
+                '<h3>' + sc.icon + ' ' + sc.title + '</h3>' +
+                '<div class="sum-header-right"><span class="sum-header-stat text-red">True cost: ' + fmtDollarFull(totalRealCost) + '</span><span class="sum-toggle-chevron">▼</span></div>' +
+                '</div>';
+            html += '<div class="sum-block-body collapsed">';
 
             html += '<div class="sum-sub-heading">What You Paid</div>';
             html += '<div class="sum-stat-cols">';
@@ -2231,8 +2247,11 @@ function renderSummary() {
                 : 'Jordan\'s minimum payments take ' + fmtMonths(res.minMonths) + ' and cost ' + fmtDollarFull(res.minTotalInterest) + ' in interest.';
             var interestSaved    = res.minNeverPaidOff ? null : (res.minTotalInterest - res.totalInterest);
 
-            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
-            html += '<div class="sum-block-body">';
+            html += '<div class="sum-block-header sum-toggle-header">' +
+                '<h3>' + sc.icon + ' ' + sc.title + '</h3>' +
+                '<div class="sum-header-right"><span class="sum-header-stat text-red">Interest paid: ' + fmtDollarFull(res.totalInterest) + '</span><span class="sum-toggle-chevron">▼</span></div>' +
+                '</div>';
+            html += '<div class="sum-block-body collapsed">';
 
             html += '<div class="sum-sub-heading">Your Payoff</div>';
             html += '<div class="sum-stat-cols">';
@@ -2266,8 +2285,11 @@ function renderSummary() {
             var pct30 = (res.loan30TotalInterest / res.loan30TotalPaid) * 100;
             var downAmt30 = res.price * res.downPct;
 
-            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
-            html += '<div class="sum-block-body">';
+            html += '<div class="sum-block-header sum-toggle-header">' +
+                '<h3>' + sc.icon + ' ' + sc.title + '</h3>' +
+                '<div class="sum-header-right"><span class="sum-header-stat text-gold">30yr costs +' + fmtDollarFull(res.interestDiff) + ' extra</span><span class="sum-toggle-chevron">▼</span></div>' +
+                '</div>';
+            html += '<div class="sum-block-body collapsed">';
 
             html += '<div class="sum-sub-heading">15-Year vs 30-Year Side by Side</div>';
             html += '<div class="sum-stat-cols">';
@@ -2304,6 +2326,17 @@ function renderSummary() {
     });
 
     summaryContent.innerHTML = html;
+
+    // Wire up collapsible block toggles
+    summaryContent.querySelectorAll('.sum-toggle-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var body = header.nextElementSibling;
+            if (!body || !body.classList.contains('sum-block-body')) return;
+            var isCollapsed = body.classList.contains('collapsed');
+            body.classList.toggle('collapsed', !isCollapsed);
+            header.classList.toggle('open', isCollapsed);
+        });
+    });
 }
 
 // =========================================================================

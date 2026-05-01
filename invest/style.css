@@ -1355,14 +1355,62 @@ body {
 .sum-stat-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0;
+    column-gap: 24px;
 }
 
 .sum-stat-cols .stat-row {
     padding: 6px 0;
 }
 
+/* Left column in 2-col stat grid gets a subtle right divider */
+.sum-stat-cols .stat-row:nth-child(odd) {
+    padding-right: 8px;
+    border-right: 1px solid var(--border);
+}
+
 @media (max-width: 600px) {
     .sum-stat-cols { grid-template-columns: 1fr; }
+    .sum-stat-cols .stat-row:nth-child(odd) { border-right: none; padding-right: 0; }
     .summary-hero-stats { grid-template-columns: 1fr 1fr; }
+}
+
+/* Collapsible scenario blocks */
+.sum-toggle-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.sum-toggle-header:hover {
+    background: #202030;
+}
+
+.sum-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.sum-header-stat {
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.sum-toggle-chevron {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    transition: transform 0.25s;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.sum-toggle-header.open .sum-toggle-chevron {
+    transform: rotate(180deg);
+}
+
+.sum-block-body.collapsed {
+    display: none;
 }
