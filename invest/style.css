@@ -859,6 +859,24 @@ body {
     border-bottom-color: var(--accent);
 }
 
+/* Advanced tab — purple pulse to attract attention until clicked */
+@keyframes advTabPulse {
+    0%, 100% {
+        color: #a855f7;
+        border-bottom-color: rgba(168, 85, 247, 0.5);
+        text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+    }
+    50% {
+        color: #d8b4fe;
+        border-bottom-color: #a855f7;
+        text-shadow: 0 0 18px rgba(168, 85, 247, 1), 0 0 32px rgba(124, 58, 237, 0.7);
+    }
+}
+
+#tab-advanced:not(.active) {
+    animation: advTabPulse 2s ease-in-out infinite;
+}
+
 /* =========================================================================
    ADVANCED — SHARED COMPONENTS
    ========================================================================= */
@@ -1194,4 +1212,157 @@ body {
     text-align: right;
     color: var(--text-mid);
     font-size: 0.75rem;
+}
+
+/* =========================================================================
+   ENHANCED SUMMARY SCREEN
+   ========================================================================= */
+
+/* Hero grand-totals banner */
+.summary-hero {
+    background: linear-gradient(135deg, rgba(0,240,255,0.07) 0%, rgba(0,255,136,0.05) 100%);
+    border: 1.5px solid rgba(0,240,255,0.25);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 8px;
+}
+
+.summary-hero h3 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 14px;
+}
+
+.summary-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+}
+
+.summary-hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.summary-hero-stat .shstat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summary-hero-stat .shstat-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* Scenario block inside summary — override the existing minimal style */
+.summary-scenario-block {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.sum-block-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+}
+
+.sum-block-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+}
+
+.sum-block-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* How-calculated explanation */
+.sum-calc-note {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border-left: 2px solid var(--border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-top: 2px;
+}
+
+/* Key-takeaway callout */
+.sum-takeaway {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.sum-takeaway.green {
+    background: rgba(0,255,136,0.07);
+    border: 1px solid rgba(0,255,136,0.25);
+    color: var(--text);
+}
+
+.sum-takeaway.red {
+    background: rgba(255,68,102,0.07);
+    border: 1px solid rgba(255,68,102,0.22);
+    color: var(--text);
+}
+
+.sum-takeaway.gold {
+    background: rgba(255,170,0,0.07);
+    border: 1px solid rgba(255,170,0,0.25);
+    color: var(--text);
+}
+
+.sum-takeaway-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* Sub-section heading inside summary block */
+.sum-sub-heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+}
+
+/* Two-column stat pairs inside summary */
+.sum-stat-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.sum-stat-cols .stat-row {
+    padding: 6px 0;
+}
+
+@media (max-width: 600px) {
+    .sum-stat-cols { grid-template-columns: 1fr; }
+    .summary-hero-stats { grid-template-columns: 1fr 1fr; }
 }

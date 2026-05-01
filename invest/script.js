@@ -920,9 +920,14 @@ function renderCar() {
 
     exploredScenarios['car'] = {
         price:          carState.price,
+        down:           carState.down,
+        years:          carState.years,
+        loanAmount:     principal,
         monthlyPayment: loan.monthlyPayment,
+        totalPaid:      loan.totalPaid,
         totalInterest:  loan.totalInterest,
         oppCost:        oppCost,
+        oppCostTo65:    oppCostTo65,
     };
     updateCardStatuses();
 }
@@ -1043,10 +1048,14 @@ function renderCredit() {
     scenarioInsight.classList.remove('hidden');
 
     exploredScenarios['credit'] = {
-        balance:       balance,
-        payment:       payment,
-        months:        playerResult.months,
-        totalInterest: playerResult.totalInterest,
+        balance:           balance,
+        payment:           payment,
+        months:            playerResult.months,
+        totalInterest:     playerResult.totalInterest,
+        totalPaid:         playerResult.totalPaid,
+        minMonths:         jordanResult.months,
+        minTotalInterest:  jordanResult.totalInterest,
+        minNeverPaidOff:   jordanResult.neverPaidOff,
     };
     updateCardStatuses();
 }
@@ -1170,10 +1179,18 @@ function renderHome() {
     scenarioInsight.classList.remove('hidden');
 
     exploredScenarios['home'] = {
-        price:         homeState.price,
-        loan15Monthly: loan15.monthlyPayment,
-        loan30Monthly: loan30.monthlyPayment,
-        interestDiff:  loan30.totalInterest - loan15.totalInterest,
+        price:              homeState.price,
+        downPct:            homeState.downPct,
+        loanAmount:         principal,
+        loan15Monthly:      loan15.monthlyPayment,
+        loan15TotalInterest: loan15.totalInterest,
+        loan15TotalPaid:    loan15.totalPaid,
+        loan30Monthly:      loan30.monthlyPayment,
+        loan30TotalInterest: loan30.totalInterest,
+        loan30TotalPaid:    loan30.totalPaid,
+        interestDiff:       loan30.totalInterest - loan15.totalInterest,
+        monthlySavings:     Math.abs(monthlyDiff),
+        diffInvested15:     diffInvested15,
     };
     updateCardStatuses();
 }
@@ -2090,29 +2107,200 @@ function renderSummary() {
     ];
 
     var html = '';
+
+    // --- Grand totals hero banner (only if 2+ scenarios explored) ---
+    var explored = scenarios.filter(function(s) { return exploredScenarios[s.id]; });
+    if (explored.length >= 2) {
+        var totalInterestPaid = 0;
+        var wealthBuilt = 0;
+        if (exploredScenarios['car'])    totalInterestPaid += exploredScenarios['car'].totalInterest;
+        if (exploredScenarios['credit']) totalInterestPaid += exploredScenarios['credit'].totalInterest;
+        if (exploredScenarios['home'])   totalInterestPaid += exploredScenarios['home'].loan30TotalInterest || 0;
+        if (exploredScenarios['invest']) wealthBuilt = exploredScenarios['invest'].playerFinal;
+
+        // If all that interest had been invested at 10.5% for 30 years
+        var interestInvested = calcDCA(0, 0, 30, RATES.sp500Avg).final + totalInterestPaid * Math.pow(1 + RATES.sp500Avg, 30);
+        // Simpler: lump sum FV of total interest paid over 30 years
+        var interestOpportunityCost = totalInterestPaid * Math.pow(1 + RATES.sp500Avg, 30);
+
+        html += '<div class="summary-hero">';
+        html += '<h3>Your Lifetime Financial Snapshot</h3>';
+        html += '<div class="summary-hero-stats">';
+        if (wealthBuilt > 0) {
+            html += '<div class="summary-hero-stat"><span class="shstat-label">Investing Portfolio at 65</span>' +
+                '<span class="shstat-value text-green">' + fmtDollarFull(wealthBuilt) + '</span></div>';
+        }
+        if (totalInterestPaid > 0) {
+            html += '<div class="summary-hero-stat"><span class="shstat-label">Total Interest Paid to Lenders</span>' +
+                '<span class="shstat-value text-red">' + fmtDollarFull(totalInterestPaid) + '</span></div>';
+            html += '<div class="summary-hero-stat"><span class="shstat-label">That Interest — If Invested Instead (30 yrs)</span>' +
+                '<span class="shstat-value text-gold">' + fmtDollarFull(interestOpportunityCost) + '</span></div>';
+        }
+        html += '</div>'; // summary-hero-stats
+        html += '<p style="font-size:0.8rem;color:var(--text-dim);margin-top:14px;line-height:1.5">' +
+            'Every dollar of interest you pay to a bank is a dollar that can\'t compound for you. The numbers above are why the difference between debt and investing is measured in hundreds of thousands of dollars over a lifetime.' +
+            '</p>';
+        html += '</div>'; // summary-hero
+    }
+
+    // --- Per-scenario blocks ---
     scenarios.forEach(function(sc) {
         var res = exploredScenarios[sc.id];
         html += '<div class="summary-scenario-block' + (res ? '' : ' not-explored') + '">';
-        html += '<h3>' + sc.icon + ' ' + sc.title + '</h3>';
+
         if (!res) {
-            html += '<p class="summary-not-explored">Not yet explored</p>';
+            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
+            html += '<div class="sum-block-body"><p class="summary-not-explored">Not yet explored — go back to the hub and try this scenario.</p></div>';
+
         } else if (sc.id === 'invest') {
-            html += '<div class="stat-row"><span class="stat-label">' + playerName + ' at retirement (age 65)</span><span class="stat-value green">' + fmtDollarFull(res.playerFinal) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Jordan at retirement (age 65)</span><span class="stat-value gray">' + fmtDollarFull(res.jordanFinal) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Your advantage</span><span class="stat-value green">' + fmtDollarFull(res.playerFinal - res.jordanFinal) + '</span></div>';
+            var monthsInvested  = (DEFAULTS.retireAge - res.playerAge) * 12;
+            var totalContributed = res.monthly * monthsInvested;
+            var investGains      = res.playerFinal - totalContributed;
+            var yearsDiff        = DEFAULTS.jordanInvestAge - res.playerAge;
+            var advantage        = res.playerFinal - res.jordanFinal;
+            // Cost of waiting 1 year: roughly the marginal loss of 12 months of compounding
+            var oneYearLaterResult = calcDCA(res.monthly, res.playerAge + 1, DEFAULTS.retireAge, RATES.sp500Avg);
+            var costOfWaiting1Yr   = res.playerFinal - oneYearLaterResult.final;
+
+            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
+            html += '<div class="sum-block-body">';
+
+            html += '<div class="sum-sub-heading">Your Portfolio at Retirement (Age 65)</div>';
+            html += '<div class="stat-row"><span class="stat-label">' + playerName + '\'s final portfolio</span><span class="stat-value text-green">' + fmtDollarFull(res.playerFinal) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Total you contributed</span><span class="stat-value">' + fmtDollarFull(totalContributed) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Market growth on top</span><span class="stat-value text-green">' + fmtDollarFull(investGains) + '</span></div>';
+            html += '<div class="sum-calc-note">How calculated: $' + res.monthly + '/mo invested each month from age ' + res.playerAge + ' to 65 (' + monthsInvested + ' months), ' +
+                'compounding at 10.5% avg annual return. Formula: each month, portfolio = (portfolio + $' + res.monthly + ') × (1 + 0.105/12). ' +
+                'The market added <strong>' + fmtDollarFull(investGains) + '</strong> on top of your <strong>' + fmtDollarFull(totalContributed) + '</strong> in contributions — ' +
+                'that\'s the market doing <strong>' + (investGains / totalContributed).toFixed(1) + 'x</strong> the work you did.</div>';
+
+            html += '<div class="sum-sub-heading" style="margin-top:4px">vs Jordan (Starts at Age 40)</div>';
+            html += '<div class="stat-row"><span class="stat-label">Jordan\'s final portfolio</span><span class="stat-value" style="color:var(--text-mid)">' + fmtDollarFull(res.jordanFinal) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Your head-start advantage</span><span class="stat-value text-green">+' + fmtDollarFull(advantage) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Waiting cost per year lost</span><span class="stat-value text-red">~' + fmtDollarFull(costOfWaiting1Yr) + '/yr</span></div>';
+            html += '<div class="sum-calc-note">Jordan invests the same $' + res.monthly + '/mo but starts at 40 — only 25 years of growth instead of ' + (DEFAULTS.retireAge - res.playerAge) + '. ' +
+                'The extra ' + yearsDiff + ' years you have aren\'t just worth 12 more monthly payments — they\'re worth compounding on the entire portfolio for an extra ' + yearsDiff + ' years. ' +
+                'That\'s why <strong>time is more valuable than contribution size</strong>.</div>';
+
+            html += '<div class="sum-takeaway green">' +
+                '<span class="sum-takeaway-icon">🌱</span>' +
+                '<span>Starting at age <strong>' + res.playerAge + '</strong> vs 40 adds <strong>' + fmtDollarFull(advantage) + '</strong> to your retirement — and every year you wait costs you roughly <strong>' + fmtDollarFull(costOfWaiting1Yr) + '</strong>.</span>' +
+                '</div>';
+
+            html += '</div>'; // sum-block-body
+
         } else if (sc.id === 'car') {
-            html += '<div class="stat-row"><span class="stat-label">Car price</span><span class="stat-value">' + fmtDollarFull(res.price) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Total interest paid</span><span class="stat-value red">' + fmtDollarFull(res.totalInterest) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Opportunity cost (if invested)</span><span class="stat-value gold">' + fmtDollarFull(res.oppCost) + '</span></div>';
+            var pctInterest   = (res.totalInterest / res.totalPaid) * 100;
+            var totalRealCost = res.down + res.totalPaid + res.oppCost;
+
+            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
+            html += '<div class="sum-block-body">';
+
+            html += '<div class="sum-sub-heading">What You Paid</div>';
+            html += '<div class="sum-stat-cols">';
+            html += '<div class="stat-row"><span class="stat-label">Car sticker price</span><span class="stat-value">' + fmtDollarFull(res.price) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Down payment</span><span class="stat-value">' + fmtDollarFull(res.down) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Amount borrowed</span><span class="stat-value">' + fmtDollarFull(res.loanAmount) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Monthly payment</span><span class="stat-value text-red">' + fmtDollarFull(res.monthlyPayment) + '/mo</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Total paid to lender</span><span class="stat-value text-red">' + fmtDollarFull(res.totalPaid) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Of which: interest</span><span class="stat-value text-red">' + fmtDollarFull(res.totalInterest) + ' (' + pctInterest.toFixed(0) + '%)</span></div>';
+            html += '</div>'; // sum-stat-cols
+            html += '<div class="sum-calc-note">How calculated: At 7% APR, monthly rate = 0.583%. Each month, interest = remaining balance × 0.00583. Your payment of ' + fmtDollarFull(res.monthlyPayment) + ' first covers that interest; the remainder reduces the principal. ' +
+                'Over ' + res.years + ' years, the bank collects <strong>' + fmtDollarFull(res.totalInterest) + '</strong> — ' + pctInterest.toFixed(0) + '¢ of every dollar you paid went straight to interest.</div>';
+
+            html += '<div class="sum-sub-heading" style="margin-top:4px">The True Cost (Opportunity)</div>';
+            html += '<div class="stat-row"><span class="stat-label">If payments invested over loan term</span><span class="stat-value text-gold">' + fmtDollarFull(res.oppCost) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">True cost of this car</span><span class="stat-value text-red">' + fmtDollarFull(totalRealCost) + '</span></div>';
+            html += '<div class="sum-calc-note">The opportunity cost is what your ' + fmtDollarFull(res.monthlyPayment) + '/mo payment <em>could have become</em> if invested in an S&P 500 index fund at 10.5% avg for ' + res.years + ' years instead of going to the bank. ' +
+                'The "true cost" = your down payment + all loan payments + that foregone growth.</div>';
+
+            html += '<div class="sum-takeaway red">' +
+                '<span class="sum-takeaway-icon">🚗</span>' +
+                '<span>This car\'s sticker price was <strong>' + fmtDollarFull(res.price) + '</strong>. Its true cost — including interest and foregone investment growth — is <strong>' + fmtDollarFull(totalRealCost) + '</strong>.</span>' +
+                '</div>';
+
+            html += '</div>'; // sum-block-body
+
         } else if (sc.id === 'credit') {
-            html += '<div class="stat-row"><span class="stat-label">Balance cleared</span><span class="stat-value green">' + fmtDollarFull(res.balance) + '</span></div>';
+            var totalPaidCredit  = res.totalPaid || (res.balance + res.totalInterest);
+            var costPerDollar    = totalPaidCredit / res.balance;
+            var monthlyIntCharge = res.balance * (RATES.creditCard / 12);
+            var pctToInterest    = (res.totalInterest / totalPaidCredit) * 100;
+            var minCompare       = res.minNeverPaidOff
+                ? 'Jordan\'s minimum payments never pay off this balance — the interest exceeds the payment.'
+                : 'Jordan\'s minimum payments take ' + fmtMonths(res.minMonths) + ' and cost ' + fmtDollarFull(res.minTotalInterest) + ' in interest.';
+            var interestSaved    = res.minNeverPaidOff ? null : (res.minTotalInterest - res.totalInterest);
+
+            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
+            html += '<div class="sum-block-body">';
+
+            html += '<div class="sum-sub-heading">Your Payoff</div>';
+            html += '<div class="sum-stat-cols">';
+            html += '<div class="stat-row"><span class="stat-label">Balance cleared</span><span class="stat-value text-green">' + fmtDollarFull(res.balance) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Monthly payment</span><span class="stat-value">' + fmtDollarFull(res.payment) + '/mo</span></div>';
             html += '<div class="stat-row"><span class="stat-label">Payoff time</span><span class="stat-value">' + fmtMonths(res.months) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Total interest paid</span><span class="stat-value red">' + fmtDollarFull(res.totalInterest) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Total interest paid</span><span class="stat-value text-red">' + fmtDollarFull(res.totalInterest) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Total amount paid</span><span class="stat-value text-red">' + fmtDollarFull(totalPaidCredit) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Cost per $1 borrowed</span><span class="stat-value text-red">$' + costPerDollar.toFixed(2) + '</span></div>';
+            html += '</div>';
+            html += '<div class="sum-calc-note">How calculated: 24% APR ÷ 12 = 2% per month. In month 1, interest = ' + fmtDollarFull(monthlyIntCharge) + '. Your ' + fmtDollarFull(res.payment) + ' payment first covers that interest; the rest (' + fmtDollarFull(res.payment - monthlyIntCharge) + ') reduces the balance. ' +
+                'As the balance falls each month, less of your payment goes to interest and more goes to principal — accelerating the payoff. ' +
+                'Of the <strong>' + fmtDollarFull(totalPaidCredit) + '</strong> you paid, <strong>' + fmtDollarFull(res.totalInterest) + ' (' + pctToInterest.toFixed(0) + '%)</strong> was pure interest.</div>';
+
+            html += '<div class="sum-sub-heading" style="margin-top:4px">vs Jordan (Minimum Payments)</div>';
+            html += '<div class="stat-row"><span class="stat-label">Jordan\'s strategy</span><span class="stat-value text-red">' + minCompare + '</span></div>';
+            if (interestSaved !== null && interestSaved > 0) {
+                html += '<div class="stat-row"><span class="stat-label">You saved vs minimum payments</span><span class="stat-value text-green">' + fmtDollarFull(interestSaved) + '</span></div>';
+            }
+            html += '<div class="sum-calc-note">Minimum payments = 2% of balance or $25 (whichever is higher). As the balance shrinks, so does the minimum — meaning you pay less and less toward principal each month, dragging the payoff out for years and maximizing interest paid.</div>';
+
+            html += '<div class="sum-takeaway red">' +
+                '<span class="sum-takeaway-icon">💳</span>' +
+                '<span>This debt cost you <strong>' + fmtDollarFull(res.totalInterest) + '</strong> in interest. That money earned zero return — it went entirely to the card issuer. For every $1 you borrowed, you paid back <strong>$' + costPerDollar.toFixed(2) + '</strong>.</span>' +
+                '</div>';
+
+            html += '</div>'; // sum-block-body
+
         } else if (sc.id === 'home') {
+            var pct15 = (res.loan15TotalInterest / res.loan15TotalPaid) * 100;
+            var pct30 = (res.loan30TotalInterest / res.loan30TotalPaid) * 100;
+            var downAmt30 = res.price * res.downPct;
+
+            html += '<div class="sum-block-header"><h3>' + sc.icon + ' ' + sc.title + '</h3></div>';
+            html += '<div class="sum-block-body">';
+
+            html += '<div class="sum-sub-heading">15-Year vs 30-Year Side by Side</div>';
+            html += '<div class="sum-stat-cols">';
             html += '<div class="stat-row"><span class="stat-label">Home price</span><span class="stat-value">' + fmtDollarFull(res.price) + '</span></div>';
-            html += '<div class="stat-row"><span class="stat-label">Extra interest (30yr vs 15yr)</span><span class="stat-value red">' + fmtDollarFull(res.interestDiff) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Down payment (' + Math.round(res.downPct * 100) + '%)</span><span class="stat-value">' + fmtDollarFull(downAmt30) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Loan amount</span><span class="stat-value">' + fmtDollarFull(res.loanAmount) + '</span></div>';
+            html += '<div class="stat-row" style="visibility:hidden"></div>';
+            html += '<div class="stat-row"><span class="stat-label">15-yr monthly</span><span class="stat-value text-red">' + fmtDollarFull(res.loan15Monthly) + '/mo</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">30-yr monthly</span><span class="stat-value text-green">' + fmtDollarFull(res.loan30Monthly) + '/mo</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">15-yr total interest</span><span class="stat-value text-red">' + fmtDollarFull(res.loan15TotalInterest) + ' (' + pct15.toFixed(0) + '%)</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">30-yr total interest</span><span class="stat-value text-red">' + fmtDollarFull(res.loan30TotalInterest) + ' (' + pct30.toFixed(0) + '%)</span></div>';
+            html += '</div>';
+            html += '<div class="stat-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px"><span class="stat-label"><strong>Extra interest choosing 30-year</strong></span><span class="stat-value text-red"><strong>+' + fmtDollarFull(res.interestDiff) + '</strong></span></div>';
+            html += '<div class="sum-calc-note">How calculated: Both loans use the same principal (' + fmtDollarFull(res.loanAmount) + '). The 30-year at 7% compounds interest over 360 payments instead of 180 at 6.5%. ' +
+                'Even though the 30-year has a lower monthly payment, you\'re borrowing that same money for twice as long — giving the bank twice the time to charge interest on your balance. ' +
+                pct30.toFixed(0) + '¢ of every dollar you pay on the 30-year goes to interest, vs ' + pct15.toFixed(0) + '¢ on the 15-year.</div>';
+
+            html += '<div class="sum-sub-heading" style="margin-top:4px">The Monthly Savings — and What They\'re Worth</div>';
+            html += '<div class="stat-row"><span class="stat-label">Monthly savings (30yr lower payment)</span><span class="stat-value text-green">' + fmtDollarFull(res.monthlySavings) + '/mo</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">If that savings invested for 15 yrs</span><span class="stat-value text-gold">' + fmtDollarFull(res.diffInvested15) + '</span></div>';
+            html += '<div class="stat-row"><span class="stat-label">Net extra cost of 30-year</span><span class="stat-value text-red">+' + fmtDollarFull(res.interestDiff - res.diffInvested15) + '</span></div>';
+            html += '<div class="sum-calc-note">The 30-year saves ' + fmtDollarFull(res.monthlySavings) + '/mo vs the 15-year. If that monthly savings were invested in an S&P 500 index fund at 10.5% for 15 years, it would grow to ' + fmtDollarFull(res.diffInvested15) + '. ' +
+                'Even accounting for this, the 30-year still costs more — unless you\'re disciplined enough to actually invest that monthly savings (most people aren\'t).</div>';
+
+            html += '<div class="sum-takeaway gold">' +
+                '<span class="sum-takeaway-icon">🏠</span>' +
+                '<span>The 30-year mortgage feels cheaper at <strong>' + fmtDollarFull(res.loan30Monthly) + '/mo</strong>, but costs <strong>' + fmtDollarFull(res.interestDiff) + ' more in interest</strong> over its life — roughly the price of a new car every few years, paid to your lender.</span>' +
+                '</div>';
+
+            html += '</div>'; // sum-block-body
         }
-        html += '</div>';
+
+        html += '</div>'; // summary-scenario-block
     });
 
     summaryContent.innerHTML = html;

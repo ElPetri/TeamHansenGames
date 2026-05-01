@@ -150,10 +150,55 @@ opportunityCost = calcDCA(payment, 0, years, 0.105)
 ---
 
 ## Summary Screen
-- Shows combined results from all explored scenarios
-- Displays wealth gap between player and Jordan across explored scenarios
-- Features Buffett Quote #3 + VOO/SPY nudge
-- Educational disclaimer: "For educational purposes only. Not financial advice."
+
+The summary screen now provides a detailed, educational breakdown of every explored scenario:
+
+### Grand Totals Hero Banner
+Shown when 2+ scenarios have been explored:
+- **Investing portfolio at 65** — the player's final wealth
+- **Total interest paid to lenders** — sum across car + credit + home scenarios
+- **That interest if invested instead (30 yrs)** — illustrates the compound opportunity cost of debt
+
+### Per-Scenario Breakdown
+
+#### 📈 Invest
+- Portfolio at retirement with contributor/growth split (how much came from contributions vs market gains)
+- Jordan comparison: head-start advantage + estimated cost of waiting 1 more year
+- "How calculated" explanation: DCA formula, 10.5% avg, monthly compounding
+- Key takeaway callout: time advantage quantified in dollars
+
+#### 🚗 Car
+- Full loan breakdown: sticker → down → borrowed → monthly payment → total paid → interest isolated
+- Interest % of total payments; per-cent explanation of how amortization works
+- True cost = down + loan payments + opportunity cost (what payments would have grown to)
+- Key takeaway: sticker price vs real cost in dollars
+
+#### 💳 Credit
+- Balance, payment, payoff time, total interest, total paid, cost-per-$1-borrowed
+- Step-by-step explanation of how interest accrues each month and why early payments pay mostly interest
+- Jordan comparison: minimum payment outcome; interest saved vs minimum strategy
+- Key takeaway: interest cost expressed as a multiplier on the original debt
+
+#### 🏠 Home
+- Side-by-side 15yr vs 30yr: monthly payment, total interest, interest as % of all payments
+- Extra interest on 30yr; monthly savings from choosing 30yr; what that savings becomes if invested
+- Net cost of 30yr after crediting the invested savings
+- Key takeaway: the low monthly payment framed as its true 30-year interest cost
+
+---
+
+## UI/UX Details
+
+### Age Input
+The "Your current age" field on the hub screen is a `<select>` dropdown (options 15–50, default 18). This prevents invalid values and is faster to use on mobile than a number input.
+
+### Advanced Tab Pulse
+When a scenario is open and the **Basic** tab is active, the **Advanced ↓** tab pulses with a glowing purple animation (`@keyframes advTabPulse`) to draw attention. The animation stops as soon as the user clicks the Advanced tab (once `active` class is applied).
+
+- Colors: `#a855f7` → `#d8b4fe` (purple-500 → purple-200)
+- Glow: `text-shadow` cycling from soft to vivid
+- Timing: 2s ease-in-out, infinite
+- CSS rule: `#tab-advanced:not(.active) { animation: advTabPulse 2s ease-in-out infinite; }`
 
 ---
 
